@@ -3588,6 +3588,15 @@ do
     session.commands=math.clamp(tonumber(session.commands) or 0,0,1e9)
     v13Data.gameSessions[v15PlaceId]=session
     m.session=session
+    m.reportError=function(command,message)
+        local record={
+            time=os.date("%H:%M:%S"),
+            command=tostring(command or "?"):sub(1,35),
+            message=tostring(message or ""):sub(1,180)
+        }
+        table.insert(m.sessionErrors,1,record)
+        if #m.sessionErrors>15 then table.remove(m.sessionErrors) end
+    end
 
     m.favoriteAdd=function(raw)
         local name=singleWord(raw)
@@ -3891,6 +3900,15 @@ do
     register("preset","SETTINGS","Aplicar preset: visual, leve, claro...",function(arg)
         return m.presetApply(arg)
     end,"preset visual")
+    register("errorlog","SETTINGS","Ver falhas de comandos desta sessao",function()
+        show("DIAGNOSTICS")
+        if #m.sessionErrors==0 then
+            notify("Sem falhas registradas nesta sessao.","success")
+        else
+            notify(#m.sessionErrors.." falha(s) no diagnostico.","info")
+        end
+        return false
+    end)
     register("diagnose","SETTINGS","Abrir verificacoes de compatibilidade",function()
         show("DIAGNOSTICS")
         return false
@@ -3919,6 +3937,9 @@ exec = function(raw)
     if addHistory then addHistory(tostring(raw)) end
 
     if not entry then
+        if v14.v17 and v14.v17.reportError then
+            v14.v17.reportError(command,"Comando desconhecido")
+        end
         notify("Comando desconhecido: "..command,"error")
         return
     end
@@ -3939,6 +3960,9 @@ exec = function(raw)
 
     if not ok then
         local err = result
+        if v14.v17 and v14.v17.reportError then
+            v14.v17.reportError(command,tostring(err))
+        end
         notify("Erro em "..command..": "..tostring(err),"error")
         return
     end
@@ -6390,6 +6414,9 @@ do
             local importField=ui.box(pages.BACKUP,"Cole aqui o backup BRAB0X-V17...",130,true)
             importField.ClearTextOnFocus=false
             local pendingImport=false
+            bind(importField:GetPropertyChangedSignal("Text"),function()
+                pendingImport=false
+            end)
             groupButtons(pages.BACKUP,{
                 {"IMPORTAR BACKUP",function()
                     if not pendingImport then
@@ -6454,7 +6481,17 @@ do
                     local e=order[i]
                     local profile=v13Data.gameProfiles[e.id]
                     local name=profile and profile.label or ("Jogo "..e.id)
-                    info(details,name.."  |  "..e.id.."  |  "..(e.entry.visits or 0).." visitas",32)
+                    info(details,tostring(name).."  |  "..e.id.."  |  "..
+                        tostring(e.entry.visits or 0).." visitas",32)
+                end
+                ui.section(details,"REGISTRO DE FALHAS DESTA SESSAO")
+                if #m.sessionErrors==0 then
+                    info(details,"Nenhum comando apresentou erro nesta sessao.",34)
+                end
+                for i=1,math.min(8,#m.sessionErrors) do
+                    local issue=m.sessionErrors[i]
+                    info(details,issue.time.." / "..issue.command..
+                        ": "..issue.message,51)
                 end
             end
 
