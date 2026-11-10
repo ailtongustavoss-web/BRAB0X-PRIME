@@ -5434,6 +5434,192 @@ do
     end
 end
 
+-- V15 / GERENCIADOR VISUAL DE JOGOS
+-- Um unico loadstring: usa game.PlaceId para reconhecer e aplicar perfis de forma automatica.
+do
+    local router=v14.router
+    local ui=v14.ui
+    v14.buildGameRouter=function()
+        local page=pages.GAMES
+        local header=ui.title(page,"GERENCIADOR UNIVERSAL DE JOGOS",
+            "O mesmo carregador detecta automaticamente o PlaceId de cada jogo.")
+        local mode=round(obj("Frame",page,{
+            Size=UDim2.new(1,-8,0,156),
+            BackgroundColor3=Color3.fromRGB(28,18,27),
+            BorderSizePixel=0
+        }),10)
+        obj("UIStroke",mode,{Color=accent,Thickness=1,Transparency=.3})
+        local gameName=txt(mode,"JOGO: --",37,19,true)
+        gameName.Position=UDim2.fromOffset(15,10)
+        gameName.Size=UDim2.new(1,-30,0,36)
+        gameName.TextColor3=accent
+        local placeInfo=txt(mode,"PLACE ID: --",28,13,true)
+        placeInfo.Position=UDim2.fromOffset(16,46)
+        placeInfo.Size=UDim2.new(1,-32,0,29)
+        local moduleInfo=txt(mode,"MODULO: UNIVERSAL",35,12,true)
+        moduleInfo.Position=UDim2.fromOffset(16,78)
+        moduleInfo.Size=UDim2.new(1,-32,0,28)
+        moduleInfo.TextColor3=white
+        local modeNote=txt(mode,
+            "Modulos exclusivos so serao habilitados para jogos cadastrados no codigo.",
+            46,11)
+        modeNote.Position=UDim2.fromOffset(16,107)
+        modeNote.Size=UDim2.new(1,-32,0,42)
+        modeNote.TextColor3=muted
+
+        ui.section(page,"NOME DESTE JOGO")
+        local labelBox=ui.box(page,"Nome do jogo ou apelido personalizado",39)
+        local function buttons(items)
+            local frame=obj("Frame",page,{
+                Size=UDim2.new(1,-8,0,42),
+                BackgroundTransparency=1
+            })
+            for i,entry in ipairs(items) do
+                local b=btn(frame,entry[1],entry[2],40)
+                b.Position=UDim2.new((i-1)/#items,3,0,0)
+                b.Size=UDim2.new(1/#items,-8,1,0)
+                b.TextSize=10
+            end
+            return frame
+        end
+        buttons({
+            {"SALVAR NOME",function()router.setLabel(labelBox.Text)end},
+            {"PERFIL DESTE JOGO",function()router.saveProfile()end}
+        })
+        ui.section(page,"MODOS DO CARREGADOR")
+        buttons({
+            {"SALVAR PERFIL",function()router.saveProfile()end},
+            {"APLICAR PERFIL",function()router.applyProfile()end},
+            {"UNIVERSAL",function()router.useUniversal()end}
+        })
+        local explanation=txt(page,
+            "UNIVERSAL = todos os comandos normais. PERFIL = suas preferencias, FOV, velocidade e atalhos para este PlaceId.",
+            48,12)
+        explanation.TextColor3=muted
+
+        ui.section(page,"ATALHOS ESPECIFICOS PARA ESTE JOGO")
+        local inputs={}
+        for index=1,4 do
+            local cell=round(obj("Frame",page,{
+                Size=UDim2.new(1,-8,0,49),
+                BackgroundColor3=control,
+                BorderSizePixel=0
+            }),8)
+            local num=txt(cell,tostring(index)..".",24,13,true)
+            num.Position=UDim2.fromOffset(9,10)
+            num.Size=UDim2.fromOffset(34,30)
+            num.TextColor3=accent
+            local field=round(obj("TextBox",cell,{
+                Position=UDim2.fromOffset(42,8),
+                Size=UDim2.new(1,-166,0,34),
+                Text=tostring(router.profile.quick[index] or ""),
+                PlaceholderText="ex.: fly, fov 80, goto nearest",
+                BackgroundColor3=Color3.fromRGB(39,28,38),
+                TextColor3=white,PlaceholderColor3=muted,
+                BorderSizePixel=0,Font=Enum.Font.Code,
+                TextSize=12,ClearTextOnFocus=false
+            }),7)
+            inputs[index]=field
+            local execute=btn(cell,"EXECUTAR",function()
+                local command=router.safeQuick(field.Text)
+                if not command then
+                    notify("Atalho desconhecido ou nao permitido.","error")
+                    return
+                end
+                exec(command)
+            end,34)
+            execute.Position=UDim2.new(1,-118,0,8)
+            execute.Size=UDim2.fromOffset(109,34)
+            execute.TextSize=10
+        end
+        buttons({
+            {"SALVAR OS 4 ATALHOS",function()
+                local result={}
+                for _,field in ipairs(inputs) do result[#result+1]=field.Text end
+                router.setQuicks(result)
+            end},
+            {"ABRIR COMANDOS",function()show("COMMANDS")end},
+            {"AJUDA",function()show("HELP")end}
+        })
+        ui.section(page,"CADASTRAR OUTRO JOGO")
+        local newId=ui.box(page,"PlaceId do outro jogo (somente numeros)",38)
+        local newName=ui.box(page,"Nome do jogo cadastrado",38)
+        buttons({
+            {"CADASTRAR PLACEID",function()
+                router.registerGame(newId.Text,newName.Text)
+            end},
+            {"LIMPAR CAMPOS",function()
+                newId.Text=""
+                newName.Text=""
+            end}
+        })
+        local listCaption=txt(page,
+            "Jogos registrados no seu BRAB0X PRIME (apenas perfis; nenhuma falha e explorada).",
+            35,11)
+        listCaption.TextColor3=muted
+
+        ui.section(page,"JOGOS CADASTRADOS")
+        local holder=ui.holder(page)
+        local listHelp=txt(page,
+            "Ao entrar em outro jogo e executar o mesmo loadstring, ele sera identificado automaticamente. Seus perfis sao locais.",
+            43,11)
+        listHelp.TextColor3=muted
+        v14.panelRefresh.GAMES=function()
+            if not page.Visible then return end
+            router.detect()
+            local profile=router.profile
+            gameName.Text="JOGO: "..tostring(profile.label or "Desconhecido"):sub(1,45)
+            placeInfo.Text="PlaceId: "..router.placeId.."     |     UniverseId: "..router.universeId
+            moduleInfo.Text="MODO: "..(profile.mode=="custom" and "PERFIL DO JOGO" or "UNIVERSAL")..
+                "     |     MODULO: "..(router.currentModule and router.currentModule.name or "PADRAO")
+            if UIS:GetFocusedTextBox()~=labelBox then labelBox.Text=profile.label or "" end
+            for index,field in ipairs(inputs) do
+                if UIS:GetFocusedTextBox()~=field then
+                    field.Text=tostring(profile.quick[index] or "")
+                end
+            end
+            clear(holder)
+            local names={}
+            for id,value in pairs(router.profiles) do
+                if type(value)=="table" and tostring(id):match("^%d+$") then
+                    names[#names+1]=id
+                end
+            end
+            table.sort(names,function(a,b)
+                if a==router.placeId then return true end
+                if b==router.placeId then return false end
+                return (router.profiles[a].lastVisit or 0)>
+                    (router.profiles[b].lastVisit or 0)
+            end)
+            for i=1,math.min(#names,35) do
+                local id=names[i]
+                local entry=router.profiles[id]
+                local label=(entry.label or ("Jogo "..id)):sub(1,34)
+                local mark=id==router.placeId and " ● ATUAL" or ""
+                ui.row(holder,label.."  |  "..id..mark,{
+                    {"MOSTRAR ID",function()
+                        if type(setclipboard)=="function" then
+                            local ok=pcall(setclipboard,id)
+                            if ok then notify("PlaceId copiado: "..id);return end
+                        end
+                        cmdInput.Text=id
+                        notify("PlaceId colocado no campo inferior: "..id)
+                    end,99},
+                    {id==router.placeId and "ATUAL" or "REMOVER",function()
+                        if id==router.placeId then
+                            router.info()
+                        else
+                            router.removeGame(id)
+                        end
+                    end,85}
+                })
+            end
+        end
+        v14.gamePageReady=true
+        v14.panelRefresh.GAMES()
+    end
+end
+
 -- ABA CONFIGURACOES
 
 do
