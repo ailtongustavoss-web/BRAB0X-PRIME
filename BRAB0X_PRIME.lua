@@ -5939,6 +5939,211 @@ do
     end
 end
 
+-- V15.1 / INTERFACE FIFA SUPER SOCCER - BRAB0X PRIME
+do
+    local sc=v14.soccer
+    if sc and sc.enabled then
+        sc.install=function()
+            local ui=v14.ui
+            local page=pages.SOCCER
+            ui.title(page,"⚽  FIFA SUPER SOCCER  /  TREINO",
+                "Play! Football • 4v4 • PlaceId 12177325772")
+            local notice=txt(page,
+                "⚠  ESTE MODULO NAO AUMENTA A HITBOX REAL NEM A FORCA DO CHUTE. AS OPCOES ABAIXO SAO VISUAIS E LOCAIS.",
+                48,12,true)
+            notice.TextColor3=Color3.fromRGB(255,135,148)
+            ui.section(page,"⚽  CENTRO DE TREINO")
+
+            local status=round(obj("Frame",page,{
+                Size=UDim2.new(1,-8,0,108),
+                BackgroundColor3=Color3.fromRGB(26,16,26),
+                BorderSizePixel=0
+            }),10)
+            obj("UIStroke",status,{Color=accent,Thickness=1.2,Transparency=.34})
+            local statusName=txt(status,"BOLA: PROCURANDO...",31,17,true)
+            statusName.Position=UDim2.fromOffset(14,8)
+            statusName.Size=UDim2.new(1,-28,0,32)
+            statusName.TextColor3=accent
+            local statusNumbers=txt(status,
+                "CHUTES: 0   PASSES: 0   DRIBLES: 0   CARRINHOS: 0",31,12,true)
+            statusNumbers.Position=UDim2.fromOffset(15,44)
+            statusNumbers.Size=UDim2.new(1,-30,0,30)
+            local statusFoot=txt(status,
+                "Nenhuma alteracao no servidor. Contagem de teclas, nao de gols.",30,11)
+            statusFoot.Position=UDim2.fromOffset(15,76)
+            statusFoot.Size=UDim2.new(1,-30,0,25)
+            statusFoot.TextColor3=muted
+
+            local function buttonRow(items)
+                local row=obj("Frame",page,{
+                    Size=UDim2.new(1,-8,0,43),BackgroundTransparency=1
+                })
+                for i,item in ipairs(items) do
+                    local b=btn(row,item[1],item[2],40)
+                    b.Position=UDim2.new((i-1)/#items,3,0,0)
+                    b.Size=UDim2.new(1/#items,-7,0,40)
+                    b.TextSize=10
+                end
+            end
+            local function toggle(name,method)
+                local b=btn(page,name,function()
+                    method()
+                end,39)
+                b.Size=UDim2.new(1,-8,0,39)
+                return b
+            end
+            ui.section(page,"HITBOX VISUAL  /  NAO ALTERA COLISAO")
+            local ballButton,rangeButton,hudButton,meterButton
+            ballButton=toggle("DESTAQUE DA BOLA",function()
+                sc.toggleBall(not sc.settings.ballHighlight)
+            end)
+            rangeButton=toggle("RAIO VISUAL DA BOLA",function()
+                sc.toggleRange(not sc.settings.visualRadius)
+            end)
+            sliderControl(page,"RAIO VISUAL EM STUDS",
+                "Apenas desenha uma esfera de referencia. Sem mudar hitbox real.",
+                2,24,1,function()return sc.settings.range end,
+                "fifaradius","%.0f")
+            ui.section(page,"CHUTE / MEDIDOR SIMULADO")
+            local description=txt(page,
+                "Segure o botao esquerdo para carregar o medidor VISUAL. A forca real do chute continua definida pelo jogo.",
+                54,12)
+            description.TextColor3=muted
+            meterButton=toggle("MEDIDOR VISUAL",function()
+                sc.toggleMeter(not sc.settings.showMeter)
+            end)
+            sliderControl(page,"SENSIBILIDADE DO MEDIDOR SIMULADO",
+                "Nao muda potencia, velocidade ou trajetoria real da bola.",
+                .5,3,.1,function()return sc.settings.meterSensitivity end,
+                "fifametersensitivity","%.1f")
+            ui.section(page,"CAMERA / VISUAL")
+            buttonRow({
+                {"FOV 70",function()exec("fifacamera 70")end},
+                {"FOV 85",function()exec("fifacamera 85")end},
+                {"FOV 100",function()exec("fifacamera 100")end}
+            })
+            hudButton=toggle("HUD DE TREINO",function()
+                sc.toggleHUD(not sc.settings.hud)
+            end)
+            ui.section(page,"CONTROLES OFICIAIS DO FIFA SUPER SOCCER")
+            local controls=txt(page,
+                "LMB  CHUTE / CRUZAMENTO     •     RMB  PASSE / CHUTE BAIXO\n"..
+                "E  CARRINHO    •    Q  DRIBLE    •    R  PEDIR BOLA\n"..
+                "C  CAMERA LIVRE DO JOGO    •    TAB  PLACAR",100,12,true)
+            controls.TextColor3=white
+            buttonRow({
+                {"MOSTRAR CONTROLES",function()exec("fifacontrols")end},
+                {"ESTATISTICAS",function()exec("fifastats")end},
+                {"ZERAR TENTATIVAS",function()exec("fifaresetstats")end}
+            })
+            local sourceNote=txt(page,
+                "Dica: o FIFA Super Soccer pode alterar modelos de bola. Se ela nao aparecer, o rastreador exibira 'nao encontrada'.",
+                53,11)
+            sourceNote.TextColor3=muted
+
+            -- Overlay opcional: fica fora do painel para acompanhar jogadas.
+            local hud=round(obj("Frame",gui,{
+                Size=UDim2.fromOffset(278,158),
+                Position=UDim2.new(0,14,0,100),
+                BackgroundColor3=Color3.fromRGB(15,10,19),
+                BackgroundTransparency=.08,
+                BorderSizePixel=0,ZIndex=78,
+                Visible=sc.settings.hud
+            }),12)
+            obj("UIStroke",hud,{
+                Color=Color3.fromRGB(250,35,64),Transparency=.14,Thickness=1.4
+            })
+            sc.hud=hud
+            sc.visibleHUD=hud
+            local hudHead=txt(hud,"⚽  BRAB0X  /  FIFA TREINO",32,15,true)
+            hudHead.TextColor3=Color3.fromRGB(255,73,97)
+            hudHead.Position=UDim2.fromOffset(12,8)
+            hudHead.Size=UDim2.new(1,-24,0,31)
+            hudHead.ZIndex=79
+            local ballDistance=txt(hud,"BOLA: procurando...",36,12,true)
+            ballDistance.Position=UDim2.fromOffset(12,40)
+            ballDistance.Size=UDim2.new(1,-24,0,32)
+            ballDistance.ZIndex=79
+            local counter=txt(hud,"CHUTES 0  |  PASSES 0",30,12)
+            counter.Position=UDim2.fromOffset(12,76)
+            counter.Size=UDim2.new(1,-24,0,28)
+            counter.TextColor3=white
+            counter.ZIndex=79
+            local finePrint=txt(hud,"SOMENTE VISUAL • NAO ALTERA A PARTIDA",31,10,true)
+            finePrint.Position=UDim2.fromOffset(12,117)
+            finePrint.Size=UDim2.new(1,-24,0,30)
+            finePrint.TextColor3=muted
+            finePrint.ZIndex=79
+
+            local meter=round(obj("Frame",gui,{
+                AnchorPoint=Vector2.new(.5,1),
+                Position=UDim2.new(.5,0,1,-96),
+                Size=UDim2.fromOffset(275,70),
+                BackgroundColor3=Color3.fromRGB(17,12,24),
+                BackgroundTransparency=.04,
+                BorderSizePixel=0,ZIndex=81,
+                Visible=sc.settings.showMeter
+            }),11)
+            obj("UIStroke",meter,{
+                Color=Color3.fromRGB(242,48,79),Thickness=1.1,Transparency=.2
+            })
+            sc.meterRoot=meter
+            local meterTitle=txt(meter,
+                "POTENCIA SIMULADA  •  NAO MUDA O CHUTE",31,11,true)
+            meterTitle.Position=UDim2.fromOffset(10,5)
+            meterTitle.Size=UDim2.new(1,-20,0,24)
+            meterTitle.ZIndex=83
+            meterTitle.TextColor3=Color3.fromRGB(255,83,119)
+            local meterTrack=round(obj("Frame",meter,{
+                Position=UDim2.fromOffset(12,36),
+                Size=UDim2.new(1,-24,0,17),
+                BackgroundColor3=Color3.fromRGB(59,31,42),
+                BorderSizePixel=0,ZIndex=82
+            }),5)
+            local meterFill=round(obj("Frame",meterTrack,{
+                Size=UDim2.fromScale(0,1),
+                BackgroundColor3=Color3.fromRGB(241,35,64),
+                BorderSizePixel=0,ZIndex=84
+            }),5)
+            local meterValue=txt(meter,"0%",24,12,true)
+            meterValue.TextColor3=white
+            meterValue.TextXAlignment=Enum.TextXAlignment.Right
+            meterValue.Position=UDim2.new(1,-70,0,4)
+            meterValue.Size=UDim2.fromOffset(56,25)
+            meterValue.ZIndex=84
+
+            sc.liveUpdate=function()
+                local p=sc.stats
+                local dist=sc.lastDistance and (sc.lastDistance.." studs")
+                    or "NAO ENCONTRADA"
+                local charge=math.floor(sc.visualCharge+.5)
+                ballDistance.Text="BOLA: "..dist
+                counter.Text="CHUTES "..p.shots.."  |  PASSES "..p.passes..
+                    "  |  DRIBLES "..p.dribbles
+                meterFill.Size=UDim2.fromScale(charge/100,1)
+                meterValue.Text=charge.."%"
+                if page.Visible then
+                    statusName.Text="BOLA: "..dist
+                    statusNumbers.Text=("CHUTES: %d   PASSES: %d   DRIBLES: %d   CARRINHOS: %d"):format(
+                        p.shots,p.passes,p.dribbles,p.tackles)
+                end
+            end
+            sc.refresh=function()
+                if not page.Visible then return end
+                local on="●  ON"
+                local off="○  OFF"
+                ballButton.Text="DESTAQUE BOLA  "..(sc.settings.ballHighlight and on or off)
+                rangeButton.Text="RAIO VISUAL  "..(sc.settings.visualRadius and on or off)
+                hudButton.Text="HUD DE TREINO  "..(sc.settings.hud and on or off)
+                meterButton.Text="MEDIDOR SIMULADO  "..(sc.settings.showMeter and on or off)
+                if sc.liveUpdate then sc.liveUpdate() end
+            end
+            sc.liveUpdate()
+            sc.refresh()
+        end
+    end
+end
+
 -- ABA CONFIGURACOES
 
 do
