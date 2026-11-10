@@ -509,7 +509,7 @@ local function relabel()
 
     for _,name in ipairs(navOrder) do
         local i = table.find(sections,name)
-        navButtons[name].Text = "   "..({HOME="⌂  ",COMMANDS="▤  ",AIM="◎  ",SETTINGS="⚙  "})[name]..(labels[i] or name)
+        navButtons[name].Text = "   "..(labels[i] or name)
     end
 end
 
@@ -1786,7 +1786,7 @@ local function setAvatarInvisible(enabled)
     if enabled then
         transparency(1)
         S.invisible = true
-        notify("Invisibilidade LOCAL: somente na sua tela; nao garante invisibilidade para outros.")
+        return "INVIS LOCAL: nao garante invisibilidade para outros jogadores."
     else
         resetTransparency()
     end
@@ -1920,7 +1920,7 @@ end)
 
 -- AVATAR E MOVIMENTO
 register("invisible","PLAYER","Invisibilidade local do avatar",function()
-    setAvatarInvisible(true)
+    return setAvatarInvisible(true)
 end)
 alias("invis","PLAYER","Alias para invisible","invisible")
 alias("vis","PLAYER","Alias para visible","visible")
@@ -2263,6 +2263,10 @@ exec = function(raw)
         return
     end
     if result == false then return end
+    if type(result)=="string" then
+        notify(result)
+        return
+    end
 
     if stopped then return end
     if command ~= "coords"
@@ -2447,43 +2451,175 @@ sliderControl(quickGrid,"◉  FOV","Campo de visao",40,120,5,
     function()local c=workspace.CurrentCamera return c and c.FieldOfView or 70 end,
     "fov","%.0f")
 
-titleRow(cmdPage,"▦  CATALOGO COMPLETO")
-local commandGrid=obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,0),BackgroundTransparency=1})
-local commandLayout=obj("UIGridLayout",commandGrid,{
-    CellSize=UDim2.new(.5,-6,0,44),CellPadding=UDim2.fromOffset(9,8),
-    SortOrder=Enum.SortOrder.LayoutOrder
+-- ACESSO RAPIDO / GOTO E INVIS LOCAL
+local utilityStrip=obj("Frame",cmdPage,{
+    Size=UDim2.new(1,-8,0,46),BackgroundTransparency=1
 })
-local function sizeCommands()
-    commandGrid.Size=UDim2.new(1,-8,0,commandLayout.AbsoluteContentSize.Y+12)
+local gotoBox=round(obj("TextBox",utilityStrip,{
+    Position=UDim2.fromScale(0,0),
+    Size=UDim2.new(.44,-4,1,0),
+    BackgroundColor3=control,BorderSizePixel=0,
+    PlaceholderText="Nome do jogador ou nearest...",
+    PlaceholderColor3=muted,TextColor3=white,
+    Font=Enum.Font.Gotham,TextSize=12,
+    ClearTextOnFocus=false,Text=""
+}),8)
+local gotoBtn=btn(utilityStrip,"GOTO",function()
+    local query=gotoBox.Text
+    if query=="" then query="nearest" end
+    exec("goto "..query)
+end,46)
+gotoBtn.Position=UDim2.new(.45,0,0,0)
+gotoBtn.Size=UDim2.new(.17,-5,1,0)
+local invisBtn=btn(utilityStrip,"INVIS LOCAL",function()
+    exec(S.invisible and "visible" or "invisible")
+end,46)
+invisBtn.Position=UDim2.new(.62,0,0,0)
+invisBtn.Size=UDim2.new(.2,-5,1,0)
+local playerListBtn=btn(utilityStrip,"PLAYERS",function()
+    exec("players")
+end,46)
+playerListBtn.Position=UDim2.new(.83,0,0,0)
+playerListBtn.Size=UDim2.new(.17,-1,1,0)
+
+local listHeading=titleRow(cmdPage,">  SECOES DE COMANDOS - TOQUE PARA ABRIR/FECHAR")
+local categories={
+    {"FLY","MOVIMENTO / VOO"},
+    {"PLAYER","JOGADOR / TELEPORTE"},
+    {"CAMERA","CAMERA / VISUAL"},
+    {"WORLD","MUNDO / GRAFICOS"},
+    {"EMOTES","EMOTES / ANIMACOES"},
+    {"SETTINGS","SISTEMA / UTILIDADES"}
+}
+local accordion={}
+local foldRows={}
+local function foldedHeight(count)
+    if count<=0 then return 0 end
+    local rows=math.ceil(count/2)
+    return rows*46+(rows-1)*8+12
 end
-bind(commandLayout:GetPropertyChangedSignal("AbsoluteContentSize"),sizeCommands)
-local commandRows={}
-for _,entry in ipairs(registered) do
-    local b=btn(commandGrid,
-        "["..entry.category.."]  "..entry.example.."  •  "..entry.description,
-        function()exec(entry.example)end,44)
-    b.TextWrapped=true
-    commandRows[#commandRows+1]={
-        b=b,category=entry.category,
-        lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
+for _,row in ipairs(categories) do
+    local category,title=row[1],row[2]
+    local section=obj("Frame",cmdPage,{
+        Size=UDim2.new(1,-8,0,51),
+        BackgroundTransparency=1,
+        ClipsDescendants=true
+    })
+    local headerBtn=round(obj("TextButton",section,{
+        Size=UDim2.new(1,0,0,47),
+        Position=UDim2.fromOffset(0,0),
+        BackgroundColor3=Color3.fromRGB(33,21,30),
+        BorderSizePixel=0,
+        Text="",
+        AutoButtonColor=true
+    }),10)
+    obj("UIStroke",headerBtn,{Color=accent,Transparency=.45,Thickness=1})
+    local name=txt(headerBtn,title,30,15,true)
+    name.Position=UDim2.fromOffset(16,8)
+    name.Size=UDim2.new(1,-100,0,30)
+    local counter=txt(headerBtn,"",28,11,true)
+    counter.Position=UDim2.new(1,-98,0,9)
+    counter.Size=UDim2.fromOffset(52,28)
+    counter.TextColor3=accent
+    counter.TextXAlignment=Enum.TextXAlignment.Right
+    local arrow=txt(headerBtn,">",34,23,true)
+    arrow.Position=UDim2.new(1,-40,0,6)
+    arrow.Size=UDim2.fromOffset(30,34)
+    arrow.TextXAlignment=Enum.TextXAlignment.Center
+    arrow.TextColor3=accent
+    local content=obj("Frame",section,{
+        Position=UDim2.fromOffset(0,53),
+        Size=UDim2.new(1,0,0,0),
+        BackgroundTransparency=1
+    })
+    obj("UIGridLayout",content,{
+        CellSize=UDim2.new(.5,-6,0,46),
+        CellPadding=UDim2.fromOffset(9,8),
+        SortOrder=Enum.SortOrder.LayoutOrder
+    })
+    local g={
+        category=category,
+        section=section,
+        header=headerBtn,
+        arrow=arrow,
+        counter=counter,
+        content=content,
+        items={},
+        expanded=category=="PLAYER"
     }
+    accordion[category]=g
+    bind(headerBtn.MouseButton1Click,function()
+        g.expanded=not g.expanded
+        if refreshCommandList then refreshCommandList() end
+    end)
 end
+
+for _,entry in ipairs(registered) do
+    local g=accordion[entry.category]
+    if g then
+        local b=btn(g.content,
+            entry.example.."  |  "..entry.description,
+            function()
+                local needsArgs=(entry.name=="goto" or entry.name=="to" or entry.name=="tp")
+                if needsArgs then
+                    local target=gotoBox.Text~="" and gotoBox.Text or "nearest"
+                    exec(entry.name.." "..target)
+                else
+                    exec(entry.example)
+                end
+            end,46)
+        b.TextWrapped=true
+        b.TextSize=11
+        g.items[#g.items+1]={
+            button=b,
+            lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
+        }
+    end
+end
+
 refreshCommandList=function()
-    local term=search.Text:lower()
-    for _,it in ipairs(commandRows)do
-        it.b.Visible=moduleEnabled(it.category)
-            and (activeFilter=="ALL" or activeFilter==it.category)
-            and (term=="" or it.lookup:find(term,1,true)~=nil)
+    local q=search.Text:lower()
+    local anyResults=false
+    for name,g in pairs(accordion) do
+        local count=0
+        local categoryAllowed=activeFilter=="ALL" or activeFilter==name
+        for _,item in ipairs(g.items) do
+            local match=categoryAllowed and (q=="" or item.lookup:find(q,1,true)~=nil)
+            item.button.Visible=match
+            if match then count=count+1 end
+        end
+        g.counter.Text=tostring(count)
+        g.section.Visible=count>0
+        if count>0 then anyResults=true end
+        -- Quando ha pesquisa ou filtro, abre automaticamente a secao correspondente.
+        local open=(q~="" or activeFilter~="ALL") and count>0 or
+            (q=="" and activeFilter=="ALL" and g.expanded)
+        g.arrow.Rotation=open and 90 or 0
+        local h=open and foldedHeight(count) or 0
+        g.content.Size=UDim2.new(1,0,0,h)
+        local target=UDim2.new(1,-8,0,53+h)
+        if g.section.Size~=target then
+            Tween:Create(g.section,TweenInfo.new(.18,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+                Size=target
+            }):Play()
+        end
     end
-    for name,b in pairs(filterButtons)do
-        b.BackgroundColor3=name==activeFilter and Color3.fromRGB(148,15,35) or control
+    for name,b in pairs(filterButtons) do
+        local current=name==activeFilter
+        b.BackgroundColor3=current and Color3.fromRGB(146,15,36) or control
+        b.TextColor3=white
     end
-    quickGrid.Visible=term=="" and activeFilter=="ALL"
-    quickTitle.Visible=quickGrid.Visible
+    local showQuick=q=="" and activeFilter=="ALL"
+    quickGrid.Visible=showQuick
+    quickTitle.Visible=showQuick
+    utilityStrip.Visible=showQuick
+    listHeading.Text=q~="" and ("RESULTADOS DE BUSCA: "..q:upper()) or
+        (activeFilter~="ALL" and ("FILTRO: "..activeFilter) or
+        ">  SECOES DE COMANDOS - TOQUE PARA ABRIR/FECHAR")
     sizeQuick()
-    sizeCommands()
 end
 bind(search:GetPropertyChangedSignal("Text"),refreshCommandList)
+
 homeFilter=function(filter)
     if filter=="SETTINGS" then
         show("SETTINGS")
