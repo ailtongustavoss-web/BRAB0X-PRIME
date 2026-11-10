@@ -88,7 +88,7 @@ if type(readfile)=="function" then
         if ok2 and type(parsed)=="table" then v13Data=parsed end
     end
 end
-for _,field in ipairs({"favorites","keybinds","profiles","waypoints","macros","routes","dashboard","stats","gameProfiles"}) do
+for _,field in ipairs({"keybinds","profiles","waypoints","macros","stats","gameProfiles"}) do
     if type(v13Data[field])~="table" then v13Data[field]={} end
 end
 -- V15: o mesmo script seleciona o perfil pelo game.PlaceId. Sem baixar Lua externo.
@@ -363,7 +363,6 @@ local visualUpdates
 local v13Log
 local addHistory
 local updatePlayerManager
-local updateFavoritePanel
 local updateTeleportPanel
 local updateProfilePanel
 local updateConsolePanel
@@ -3483,24 +3482,19 @@ do
     end,"gameremove 12345678")
 end
 
--- V17 / NUCLEO ULTIMATE: FAVORITOS POR JOGO, NOTAS, BACKUP, BUSSOLA, PRESETS E DIAGNOSTICO
+-- V17 / NUCLEO ULTIMATE: NOTAS, BACKUP, PRESETS E DIAGNOSTICO
 -- Todos os recursos desta secao sao locais ou trabalham com preferencias do usuario.
 do
     local m={
         placeId=v15PlaceId,
         install=nil,
         pages={},
-        isOpen=false,
-        compassTarget=nil,
-        compassEnabled=false,
-        compassUpdated=0,
-        paletteOpened=0,
         sessionErrors={},
         guideVersion="V17",
         navigationOrder=navOrder
     }
     v14.v17=m
-    for _,key in ipairs({"gameFavorites","gameNotes","gameSessions","layout"}) do
+    for _,key in ipairs({"gameNotes","gameSessions","layout"}) do
         if type(v13Data[key])~="table" then v13Data[key]={} end
     end
     local function trim(v)
@@ -3510,12 +3504,6 @@ do
         local result=trim(v):lower():match("^(%S+)")
         return result and result:sub(1,40) or nil
     end
-    local favs=v13Data.gameFavorites[v15PlaceId]
-    if type(favs)~="table" then
-        favs={}
-        v13Data.gameFavorites[v15PlaceId]=favs
-    end
-    m.favorites=favs
     if type(v13Data.gameNotes[v15PlaceId])~="string" then
         v13Data.gameNotes[v15PlaceId]=""
     end
@@ -3536,30 +3524,6 @@ do
         if #m.sessionErrors>15 then table.remove(m.sessionErrors) end
     end
 
-    m.favoriteAdd=function(raw)
-        local name=singleWord(raw)
-        if not name or not byName[name] then
-            notify("Use: gamefav fly (comando valido).","error")
-            return false
-        end
-        if not moduleEnabled(byName[name].category) then
-            notify("Categoria "..byName[name].category.." desabilitada.","error")
-            return false
-        end
-        favs[name]=true
-        saveV13()
-        if m.refresh then m.refresh("BOOKMARKS") end
-        notify("Favorito salvo so neste jogo: "..name,"success")
-        return true
-    end
-    m.favoriteRemove=function(raw)
-        local name=singleWord(raw)
-        if not name then return false end
-        favs[name]=nil
-        saveV13()
-        if m.refresh then m.refresh("BOOKMARKS") end
-        return true
-    end
     m.noteSave=function(text)
         text=tostring(text or "")
         if #text>3000 then text=text:sub(1,3000) end
@@ -3573,27 +3537,6 @@ do
         v13Data.gameNotes[v15PlaceId]=""
         saveV13()
         if m.refresh then m.refresh("NOTES") end
-        return true
-    end
-    m.setCompass=function(raw)
-        local waypoint=singleWord(raw)
-        if waypoint=="off" or waypoint=="stop" or waypoint==nil then
-            m.compassEnabled=false
-            m.compassTarget=nil
-            if m.compassWidget then m.compassWidget.Visible=false end
-            if m.refresh then m.refresh("COMPASS") end
-            notify("Bussola desativada.","info")
-            return true
-        end
-        if not extraState.savedWaypoints[waypoint] then
-            notify("Ponto inexistente: "..waypoint..". Salve-o em Teleporte.","error")
-            return false
-        end
-        m.compassTarget=waypoint
-        m.compassEnabled=true
-        if m.compassWidget then m.compassWidget.Visible=true end
-        if m.refresh then m.refresh("COMPASS") end
-        notify("Bussola aponta para: "..waypoint,"success")
         return true
     end
     m.layoutReset=function()
@@ -3649,7 +3592,6 @@ do
             fileRead=type(readfile)=="function",
             fileWrite=type(writefile)=="function",
             clipboard=type(setclipboard)=="function",
-            bookmarks=(function()local n=0 for _,v in pairs(favs) do if v then n=n+1 end end return n end)(),
             notesSize=#(v13Data.gameNotes[v15PlaceId] or ""),
             waypoints=(function()local n=0 for _ in pairs(extraState.savedWaypoints) do n=n+1 end return n end)(),
             totalCommands=#registered,
@@ -3661,31 +3603,10 @@ do
         local export={
             version="BRAB0X-USER-BACKUP-V17",
             date=os.time(),
-            favorites={},
-            gameFavorites={},
             gameNotes={},
-            macros={},
-            profiles={}
+            macros={}
         }
-        local total=0
-        for name,on in pairs(v13Data.favorites) do
-            if on and byName[name] and total<100 then
-                export.favorites[name]=true total=total+1
-            end
-        end
         local count=0
-        for id,entries in pairs(v13Data.gameFavorites) do
-            if count>=60 then break end
-            if type(id)=="string" and id:match("^%d+$") and type(entries)=="table" then
-                local keep={}
-                for name,on in pairs(entries) do
-                    if on and byName[name] then keep[name]=true end
-                end
-                export.gameFavorites[id]=keep
-                count=count+1
-            end
-        end
-        count=0
         for id,note in pairs(v13Data.gameNotes) do
             if count>=60 then break end
             if type(id)=="string" and id:match("^%d+$") and type(note)=="string" then
@@ -3726,32 +3647,7 @@ do
             notify("Backup invalido. Aceita formato BRAB0X-V17.","error")
             return false
         end
-        local added={favorites=0,notes=0,macros=0}
-        if type(result.favorites)=="table" then
-            for name,on in pairs(result.favorites) do
-                if type(name)=="string" and byName[name] and on==true
-                    and added.favorites<100 then
-                    v13Data.favorites[name]=true
-                    added.favorites=added.favorites+1
-                end
-            end
-        end
-        if type(result.gameFavorites)=="table" then
-            local games=0
-            for id,entry in pairs(result.gameFavorites) do
-                if games>=60 then break end
-                if type(id)=="string" and id:match("^%d+$") and type(entry)=="table" then
-                    local dest=v13Data.gameFavorites[id]
-                    if type(dest)~="table" then dest={} v13Data.gameFavorites[id]=dest end
-                    for name,on in pairs(entry) do
-                        if type(name)=="string" and byName[name] and on==true then
-                            dest[name]=true
-                        end
-                    end
-                    games=games+1
-                end
-            end
-        end
+        local added={notes=0,macros=0}
         if type(result.gameNotes)=="table" then
             for id,note in pairs(result.gameNotes) do
                 if added.notes>=60 then break end
@@ -3786,33 +3682,18 @@ do
         end
         saveV13()
         if refreshCommandList then refreshCommandList() end
-        if updateFavoritePanel then updateFavoritePanel() end
         if m.refresh then m.refresh(selected) end
-        notify(("Backup importado: %d favoritos, %d notas, %d macros."):format(
-            added.favorites,added.notes,added.macros),"success")
+        notify(("Backup importado: %d notas e %d macros."):format(
+            added.notes,added.macros),"success")
         return true
     end
     m.onCommand=function(name)
         m.session.commands=math.clamp((tonumber(m.session.commands) or 0)+1,0,1e9)
-        if m.refresh and (selected=="DIAGNOSTICS" or selected=="BOOKMARKS") then
+        if m.refresh and selected=="DIAGNOSTICS" then
             m.refresh(selected)
         end
     end
 
-    register("palette","SETTINGS","Abrir paleta de comandos Ctrl+Shift+P",function()
-        if m.openPalette then m.openPalette()end
-        return false
-    end)
-    register("gamefav","SETTINGS","Salvar favorito exclusivo do jogo",function(arg)
-        return m.favoriteAdd(arg)
-    end,"gamefav fly")
-    register("gameunfav","SETTINGS","Remover favorito do jogo",function(arg)
-        return m.favoriteRemove(arg)
-    end,"gameunfav fly")
-    register("gamefavs","SETTINGS","Abrir lista de favoritos do jogo",function()
-        show("BOOKMARKS")
-        return false
-    end)
     register("notes","SETTINGS","Abrir bloco de notas por jogo",function()
         show("NOTES")
         return false
@@ -3822,12 +3703,6 @@ do
     end,"note treino no mapa 1")
     register("noteclear","SETTINGS","Apagar nota deste jogo",function()
         return m.noteClear()
-    end)
-    register("compass","PLAYER","Bussola para waypoint salvo",function(arg)
-        return m.setCompass(arg)
-    end,"compass casa")
-    register("compassoff","PLAYER","Desligar bussola local",function()
-        return m.setCompass("off")
     end)
     register("layoutreset","SETTINGS","Restaurar painel e categorias",function()
         return m.layoutReset()
@@ -5725,9 +5600,7 @@ do
     -- F2 Wheel, F6 Cinema, gamepad Start/R1/B, botoes nativos do Roblox.
     v14.onInput=function(input,used)
         local key=input.KeyCode
-        if v14.v17 and v14.v17.onInput and v14.v17.onInput(input,used) then return true end
         if UIS:GetFocusedTextBox() and key~=Enum.KeyCode.ButtonStart then return false end
-        if v14.v17 and v14.v17.onInput and v14.v17.onInput(input,used) then return true end
         if key==Enum.KeyCode.F6 and not used then
             if v14.cinematic then v14.stopCinema() else v14.startCinema() end
             return true
