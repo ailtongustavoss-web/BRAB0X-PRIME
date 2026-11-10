@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V16 | HUB ORGANIZADO + LOADER UNIVERSAL
+-- BRAB0X PRIME V17 | ULTIMATE TOOLKIT ORGANIZADO
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_STOP",
     "BRAB0X_V16_STOP",
     "BRAB0X_V15_STOP",
     "BRAB0X_V14_STOP",
@@ -54,7 +55,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V16")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -330,14 +331,16 @@ local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
     "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES",
-    "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD"
+    "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD",
+    "PALETTE","COMPASS","NOTES","BACKUP","DIAGNOSTICS","GUIDE","BOOKMARKS"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
 local navOrder = {
-    "HOME","GAMES","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
-    "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","TELEPORT",
-    "CONSOLE","PROFILES","PERFORMANCE","HELP","SETTINGS","AIM"
+    "HOME","GAMES","COMMANDS","PALETTE","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
+    "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","BOOKMARKS","TELEPORT",
+    "COMPASS","NOTES","BACKUP","DIAGNOSTICS","GUIDE","CONSOLE","PROFILES",
+    "PERFORMANCE","HELP","SETTINGS","AIM"
 }
 local function moduleEnabled(name)
     return name ~= "AIM" or config.aimEnabled==true
@@ -394,7 +397,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V16",
+    Name = "BRAB0X_PRIME_V17",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -439,7 +442,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V16  •  ORGANIZED HUB   /   BY @wendezao05153nh",
+    "V17  •  ULTIMATE TOOLKIT   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -567,15 +570,17 @@ do
     }),8)
     obj("UIStroke",navSearch,{Color=accent,Transparency=.6,Thickness=1})
     v14.navigation={groups={},byPage={},searchBox=navSearch}
+    if type(v13Data.layout)~="table" then v13Data.layout={} end
+    if type(v13Data.layout.groups)~="table" then v13Data.layout.groups={} end
     local navGroupData={
         {key="MAIN",pt="PRINCIPAL",en="MAIN",es="PRINCIPAL",
-            pages={"HOME","COMMANDS","GAMES","DASHBOARD"}},
+            pages={"HOME","COMMANDS","PALETTE","GAMES","DASHBOARD"}},
         {key="PLAYER",pt="JOGADOR",en="PLAYER",es="JUGADOR",
-            pages={"PLAYERS","TELEPORT","FAVORITES","RECENT","ROUTES"}},
+            pages={"PLAYERS","TELEPORT","COMPASS","FAVORITES","BOOKMARKS","RECENT","ROUTES"}},
         {key="TOOLS",pt="FERRAMENTAS",en="TOOLS",es="HERRAMIENTAS",
-            pages={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE"}},
+            pages={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
         {key="SYSTEM",pt="SISTEMA",en="SYSTEM",es="SISTEMA",
-            pages={"CONSOLE","PROFILES","STATS","HELP","SETTINGS","AIM"}}
+            pages={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","SETTINGS","AIM"}}
     }
     for index,definition in ipairs(navGroupData) do
         local shell=obj("Frame",nav,{
@@ -599,7 +604,8 @@ do
         stack(list,3)
         local group={
             definition=definition,button=head,frame=shell,content=list,
-            expanded=index==1,items={}
+            expanded=v13Data.layout.groups[definition.key]==nil and index==1
+                or v13Data.layout.groups[definition.key]==true,items={}
         }
         v14.navigation.groups[#v14.navigation.groups+1]=group
         for order,id in ipairs(definition.pages) do
@@ -614,6 +620,8 @@ do
         bind(head.MouseButton1Click,function()
             if navSearch.Text~="" then navSearch.Text="" end
             group.expanded=not group.expanded
+            v13Data.layout.groups[definition.key]=group.expanded
+            saveV13()
             if v14.navigation.update then v14.navigation.update() end
         end)
     end
@@ -874,6 +882,7 @@ local function show(page)
     if refreshV13Page then refreshV13Page(page) end
     if page=="HELP" and refreshHelpPage then refreshHelpPage() end
     if v14.refresh then v14.refresh(page) end
+    if v14.v17 and v14.v17.refresh then v14.v17.refresh(page) end
 end
 
 for name,b in pairs(navButtons) do
@@ -886,9 +895,9 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games"},
-        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos"},
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos",PALETTE="Busca rapida",COMPASS="Bussola",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia",BOOKMARKS="Fav. do jogo"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games",PALETTE="Quick search",COMPASS="Compass",NOTES="Notes",BACKUP="Backup",DIAGNOSTICS="Diagnostics",GUIDE="Guide",BOOKMARKS="Game favorites"},
+        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos",PALETTE="Busqueda",COMPASS="Brujula",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia",BOOKMARKS="Favoritos juego"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -1518,7 +1527,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V16_AIM"
+local aimKey = "BRAB0X_V17_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2627,7 +2636,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V16 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4180,7 +4189,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V16 / ORGANIZADO",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V17 / ULTIMATE",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5495,7 +5504,7 @@ do
         v14.panelRefresh.DASHBOARD=function()
             if not pages.DASHBOARD.Visible then return end
             clear(dashHolder)
-            dashboardStats.Text="V16  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
+            dashboardStats.Text="V17  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
             for i=1,4 do
                 local command=saved[i]
                 ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
@@ -5531,11 +5540,12 @@ do
         if v14.buildCore then v14.buildCore() end
         if v14.buildExtras then v14.buildExtras() end
         if v14.buildGameRouter then v14.buildGameRouter() end
+        if v14.v17 and v14.v17.install then v14.v17.install() end
         v14.refresh=function(page)
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V16] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -5555,6 +5565,7 @@ do
     -- F2 Wheel, F6 Cinema, gamepad Start/R1/B, botoes nativos do Roblox.
     v14.onInput=function(input,used)
         local key=input.KeyCode
+        if v14.v17 and v14.v17.onInput and v14.v17.onInput(input,used) then return true end
         if UIS:GetFocusedTextBox() and key~=Enum.KeyCode.ButtonStart then return false end
         if key==Enum.KeyCode.F6 and not used then
             if v14.cinematic then v14.stopCinema() else v14.startCinema() end
@@ -6043,8 +6054,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V16_STOP == closeHub then
-        _G.BRAB0X_V16_STOP = nil
+    if _G.BRAB0X_V17_STOP == closeHub then
+        _G.BRAB0X_V17_STOP = nil
     end
 end
 
@@ -6133,7 +6144,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V16_STOP = closeHub
+_G.BRAB0X_V17_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6299,7 +6310,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V16 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6349,6 +6360,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V16 | "
+    "BRAB0X PRIME V17 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
