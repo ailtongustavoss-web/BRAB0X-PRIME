@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V15 | LOADER UNIVERSAL MULTIJOGOS
+-- BRAB0X PRIME V15.1 | MODULO FIFA SUPER SOCCER + UNIVERSAL
 -- Criado por @wendezao05153nh
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
@@ -316,18 +316,19 @@ local L = {
 local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
-    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES",
+    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES","SOCCER",
     "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
 local navOrder = {
-    "HOME","GAMES","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
+    "HOME","GAMES","SOCCER","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
     "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","TELEPORT",
     "CONSOLE","PROFILES","PERFORMANCE","HELP","SETTINGS","AIM"
 }
 local function moduleEnabled(name)
-    return name ~= "AIM" or config.aimEnabled == true
+    if name=="SOCCER" then return v15PlaceId=="12177325772" end
+    return name~="AIM" or config.aimEnabled==true
 end
 
 local applyV13Appearance
@@ -426,7 +427,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V15  •  UNIVERSAL MULTIJOGOS   /   BY @wendezao05153nh",
+    "V15.1  •  MULTIJOGOS + FIFA   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -765,6 +766,7 @@ local function show(page)
     if refreshV13Page then refreshV13Page(page) end
     if page=="HELP" and refreshHelpPage then refreshHelpPage() end
     if v14.refresh then v14.refresh(page) end
+    if page=="SOCCER" and v14.soccer and v14.soccer.refresh then v14.soccer.refresh() end
 end
 
 for name,b in pairs(navButtons) do
@@ -777,9 +779,9 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games"},
-        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos"},
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos",SOCCER="FIFA Futebol"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games",SOCCER="FIFA Soccer"},
+        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos",SOCCER="FIFA Futbol"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -2515,7 +2517,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V15 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V15.1 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4046,7 +4048,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V15 / MULTIJOGOS",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V15.1 / MULTIJOGOS",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5397,6 +5399,7 @@ do
         if v14.buildCore then v14.buildCore() end
         if v14.buildExtras then v14.buildExtras() end
         if v14.buildGameRouter then v14.buildGameRouter() end
+        if v14.soccer and v14.soccer.install then v14.soccer.install() end
         v14.refresh=function(page)
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
@@ -6165,7 +6168,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V15 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V15.1 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6215,6 +6218,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V15 | "
+    "BRAB0X PRIME V15.1 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
