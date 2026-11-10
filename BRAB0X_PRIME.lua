@@ -295,6 +295,10 @@ local keyCaptureHandler
 local refreshV13Page
 local actionRow
 local live
+local search
+local toggleControl
+local sliderControl
+local visualUpdates
 local v13Log
 local addHistory
 local updatePlayerManager
@@ -2550,6 +2554,7 @@ exec = function(raw)
 end
 
 -- COMANDOS / NOVA INTERFACE COM CONTROLES REAIS
+do
 local cmdPage = pages.COMMANDS
 local cmdHeader = round(obj("Frame",cmdPage,{
     Size = UDim2.new(1,-8,0,66),
@@ -2564,7 +2569,7 @@ cmdHint.Position=UDim2.fromOffset(17,37)
 cmdHint.Size=UDim2.new(1,-28,0,22)
 cmdHint.TextColor3=muted
 
-local search = round(obj("TextBox",cmdPage,{
+search = round(obj("TextBox",cmdPage,{
     Size=UDim2.new(1,-8,0,40),BackgroundColor3=control,
     Text="",PlaceholderText="⌕  Buscar comando...",
     TextColor3=white,PlaceholderColor3=muted,
@@ -2592,7 +2597,7 @@ for _,entry in ipairs(filters) do
     end)
 end
 
-local visualUpdates={}
+visualUpdates={}
 local function trackVisual(fn)
     visualUpdates[#visualUpdates+1]=fn
 end
@@ -2626,7 +2631,7 @@ local function controlCard(parent,name,desc,height)
     return p
 end
 
-local function toggleControl(parent,title,desc,get,onCmd,offCmd)
+toggleControl=function(parent,title,desc,get,onCmd,offCmd)
     local p=controlCard(parent,title,desc,77)
     local b=btn(p,"",nil,29)
     b.AnchorPoint=Vector2.new(1,.5)
@@ -2646,7 +2651,7 @@ local function toggleControl(parent,title,desc,get,onCmd,offCmd)
     return p
 end
 
-local function sliderControl(parent,title,desc,lo,hi,step,get,command,fmt)
+sliderControl=function(parent,title,desc,lo,hi,step,get,command,fmt)
     local p=controlCard(parent,title,desc,103)
     local valueText=txt(p,"",24,12,true)
     valueText.Position=UDim2.new(1,-88,1,-32)
@@ -2922,6 +2927,7 @@ homeFilter=function(filter)
     end
 end
 
+end -- fim do escopo COMANDOS
 -- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
 do
 local hero = round(obj("Frame",pages.HOME,{
