@@ -3545,6 +3545,366 @@ do
     end,"gameremove 12345678")
 end
 
+-- V17 / NUCLEO ULTIMATE: FAVORITOS POR JOGO, NOTAS, BACKUP, BUSSOLA, PRESETS E DIAGNOSTICO
+-- Todos os recursos desta secao sao locais ou trabalham com preferencias do usuario.
+do
+    local m={
+        placeId=v15PlaceId,
+        install=nil,
+        pages={},
+        isOpen=false,
+        compassTarget=nil,
+        compassEnabled=false,
+        compassUpdated=0,
+        paletteOpened=0,
+        sessionErrors={},
+        guideVersion="V17",
+        navigationOrder=navOrder
+    }
+    v14.v17=m
+    for _,key in ipairs({"gameFavorites","gameNotes","gameSessions","layout"}) do
+        if type(v13Data[key])~="table" then v13Data[key]={} end
+    end
+    local function trim(v)
+        return tostring(v or ""):gsub("^%s+",""):gsub("%s+$","")
+    end
+    local function singleWord(v)
+        local result=trim(v):lower():match("^(%S+)")
+        return result and result:sub(1,40) or nil
+    end
+    local favs=v13Data.gameFavorites[v15PlaceId]
+    if type(favs)~="table" then
+        favs={}
+        v13Data.gameFavorites[v15PlaceId]=favs
+    end
+    m.favorites=favs
+    if type(v13Data.gameNotes[v15PlaceId])~="string" then
+        v13Data.gameNotes[v15PlaceId]=""
+    end
+    local session=v13Data.gameSessions[v15PlaceId]
+    if type(session)~="table" then session={visits=0,last=0,commands=0} end
+    session.visits=math.clamp((tonumber(session.visits) or 0)+1,0,1e9)
+    session.last=os.time()
+    session.commands=math.clamp(tonumber(session.commands) or 0,0,1e9)
+    v13Data.gameSessions[v15PlaceId]=session
+    m.session=session
+
+    m.favoriteAdd=function(raw)
+        local name=singleWord(raw)
+        if not name or not byName[name] then
+            notify("Use: gamefav fly (comando valido).","error")
+            return false
+        end
+        if not moduleEnabled(byName[name].category) then
+            notify("Categoria "..byName[name].category.." desabilitada.","error")
+            return false
+        end
+        favs[name]=true
+        saveV13()
+        if m.refresh then m.refresh("BOOKMARKS") end
+        notify("Favorito salvo so neste jogo: "..name,"success")
+        return true
+    end
+    m.favoriteRemove=function(raw)
+        local name=singleWord(raw)
+        if not name then return false end
+        favs[name]=nil
+        saveV13()
+        if m.refresh then m.refresh("BOOKMARKS") end
+        return true
+    end
+    m.noteSave=function(text)
+        text=tostring(text or "")
+        if #text>3000 then text=text:sub(1,3000) end
+        text=text:gsub("%z","")
+        v13Data.gameNotes[v15PlaceId]=text
+        saveV13()
+        notify("Nota deste jogo salva ("..#text.." caracteres).","success")
+        return true
+    end
+    m.noteClear=function()
+        v13Data.gameNotes[v15PlaceId]=""
+        saveV13()
+        if m.refresh then m.refresh("NOTES") end
+        return true
+    end
+    m.setCompass=function(raw)
+        local waypoint=singleWord(raw)
+        if waypoint=="off" or waypoint=="stop" or waypoint==nil then
+            m.compassEnabled=false
+            m.compassTarget=nil
+            if m.compassWidget then m.compassWidget.Visible=false end
+            if m.refresh then m.refresh("COMPASS") end
+            notify("Bussola desativada.","info")
+            return true
+        end
+        if not extraState.savedWaypoints[waypoint] then
+            notify("Ponto inexistente: "..waypoint..". Salve-o em Teleporte.","error")
+            return false
+        end
+        m.compassTarget=waypoint
+        m.compassEnabled=true
+        if m.compassWidget then m.compassWidget.Visible=true end
+        if m.refresh then m.refresh("COMPASS") end
+        notify("Bussola aponta para: "..waypoint,"success")
+        return true
+    end
+    m.layoutReset=function()
+        v13Data.layout.groups={}
+        if v14.navigation then
+            for i,group in ipairs(v14.navigation.groups) do
+                group.expanded=i==1
+            end
+            v14.navigation.searchBox.Text=""
+            v14.navigation.update("HOME")
+        end
+        main.Position=UDim2.new(.5,-480,.5,-312)
+        show("HOME")
+        saveV13()
+        notify("Menu e grupos restaurados ao layout padrao.","success")
+        return true
+    end
+    m.presets={
+        visual={"fov 85","crosshair on"},
+        claro={"day","fullbright"},
+        noite={"night","unfullbright"},
+        leve={"lowgfx","fps on"},
+        restaurar={"resetgfx","resetfov","crosshair off"},
+        exploracao={"fov 90","fps on"}
+    }
+    m.presetApply=function(raw)
+        local name=singleWord(raw)
+        local list=name and m.presets[name]
+        if not list then
+            notify("Presets: visual, claro, noite, leve, restaurar, exploracao","info")
+            return false
+        end
+        for _,command in ipairs(list) do
+            local verb=command:match("^(%S+)")
+            if verb and byName[verb:lower()] and moduleEnabled(byName[verb:lower()].category) then
+                exec(command)
+            end
+        end
+        notify("Preset aplicado: "..name,"success")
+        return true
+    end
+    m.diagnostic=function()
+        local camera=workspace.CurrentCamera
+        local _,hum,root=chars()
+        return {
+            version="V17",
+            placeId=v15PlaceId,
+            players=#Players:GetPlayers(),
+            gui=(gui and gui.Parent)~=nil,
+            camera=camera~=nil,
+            character=root~=nil and hum~=nil,
+            fileRead=type(readfile)=="function",
+            fileWrite=type(writefile)=="function",
+            clipboard=type(setclipboard)=="function",
+            bookmarks=(function()local n=0 for _,v in pairs(favs) do if v then n=n+1 end end return n end)(),
+            notesSize=#(v13Data.gameNotes[v15PlaceId] or ""),
+            waypoints=(function()local n=0 for _ in pairs(extraState.savedWaypoints) do n=n+1 end return n end)(),
+            totalCommands=#registered,
+            sessionCount=m.session.visits,
+            totalUserCommands=m.session.commands
+        }
+    end
+    m.backupExport=function()
+        local export={
+            version="BRAB0X-USER-BACKUP-V17",
+            date=os.time(),
+            favorites={},
+            gameFavorites={},
+            gameNotes={},
+            macros={},
+            profiles={}
+        }
+        local total=0
+        for name,on in pairs(v13Data.favorites) do
+            if on and byName[name] and total<100 then
+                export.favorites[name]=true total=total+1
+            end
+        end
+        local count=0
+        for id,entries in pairs(v13Data.gameFavorites) do
+            if count>=60 then break end
+            if type(id)=="string" and id:match("^%d+$") and type(entries)=="table" then
+                local keep={}
+                for name,on in pairs(entries) do
+                    if on and byName[name] then keep[name]=true end
+                end
+                export.gameFavorites[id]=keep
+                count=count+1
+            end
+        end
+        count=0
+        for id,note in pairs(v13Data.gameNotes) do
+            if count>=60 then break end
+            if type(id)=="string" and id:match("^%d+$") and type(note)=="string" then
+                export.gameNotes[id]=note:sub(1,3000)
+                count=count+1
+            end
+        end
+        count=0
+        for name,sequence in pairs(v14.macros) do
+            if count>=35 then break end
+            if type(name)=="string" and type(sequence)=="table" then
+                local safe={}
+                for _,command in ipairs(sequence) do
+                    local first=tostring(command):match("^(%S+)")
+                    if first and v14.macroActions[first:lower()] and byName[first:lower()] then
+                        safe[#safe+1]=tostring(command):sub(1,130)
+                    end
+                    if #safe>=12 then break end
+                end
+                if #safe>0 then export.macros[name:sub(1,26)]=safe count=count+1 end
+            end
+        end
+        local ok,json=pcall(function() return HttpService:JSONEncode(export) end)
+        if not ok or #json>55000 then
+            notify("Backup muito grande para exportar.","error")
+            return nil
+        end
+        return json
+    end
+    m.backupImport=function(raw)
+        if type(raw)~="string" or #raw<10 or #raw>60000 then
+            notify("JSON do backup vazio ou grande demais.","error")
+            return false
+        end
+        local ok,result=pcall(function()return HttpService:JSONDecode(raw)end)
+        if not ok or type(result)~="table"
+            or result.version~="BRAB0X-USER-BACKUP-V17" then
+            notify("Backup invalido. Aceita formato BRAB0X-V17.","error")
+            return false
+        end
+        local added={favorites=0,notes=0,macros=0}
+        if type(result.favorites)=="table" then
+            for name,on in pairs(result.favorites) do
+                if type(name)=="string" and byName[name] and on==true
+                    and added.favorites<100 then
+                    v13Data.favorites[name]=true
+                    added.favorites=added.favorites+1
+                end
+            end
+        end
+        if type(result.gameFavorites)=="table" then
+            local games=0
+            for id,entry in pairs(result.gameFavorites) do
+                if games>=60 then break end
+                if type(id)=="string" and id:match("^%d+$") and type(entry)=="table" then
+                    local dest=v13Data.gameFavorites[id]
+                    if type(dest)~="table" then dest={} v13Data.gameFavorites[id]=dest end
+                    for name,on in pairs(entry) do
+                        if type(name)=="string" and byName[name] and on==true then
+                            dest[name]=true
+                        end
+                    end
+                    games=games+1
+                end
+            end
+        end
+        if type(result.gameNotes)=="table" then
+            for id,note in pairs(result.gameNotes) do
+                if added.notes>=60 then break end
+                if type(id)=="string" and id:match("^%d+$") and type(note)=="string" then
+                    v13Data.gameNotes[id]=note:sub(1,3000):gsub("%z","")
+                    added.notes=added.notes+1
+                end
+            end
+        end
+        if type(result.macros)=="table" then
+            for name,sequence in pairs(result.macros) do
+                if added.macros>=35 then break end
+                if type(name)=="string" and name:match("^[%w_%-]+$")
+                    and #name<=26 and type(sequence)=="table" and #sequence<=12
+                    and #sequence>=1 then
+                    local safe={}
+                    local valid=true
+                    for _,command in ipairs(sequence) do
+                        if type(command)~="string" or #command>130 then valid=false break end
+                        local first=command:match("^(%S+)")
+                        if not first or not byName[first:lower()]
+                            or not v14.macroActions[first:lower()] then
+                            valid=false break
+                        end
+                        safe[#safe+1]=command
+                    end
+                    if valid then
+                        v14.macros[name]=safe added.macros=added.macros+1
+                    end
+                end
+            end
+        end
+        saveV13()
+        if refreshCommandList then refreshCommandList() end
+        if updateFavoritePanel then updateFavoritePanel() end
+        if m.refresh then m.refresh(selected) end
+        notify(("Backup importado: %d favoritos, %d notas, %d macros."):format(
+            added.favorites,added.notes,added.macros),"success")
+        return true
+    end
+    m.onCommand=function(name)
+        m.session.commands=(tonumber(m.session.commands) or 0)+1
+        if m.refresh and (selected=="DIAGNOSTICS" or selected=="BOOKMARKS") then
+            m.refresh(selected)
+        end
+    end
+
+    register("palette","SETTINGS","Abrir paleta de comandos Ctrl+Shift+P",function()
+        if m.openPalette then m.openPalette()end
+        return false
+    end)
+    register("gamefav","SETTINGS","Salvar favorito exclusivo do jogo",function(arg)
+        return m.favoriteAdd(arg)
+    end,"gamefav fly")
+    register("gameunfav","SETTINGS","Remover favorito do jogo",function(arg)
+        return m.favoriteRemove(arg)
+    end,"gameunfav fly")
+    register("gamefavs","SETTINGS","Abrir lista de favoritos do jogo",function()
+        show("BOOKMARKS")
+        return false
+    end)
+    register("notes","SETTINGS","Abrir bloco de notas por jogo",function()
+        show("NOTES")
+        return false
+    end)
+    register("note","SETTINGS","Salvar nota simples deste jogo",function(arg)
+        return m.noteSave(arg)
+    end,"note treino no mapa 1")
+    register("noteclear","SETTINGS","Apagar nota deste jogo",function()
+        return m.noteClear()
+    end)
+    register("compass","PLAYER","Bussola para waypoint salvo",function(arg)
+        return m.setCompass(arg)
+    end,"compass casa")
+    register("compassoff","PLAYER","Desligar bussola local",function()
+        return m.setCompass("off")
+    end)
+    register("layoutreset","SETTINGS","Restaurar painel e categorias",function()
+        return m.layoutReset()
+    end)
+    register("presets","SETTINGS","Abrir presets configurados",function()
+        show("GUIDE")
+        return false
+    end)
+    register("preset","SETTINGS","Aplicar preset: visual, leve, claro...",function(arg)
+        return m.presetApply(arg)
+    end,"preset visual")
+    register("diagnose","SETTINGS","Abrir verificacoes de compatibilidade",function()
+        show("DIAGNOSTICS")
+        return false
+    end)
+    register("backup","SETTINGS","Abrir backup seguro de preferenciais",function()
+        show("BACKUP")
+        return false
+    end)
+    register("guide","SETTINGS","Abrir guia completo de inicio",function()
+        show("GUIDE")
+        return false
+    end)
+end
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
