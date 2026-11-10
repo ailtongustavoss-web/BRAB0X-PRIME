@@ -2702,6 +2702,356 @@ register("notifytest","SETTINGS","Testar uma notificacao",function()
     return false
 end)
 
+-- V14 / NUCLEO DOS RECURSOS (SEM CODIGO REMOTO NEM EFEITO EM OUTROS JOGADORES)
+do
+    local function trimmed(a)
+        return tostring(a or ""):gsub("^%s+",""):gsub("%s+$","")
+    end
+    local function argParts(raw)
+        local pieces={}
+        for part in tostring(raw or ""):gmatch("%S+") do pieces[#pieces+1]=part end
+        return pieces
+    end
+    local function validName(x)
+        x=trimmed(x):lower()
+        return #x>0 and #x<=26 and x:match("^[%w_%-]+$") and x or nil
+    end
+    local function save()
+        saveV13()
+        if v14.refresh then v14.refresh(selected) end
+    end
+    local blocked={
+        resetall=true,clearwps=true,worldreset=true,close=true,
+        resetgfx=false,delwp=true,deleteprofile=true,resetkeys=true
+    }
+    v14.pending=nil
+    v14.requiresConfirmation=function(name,arg)
+        if not v14.safe or not blocked[name] then return false end
+        local token=name.." "..tostring(arg or "")
+        if v14.pending and v14.pending.token==token
+            and os.clock()-v14.pending.time<=8 then
+            v14.pending=nil
+            return false
+        end
+        v14.pending={token=token,time=os.clock()}
+        notify("MODO SEGURO: repita "..token.." em ate 8 segundos para confirmar.","info")
+        return true
+    end
+    v14.trackCommand=function(name,raw)
+        v14.commandsInSession=v14.commandsInSession+1
+        v14.stats.commandCount=(tonumber(v14.stats.commandCount) or 0)+1
+        v14.stats.frequency[name]=(tonumber(v14.stats.frequency[name]) or 0)+1
+        table.insert(v14.recent,1,{command=name,raw=raw,time=os.date("%H:%M:%S")})
+        if #v14.recent>35 then table.remove(v14.recent) end
+        if v14.commandsInSession%5==0 then saveV13() end
+        if v14.refresh and (selected=="RECENT" or selected=="STATS" or selected=="DASHBOARD") then
+            v14.refresh(selected)
+        end
+    end
+    v14.macroActions={
+        fly=true,unfly=true,flystatus=true,speed=true,speedreset=true,
+        boost=true,unboost=true,glow=true,unglow=true,trail=true,untrail=true,
+        crosshair=true,zoomout=true,zoomin=true,fov=true,first=true,third=true,
+        brightness=true,day=true,night=true,sunset=true,fullbright=true,
+        unfullbright=true,walk=true,jump=true,savepos=true,
+        transparency=true,visible=true
+    }
+    v14.macroSave=function(name,list)
+        name=validName(name)
+        if not name then notify("Nome da macro: letras/numeros, 1 a 26 caracteres.","error");return false end
+        local cmds={}
+        for chunk in tostring(list or ""):gmatch("[^;]+") do
+            local cmd=trimmed(chunk)
+            local first=cmd:match("^(%S+)")
+            if first and cmd~="" then
+                if not v14.macroActions[first:lower()] or not byName[first:lower()] then
+                    notify("Macro: comando nao permitido ou desconhecido: "..first,"error")
+                    return false
+                end
+                cmds[#cmds+1]=cmd
+            end
+        end
+        if #cmds<1 or #cmds>12 then
+            notify("Macros precisam de 1 a 12 comandos, separados por ;","error")
+            return false
+        end
+        v14.macros[name]=cmds
+        save()
+        notify("Macro "..name.." salva com "..#cmds.." comandos.","success")
+        return true
+    end
+    v14.macroRun=function(name)
+        name=validName(name)
+        local cmds=name and v14.macros[name]
+        if type(cmds)~="table" then notify("Macro nao encontrada.","error");return false end
+        if v14.macroRunning then notify("Ja existe uma macro em execucao.","error");return false end
+        v14.macroRunning=true
+        for i,command in ipairs(cmds) do
+            if stopped then break end
+            local first=command:match("^(%S+)")
+            if first and byName[first:lower()] and v14.macroActions[first:lower()] then
+                exec(command)
+            end
+        end
+        v14.macroRunning=false
+        notify("Macro executada: "..name,"success")
+        return true
+    end
+    v14.macroDelete=function(name)
+        name=validName(name)
+        if not name or not v14.macros[name] then return false end
+        v14.macros[name]=nil
+        save()
+        return true
+    end
+    v14.routeSave=function(raw)
+        local parts=argParts(raw)
+        local route=validName(table.remove(parts,1))
+        if not route or #parts==0 or #parts>20 then
+            notify("Use: routesave rota ponto1 ponto2 (1 a 20 pontos salvos).","error")
+            return false
+        end
+        local steps={}
+        for _,name in ipairs(parts) do
+            name=validName(name)
+            if not name or not extraState.savedWaypoints[name] then
+                notify("Waypoint nao encontrado: "..tostring(name),"error")
+                return false
+            end
+            steps[#steps+1]=name
+        end
+        v14.routes[route]=steps
+        v14.selectedRoute=route
+        v14.routeIndex=1
+        save()
+        notify("Rota salva: "..route.." ("..#steps.." pontos).","success")
+        return true
+    end
+    v14.routeStart=function(name)
+        name=validName(name)
+        local route=name and v14.routes[name]
+        if type(route)~="table" or #route<1 then
+            notify("Rota nao encontrada.","error")
+            return false
+        end
+        v14.selectedRoute=name
+        v14.routeIndex=1
+        notify("Rota "..name..": proximo ponto "..route[1]..". Use routenext.","info")
+        if v14.refresh then v14.refresh("ROUTES") end
+        return true
+    end
+    v14.routeNext=function()
+        local route=v14.selectedRoute and v14.routes[v14.selectedRoute]
+        if type(route)~="table" then
+            notify("Abra uma rota com routestart nome.","error")
+            return false
+        end
+        local index=v14.routeIndex or 1
+        if index>#route then notify("Rota concluida!","success");return false end
+        local wp=route[index]
+        if not extraState.savedWaypoints[wp] then
+            notify("Ponto removido: "..wp,"error");return false
+        end
+        local entry=byName.gowp
+        if not entry then return false end
+        local success,msg=pcall(entry.run,wp)
+        if not success then notify("Falha no waypoint: "..tostring(msg),"error");return false end
+        v14.routeIndex=index+1
+        notify("Rota: "..wp.." ("..index.."/"..#route..")","success")
+        return true
+    end
+    v14.routeDelete=function(name)
+        name=validName(name)
+        if not name or not v14.routes[name] then return false end
+        v14.routes[name]=nil
+        if v14.selectedRoute==name then v14.selectedRoute=nil end
+        save()
+        return true
+    end
+    v14.cinemaSpeed=18
+    v14.startCinema=function()
+        if v14.cinematic then return true end
+        local cam=workspace.CurrentCamera
+        if not cam then return false end
+        v14.cinemaSaved={type=cam.CameraType,cf=cam.CFrame,subject=cam.CameraSubject,fov=cam.FieldOfView}
+        v14.cinematic=true
+        cam.CameraType=Enum.CameraType.Scriptable
+        v14.cinemaConnection=Run.RenderStepped:Connect(function(dt)
+            if stopped or not v14.cinematic then return end
+            local current=workspace.CurrentCamera
+            if not current then return end
+            local vec=Vector3.zero
+            if UIS:IsKeyDown(Enum.KeyCode.W) then vec=vec+current.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then vec=vec-current.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then vec=vec-current.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then vec=vec+current.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.E) then vec=vec+Vector3.yAxis end
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then vec=vec-Vector3.yAxis end
+            if vec.Magnitude>0 then
+                local speed=v14.cinemaSpeed*(UIS:IsKeyDown(Enum.KeyCode.LeftShift) and 2.5 or 1)
+                current.CFrame=current.CFrame+vec.Unit*speed*math.min(dt,.1)
+            end
+        end)
+        main.Visible=false
+        reopen.Visible=false
+        notify("Modo cinema: WASD para mover, E/Q altura, Shift acelera, F6 sai.","info")
+        return true
+    end
+    v14.stopCinema=function()
+        if not v14.cinematic then return end
+        v14.cinematic=false
+        if v14.cinemaConnection then v14.cinemaConnection:Disconnect() v14.cinemaConnection=nil end
+        local cam=workspace.CurrentCamera
+        if cam then
+            cam.CameraType=Enum.CameraType.Custom
+            local _,hum=chars()
+            cam.CameraSubject=hum or (v14.cinemaSaved and v14.cinemaSaved.subject) or cam.CameraSubject
+            if v14.cinemaSaved then cam.FieldOfView=v14.cinemaSaved.fov end
+        end
+        v14.cinemaSaved=nil
+        main.Visible=true
+        reopen.Visible=false
+    end
+    v14.avatarRestore=function()
+        for part,oldStyle in pairs(v14.avatarParts) do
+            if part.Parent then
+                pcall(function()
+                    part.Color=oldStyle.color
+                    part.Material=oldStyle.material
+                    part.LocalTransparencyModifier=oldStyle.transparency
+                end)
+            end
+        end
+        v14.avatarParts={}
+    end
+    v14.avatarApply=function(colorName)
+        v14.avatarRestore()
+        if colorName=="restore" then return true end
+        local colors={
+            red=Color3.fromRGB(230,32,59),
+            black=Color3.fromRGB(27,25,30),
+            white=Color3.fromRGB(230,230,230),
+            blue=Color3.fromRGB(40,125,245),
+            gold=Color3.fromRGB(255,191,52)
+        }
+        local target=colors[colorName]
+        if not target then return false end
+        local character=player.Character
+        if not character then return false end
+        for _,part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name~="HumanoidRootPart" then
+                v14.avatarParts[part]={
+                    color=part.Color,material=part.Material,
+                    transparency=part.LocalTransparencyModifier
+                }
+                part.Color=target
+            end
+        end
+        notify("Avatar "..colorName.." aplicado apenas no seu cliente.","info")
+        return true
+    end
+    v14.musicStop=function()
+        if v14.music then
+            pcall(function()v14.music:Stop()v14.music:Destroy()end)
+            v14.music=nil
+        end
+    end
+    v14.musicPlay=function(raw)
+        local id=tostring(raw or ""):match("(%d+)")
+        if not id or #id>18 or tonumber(id)<=0 then
+            notify("Insira um ID de audio do Roblox autorizado para seu jogo.","error")
+            return false
+        end
+        v14.musicStop()
+        local sound=obj("Sound",game:GetService("SoundService"),{
+            Name="BRAB0X_V14_LOCAL_AUDIO",
+            SoundId="rbxassetid://"..id,
+            Volume=math.clamp(tonumber(v14.musicVolume) or .35,0,1),
+            Looped=true
+        })
+        v14.music=sound
+        v14.musicId=id
+        sound:Play()
+        notify("Tentando reproduzir audio autorizado ID "..id.." (depende de permissao).","info")
+        return true
+    end
+    v14.musicVolume=.35
+    v14.cleanup=function()
+        v14.stopCinema()
+        v14.avatarRestore()
+        v14.musicStop()
+        if v14.wheelFrame and v14.wheelFrame.Parent then v14.wheelFrame:Destroy() end
+        v14.wheelOpen=false
+    end
+
+    register("recent","SETTINGS","Abrir comandos recentes",function()show("RECENT")end)
+    register("wheel","SETTINGS","Abrir Command Wheel",function()
+        if v14.toggleWheel then v14.toggleWheel() end
+    end)
+    register("macros","SETTINGS","Abrir gerenciador de macros",function()show("MACROS")end)
+    register("macrosave","SETTINGS","Salvar macro: nome e comandos separados por ;",function(a)
+        local name,body=tostring(a or ""):match("^(%S+)%s+(.+)$")
+        if not name then notify("Use: macrosave nome speed 60; fov 80","error");return false end
+        return v14.macroSave(name,body)
+    end,"macrosave explorar speed 65; fov 80")
+    register("macrorun","SETTINGS","Executar macro salva",function(a)
+        return v14.macroRun(a)
+    end,"macrorun explorar")
+    register("macrodelete","SETTINGS","Excluir macro salva",function(a)
+        return v14.macroDelete(a)
+    end,"macrodelete explorar")
+    register("cinema","CAMERA","Ativar modo cinematografico livre",function()
+        return v14.startCinema()
+    end)
+    register("uncinema","CAMERA","Voltar a camera do avatar",function()
+        v14.stopCinema()
+    end)
+    register("cinemaspeed","CAMERA","Ajustar velocidade da camera livre",function(a)
+        v14.cinemaSpeed=math.clamp(tonumber(a) or 18,2,70)
+    end,"cinemaspeed 20")
+    register("routes","PLAYER","Abrir rotas de exploracao",function()show("ROUTES")end)
+    register("routesave","PLAYER","Salvar rota de waypoints",function(a)
+        return v14.routeSave(a)
+    end,"routesave passeio casa loja")
+    register("routestart","PLAYER","Selecionar rota de exploracao",function(a)
+        return v14.routeStart(a)
+    end,"routestart passeio")
+    register("routenext","PLAYER","Avancar para proximo waypoint",function()
+        return v14.routeNext()
+    end)
+    register("routedelete","PLAYER","Excluir rota",function(a)
+        return v14.routeDelete(a)
+    end,"routedelete passeio")
+    register("avatarlocal","PLAYER","Cor local do avatar",function(a)
+        return v14.avatarApply(trimmed(a):lower())
+    end,"avatarlocal red")
+    register("restoreavatar","PLAYER","Restaurar visual local",function()
+        return v14.avatarApply("restore")
+    end)
+    register("music","SETTINGS","Reproduzir audio autorizado por ID",function(a)
+        return v14.musicPlay(a)
+    end,"music 123456789")
+    register("stopmusic","SETTINGS","Parar audio local",function()
+        v14.musicStop()
+    end)
+    register("musicvolume","SETTINGS","Ajustar volume local de 0 a 1",function(a)
+        v14.musicVolume=math.clamp(tonumber(a) or .35,0,1)
+        if v14.music then v14.music.Volume=v14.musicVolume end
+    end,"musicvolume 0.4")
+    register("safemode","SETTINGS","Modo seguro para comandos destrutivos",function(a)
+        v14.safe=a=="on" or (a~="off" and not v14.safe)
+        notify("Modo seguro: "..(v14.safe and "ON" or "OFF"))
+        return false
+    end,"safemode on")
+    register("dashboard","SETTINGS","Dashboard de atalhos",function()show("DASHBOARD")end)
+    register("hubstats","SETTINGS","Estatisticas do hub",function()show("STATS")end)
+    register("gamepad","SETTINGS","Modo navegacao por controle",function(a)
+        v14.controllerMode=a=="on" or (a~="off" and not v14.controllerMode)
+        notify("Gamepad: "..(v14.controllerMode and "ON" or "OFF"))
+        return false
+    end,"gamepad on")
+end
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
