@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V8 | MODULOS + ABERTURA ANIMADA
+-- BRAB0X PRIME V9 | PAINEL REFEITO + MODULOS
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -21,6 +21,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V9_STOP",
     "BRAB0X_V8_STOP",
     "BRAB0X_V7_STOP",
     "BRAB0X_V6_STOP",
@@ -31,7 +32,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V8")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V9")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -252,14 +253,14 @@ local refreshCommandList
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V8",
+    Name = "BRAB0X_PRIME_V9",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
 
 local main = round(obj("Frame",gui,{
-    Size = UDim2.fromOffset(722,485),
-    Position = UDim2.new(.5,-361,.5,-242),
+    Size = UDim2.fromOffset(800,530),
+    Position = UDim2.new(.5,-400,.5,-265),
     BackgroundColor3 = ink,
     BorderSizePixel = 0,
     Active = true,
@@ -275,7 +276,7 @@ local stroke = obj("UIStroke",main,{
 local uiScale = obj("UIScale",main,{Scale=1})
 
 local header = obj("Frame",main,{
-    Size = UDim2.new(1,0,0,57),
+    Size = UDim2.new(1,0,0,64),
     BackgroundColor3 = card,
     BorderSizePixel = 0,
     Active = true
@@ -290,18 +291,18 @@ obj("UIGradient",header,{
 })
 
 local brand = txt(
-    header,"BRAB0X  PRIME",35,21,true
+    header,"BRAB0X  /  PRIME",35,23,true
 )
 brand.Position = UDim2.fromOffset(16,4)
 brand.Size = UDim2.fromOffset(340,34)
 
 local sub = txt(
     header,
-    "V8 / ESCOLHA SEUS MODULOS  •  COMANDOS PESQUISAVEIS",
+    "V9  •  CONTROL CENTER  /  ORGANIZADO POR CATEGORIAS",
     16,10
 )
 sub.TextColor3 = muted
-sub.Position = UDim2.fromOffset(17,34)
+sub.Position = UDim2.fromOffset(17,38)
 sub.Size = UDim2.fromOffset(440,17)
 
 local topState = txt(header,"FLY OFF",23,12,true)
@@ -369,8 +370,8 @@ end
 -- MENU LATERAL
 
 local sidebar = round(obj("Frame",main,{
-    Position = UDim2.fromOffset(12,69),
-    Size = UDim2.fromOffset(160,354),
+    Position = UDim2.fromOffset(12,76),
+    Size = UDim2.fromOffset(174,393),
     BackgroundColor3 = card,
     BorderSizePixel = 0
 }),11)
@@ -380,11 +381,11 @@ local nav = obj("Frame",sidebar,{
     Size = UDim2.new(1,-16,1,-16),
     BackgroundTransparency = 1
 })
-stack(nav,5)
+stack(nav,7)
 
 local right = round(obj("Frame",main,{
-    Position = UDim2.fromOffset(183,69),
-    Size = UDim2.fromOffset(526,354),
+    Position = UDim2.fromOffset(197,76),
+    Size = UDim2.fromOffset(590,393),
     BackgroundColor3 = card,
     BorderSizePixel = 0
 }),11)
@@ -393,11 +394,11 @@ local pages = {}
 local navButtons = {}
 
 for _,id in ipairs(sections) do
-    navButtons[id] = btn(nav,id,nil,31)
+    navButtons[id] = btn(nav,id,nil,35)
 
     pages[id] = obj("ScrollingFrame",right,{
-        Size = UDim2.new(1,-18,1,-16),
-        Position = UDim2.fromOffset(9,8),
+        Size = UDim2.new(1,-22,1,-20),
+        Position = UDim2.fromOffset(11,10),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ScrollBarThickness = 4,
@@ -417,12 +418,12 @@ local status = txt(
 )
 
 status.TextColor3 = muted
-status.Position = UDim2.fromOffset(14,433)
+status.Position = UDim2.fromOffset(15,480)
 status.Size = UDim2.new(1,-28,0,17)
 
 local cmdInput = round(obj("TextBox",main,{
-    Position = UDim2.fromOffset(13,455),
-    Size = UDim2.fromOffset(585,26),
+    Position = UDim2.fromOffset(13,500),
+    Size = UDim2.fromOffset(652,27),
     BackgroundColor3 = control,
     BorderSizePixel = 0,
     Text = "",
@@ -435,8 +436,8 @@ local cmdInput = round(obj("TextBox",main,{
 }),7)
 
 local execute = btn(main,"EXEC",nil,26)
-execute.Position = UDim2.fromOffset(605,455)
-execute.Size = UDim2.fromOffset(103,26)
+execute.Position = UDim2.fromOffset(674,500)
+execute.Size = UDim2.fromOffset(113,27)
 
 local selected = "HOME"
 
@@ -476,7 +477,7 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     for i,name in ipairs(sections) do
-        navButtons[name].Text = labels[i]
+        navButtons[name].Text = "   "..labels[i]
     end
 end
 
@@ -486,7 +487,7 @@ local function responsive()
         or Vector2.new(1280,720)
 
     uiScale.Scale = math.clamp(
-        math.min(view.X/745,view.Y/520),
+        math.min(view.X/825,view.Y/560),
         .5,1
     )*config.scale
 end
@@ -503,12 +504,27 @@ local exec
 local closeHub
 local refresh
 
+-- Comandos em duas colunas
+local itemRowCache = {}
 local function item(p,label,command)
-    return btn(p,label,function()
-        if command and exec then
-            exec(command)
-        end
-    end)
+    local row = itemRowCache[p]
+    if not row or not row.Parent or #row:GetChildren() >= 3 then
+        row = obj("Frame",p,{
+            Size = UDim2.new(1,-8,0,39),
+            BackgroundTransparency = 1
+        })
+        obj("UIListLayout",row,{
+            FillDirection = Enum.FillDirection.Horizontal,
+            Padding = UDim.new(0,8),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        itemRowCache[p] = row
+    end
+    local b = btn(row,label,function()
+        if command and exec then exec(command) end
+    end,39)
+    b.Size = UDim2.new(.5,-4,1,0)
+    return b
 end
 
 local function line(p,a,ca,b,cb)
@@ -1081,7 +1097,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V8_AIM"
+local aimKey = "BRAB0X_V9_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -1707,19 +1723,28 @@ local search = round(obj("TextBox",cmdPage,{
     TextSize = 13
 }),8)
 
+local commandGrid = obj("Frame",cmdPage,{
+    Size = UDim2.new(1,-8,0,0),
+    AutomaticSize = Enum.AutomaticSize.Y,
+    BackgroundTransparency = 1
+})
+obj("UIGridLayout",commandGrid,{
+    CellSize = UDim2.new(.5,-5,0,42),
+    CellPadding = UDim2.fromOffset(9,8),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
 local commandRows = {}
 
 for _,entry in ipairs(registered) do
     local b = btn(
-        cmdPage,
+        commandGrid,
         entry.example.."   •   "..entry.description,
         function()
             exec(entry.example)
         end,
-        33
+        42
     )
-
-    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.TextXAlignment = Enum.TextXAlignment.Center
 
     commandRows[#commandRows+1] = {
         b = b,
@@ -1764,15 +1789,21 @@ obj("UIGradient",hero,{
     )
 })
 
+local heroEdge = obj("Frame",hero,{
+    Size = UDim2.new(0,4,1,0),
+    BackgroundColor3 = accent,
+    BorderSizePixel = 0
+})
+
 local heroName = txt(
-    hero,"BRAB0X PRIME / NEON",36,19,true
+    hero,"BRAB0X PRIME / CONTROL CENTER",36,19,true
 )
 heroName.Position = UDim2.fromOffset(16,10)
 heroName.Size = UDim2.new(1,-25,0,35)
 
 local heroText = txt(
     hero,
-    "Fly • Emotes • Camera • Visual • Comandos",
+    "Escolha uma categoria na lateral • Atalhos e modulos configuraveis",
     25,12
 )
 heroText.TextColor3 = muted
@@ -2275,8 +2306,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V8_STOP == closeHub then
-        _G.BRAB0X_V8_STOP = nil
+    if _G.BRAB0X_V9_STOP == closeHub then
+        _G.BRAB0X_V9_STOP = nil
     end
 end
 
@@ -2358,7 +2389,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V8_STOP = closeHub
+_G.BRAB0X_V9_STOP = closeHub
 
 -- ABERTURA ANIMADA
 
@@ -2366,6 +2397,7 @@ local gate = obj("Frame",gui,{
     Size = UDim2.fromScale(1,1),
     Position = UDim2.fromScale(0,0),
     BackgroundColor3 = ink,
+    BackgroundTransparency = .42,
     BorderSizePixel = 0,
     Active = true,
     ZIndex = 50
@@ -2426,7 +2458,7 @@ local progress = round(obj("Frame",progressBG,{
 local picker = round(obj("Frame",gate,{
     AnchorPoint = Vector2.new(.5,.5),
     Position = UDim2.fromScale(.5,.5),
-    Size = UDim2.fromOffset(500,460),
+    Size = UDim2.fromOffset(658,444),
     BackgroundColor3 = card,
     BorderSizePixel = 0,
     Visible = false,
@@ -2439,28 +2471,35 @@ obj("UIStroke",picker,{
     Transparency = .15
 })
 
+local topStrip = obj("Frame",picker,{
+    Size = UDim2.new(1,0,0,4),
+    BackgroundColor3 = accent,
+    BorderSizePixel = 0,
+    ZIndex = 56
+})
+
 local pickerTitle = txt(
-    picker,"QUE COMANDOS VOCE QUER?",30,20,true
+    picker,"MONTE SEU BRAB0X PRIME",36,24,true
 )
 
-pickerTitle.Position = UDim2.fromOffset(21,14)
-pickerTitle.Size = UDim2.fromOffset(460,32)
+pickerTitle.Position = UDim2.fromOffset(25,16)
+pickerTitle.Size = UDim2.fromOffset(610,36)
 pickerTitle.ZIndex = 56
 
 local pickerSubtitle = txt(
     picker,
-    "Selecione uma ou mais categorias.",
+    "ATIVE SO O QUE VOCE PRECISA  /  ALTERE DEPOIS EM AJUSTES",
     24,12
 )
 
-pickerSubtitle.Position = UDim2.fromOffset(22,50)
-pickerSubtitle.Size = UDim2.fromOffset(450,23)
+pickerSubtitle.Position = UDim2.fromOffset(26,57)
+pickerSubtitle.Size = UDim2.fromOffset(600,23)
 pickerSubtitle.TextColor3 = muted
 pickerSubtitle.ZIndex = 56
 
 local selectionScroll = obj("ScrollingFrame",picker,{
-    Position = UDim2.fromOffset(20,86),
-    Size = UDim2.fromOffset(460,286),
+    Position = UDim2.fromOffset(24,93),
+    Size = UDim2.fromOffset(611,279),
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     ScrollBarThickness = 4,
@@ -2470,7 +2509,11 @@ local selectionScroll = obj("ScrollingFrame",picker,{
     ZIndex = 56
 })
 
-stack(selectionScroll,6)
+obj("UIGridLayout",selectionScroll,{
+    CellSize = UDim2.fromOffset(294,82),
+    CellPadding = UDim2.fromOffset(11,12),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
 
 local selectedModules = {}
 local choices = {}
@@ -2480,18 +2523,18 @@ for _,entry in ipairs(selectorOrder) do
     local title = entry[2]
     local desc = entry[3]
 
-    local b = btn(selectionScroll,"",nil,42)
+    local b = btn(selectionScroll,"",nil,82)
     b.BackgroundColor3 = control
     b.ZIndex = 57
 
-    local label = txt(b,title,19,13,true)
-    label.Position = UDim2.fromOffset(12,3)
-    label.Size = UDim2.fromOffset(435,19)
+    local label = txt(b,title,24,14,true)
+    label.Position = UDim2.fromOffset(16,14)
+    label.Size = UDim2.fromOffset(264,24)
     label.ZIndex = 58
 
-    local details = txt(b,desc,14,10)
-    details.Position = UDim2.fromOffset(12,23)
-    details.Size = UDim2.fromOffset(435,14)
+    local details = txt(b,desc,31,11)
+    details.Position = UDim2.fromOffset(16,39)
+    details.Size = UDim2.fromOffset(262,31)
     details.TextColor3 = muted
     details.ZIndex = 58
 
@@ -2519,15 +2562,15 @@ end
 local allBtn = btn(
     picker,"SELECIONAR TUDO",nil,37
 )
-allBtn.Position = UDim2.fromOffset(20,386)
-allBtn.Size = UDim2.fromOffset(216,37)
+allBtn.Position = UDim2.fromOffset(24,386)
+allBtn.Size = UDim2.fromOffset(286,39)
 allBtn.ZIndex = 56
 
 local launch = btn(
     picker,"ABRIR BRAB0X PRIME",nil,37
 )
-launch.Position = UDim2.fromOffset(244,386)
-launch.Size = UDim2.fromOffset(236,37)
+launch.Position = UDim2.fromOffset(323,386)
+launch.Size = UDim2.fromOffset(312,39)
 launch.ZIndex = 56
 launch.BackgroundColor3 = accent
 launch.TextColor3 = ink
@@ -2649,6 +2692,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V8 | "
+    "BRAB0X PRIME V9 | "
     ..#registered.." comandos"
 )
