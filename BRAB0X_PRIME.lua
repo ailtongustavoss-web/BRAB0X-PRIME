@@ -6160,6 +6160,485 @@ do
     end
 end
 
+-- V17 / ULTIMATE INTERFACE - PALETA, FAVORITOS POR JOGO, NOTAS, BUSSOLA, BACKUP E GUIA
+do
+    local m=v14.v17
+    if m then
+        local function info(parent,message,height)
+            local t=txt(parent,message,height or 42,12)
+            t.TextColor3=muted
+            return t
+        end
+        local function groupButtons(parent,items)
+            local bar=obj("Frame",parent,{
+                Size=UDim2.new(1,-8,0,40),BackgroundTransparency=1
+            })
+            for i,entry in ipairs(items) do
+                local button=btn(bar,entry[1],entry[2],39)
+                button.Position=UDim2.new((i-1)/#items,3,0,0)
+                button.Size=UDim2.new(1/#items,-7,0,39)
+                button.TextSize=10
+            end
+            return bar
+        end
+        local function listBlock(parent,label,subtext)
+            v14.ui.title(parent,label,subtext)
+            return v14.ui.holder(parent)
+        end
+        local function copyText(text)
+            if type(setclipboard)=="function" then
+                local ok=pcall(setclipboard,text)
+                if ok then
+                    notify("Conteudo copiado para a area de transferencia.","success")
+                    return true
+                end
+            end
+            notify("Copie o texto manualmente (Ctrl+A, Ctrl+C).","info")
+            return false
+        end
+        m.install=function()
+            local ui=v14.ui
+            m.pages={}
+
+            -- Busca global: nenhum comando e executado sem selecao explicita.
+            ui.title(pages.PALETTE,"⌕  PALETA DE COMANDOS",
+                "Pesquise tudo com Ctrl+Shift+P e execute pela lista")
+            info(pages.PALETTE,
+                "Procure nomes, categorias ou descricoes. Clique em EXECUTAR para usar o comando. Atalho: Ctrl+Shift+P.",58)
+            groupButtons(pages.PALETTE,{
+                {"ABRIR BUSCA RAPIDA",function()m.openPalette()end},
+                {"VER TODOS OS COMANDOS",function()show("COMMANDS")end}
+            })
+            ui.section(pages.PALETTE,"ULTIMOS EXECUTADOS")
+            local paletteHistory=ui.holder(pages.PALETTE)
+            m.pages.PALETTE=function()
+                clear(paletteHistory)
+                for i=1,math.min(8,#v14.recent) do
+                    local row=v14.recent[i]
+                    ui.row(paletteHistory,row.raw,{
+                        {"EXECUTAR",function()exec(row.raw)end,87}
+                    })
+                end
+                if #v14.recent==0 then info(paletteHistory,"Nenhum comando usado nesta sessao.",35) end
+            end
+
+            -- Favoritos separados do conjunto global.
+            ui.title(pages.BOOKMARKS,"★  FAVORITOS POR JOGO",
+                "Cada PlaceId possui uma lista independente de comandos favoritos")
+            info(pages.BOOKMARKS,
+                "Use gamefav fly para salvar um comando apenas neste jogo, ou adicione pela lista abaixo.",49)
+            local favText=ui.box(pages.BOOKMARKS,"Nome do comando (ex.: fly)",39)
+            groupButtons(pages.BOOKMARKS,{
+                {"SALVAR NESTE JOGO",function()m.favoriteAdd(favText.Text)end},
+                {"FAVORITOS GLOBAIS",function()show("FAVORITES")end}
+            })
+            ui.section(pages.BOOKMARKS,"COMANDOS MARCADOS")
+            local bookmarkList=ui.holder(pages.BOOKMARKS)
+            m.pages.BOOKMARKS=function()
+                clear(bookmarkList)
+                local names={}
+                for name,on in pairs(m.favorites) do
+                    if on and byName[name] then names[#names+1]=name end
+                end
+                table.sort(names)
+                for _,name in ipairs(names) do
+                    local entry=byName[name]
+                    ui.row(bookmarkList,"★  "..name.."  •  "..entry.category,{
+                        {"USAR",function()exec(entry.example)end,76},
+                        {"TIRAR",function()m.favoriteRemove(name)end,72}
+                    })
+                end
+                if #names==0 then info(bookmarkList,"Nenhum favorito deste jogo.",35) end
+            end
+
+            -- Bloco de notas separado e persistente por PlaceId.
+            ui.title(pages.NOTES,"✎  NOTAS DO JOGO",
+                "Guarde lembretes diferentes para cada experiencia")
+            info(pages.NOTES,"Notas locais com ate 3000 caracteres. Nao sao enviadas para outros jogadores.",42)
+            local noteField=ui.box(pages.NOTES,"Escreva suas notas aqui...",186,true)
+            noteField.TextWrapped=true
+            noteField.TextYAlignment=Enum.TextYAlignment.Top
+            noteField.Text=type(v13Data.gameNotes[v15PlaceId])=="string"
+                and v13Data.gameNotes[v15PlaceId] or ""
+            local askNoteClear=false
+            groupButtons(pages.NOTES,{
+                {"SALVAR NOTA",function()
+                    m.noteSave(noteField.Text)
+                    askNoteClear=false
+                end},
+                {"APAGAR NOTA",function()
+                    if v14.safe and not askNoteClear then
+                        askNoteClear=true
+                        notify("Clique em APAGAR NOTA novamente para confirmar.","info")
+                        return
+                    end
+                    askNoteClear=false
+                    m.noteClear()
+                    noteField.Text=""
+                end}
+            })
+            ui.section(pages.NOTES,"STATUS DA NOTA")
+            local noteStatus=info(pages.NOTES,"",34)
+            m.pages.NOTES=function()
+                if UIS:GetFocusedTextBox()~=noteField then
+                    noteField.Text=v13Data.gameNotes[v15PlaceId] or ""
+                end
+                noteStatus.Text="JOGO "..v15PlaceId.." | "..#noteField.Text..
+                    " / 3000 caracteres salvos localmente"
+            end
+
+            -- Bússola: direcao e distancia ate waypoint existente.
+            ui.title(pages.COMPASS,"⌖  BUSSOLA DE EXPLORACAO",
+                "Direcao e distancia ate seus waypoints salvos")
+            info(pages.COMPASS,
+                "A bussola so mostra orientacao. Nao teleporta automaticamente.",34)
+            local compassLine=ui.section(pages.COMPASS,"BUSSOLA DESLIGADA")
+            groupButtons(pages.COMPASS,{
+                {"DESLIGAR",function()m.setCompass("off")end},
+                {"SALVAR POSICAO",function()show("TELEPORT")end},
+                {"REABRIR BUSSOLA",function()
+                    m.setCompass(m.compassTarget or "off")
+                end}
+            })
+            ui.section(pages.COMPASS,"WAYPOINTS DISPONIVEIS")
+            local points=ui.holder(pages.COMPASS)
+            m.pages.COMPASS=function()
+                clear(points)
+                local names={}
+                for name in pairs(extraState.savedWaypoints) do names[#names+1]=name end
+                table.sort(names)
+                for _,name in ipairs(names) do
+                    ui.row(points,"⌖  "..name,{
+                        {"APONTAR",function()m.setCompass(name)end,88}
+                    })
+                end
+                compassLine.Text=m.compassEnabled and
+                    ("DESTINO: "..tostring(m.compassTarget)) or "BUSSOLA DESLIGADA"
+                if #names==0 then info(points,"Salve pelo menos um ponto na aba Teleporte.",39) end
+            end
+            local compassHUD=round(obj("Frame",gui,{
+                Size=UDim2.fromOffset(294,90),
+                Position=UDim2.new(0,15,0,86),
+                BackgroundColor3=Color3.fromRGB(20,12,23),
+                BackgroundTransparency=.09,
+                BorderSizePixel=0,
+                Visible=m.compassEnabled,ZIndex=87
+            }),11)
+            obj("UIStroke",compassHUD,{Color=accent,Thickness=1.5,Transparency=.28})
+            local hudHeading=txt(compassHUD,"⌖  BRAB0X / BUSSOLA",25,13,true)
+            hudHeading.Position=UDim2.fromOffset(11,6)
+            hudHeading.Size=UDim2.new(1,-22,0,25)
+            hudHeading.TextColor3=accent
+            hudHeading.ZIndex=88
+            local direction=txt(compassHUD,"↑  Aguarde...",46,16,true)
+            direction.Position=UDim2.fromOffset(11,31)
+            direction.Size=UDim2.new(1,-22,0,46)
+            direction.ZIndex=88
+            m.compassWidget=compassHUD
+            local arrow={"↑","↗","→","↘","↓","↙","←","↖"}
+            m.updateCompass=function()
+                if not m.compassEnabled then
+                    compassHUD.Visible=false
+                    return
+                end
+                local point=m.compassTarget and extraState.savedWaypoints[m.compassTarget]
+                local _,_,root=chars()
+                if not point or not root then
+                    compassHUD.Visible=true
+                    direction.Text="Waypoint ou personagem indisponivel"
+                    return
+                end
+                local delta=point.Position-root.Position
+                local distance=math.floor(delta.Magnitude+.5)
+                local localDirection=root.CFrame:VectorToObjectSpace(delta)
+                local angle=math.deg(math.atan2(localDirection.X,-localDirection.Z))
+                local index=math.floor(((angle+22.5)%360)/45)+1
+                compassHUD.Visible=true
+                direction.Text=arrow[index].."  "..m.compassTarget:upper()..
+                    "  •  "..distance.." studs"
+            end
+
+            -- Backup de FAVORITOS, NOTAS e MACROS. Limites e whitelist no import.
+            ui.title(pages.BACKUP,"▣  BACKUP DE PREFERENCIAS",
+                "Exporte e importe notas, favoritos e macros seguras")
+            info(pages.BACKUP,
+                "Backup em JSON V17. Ele nao contem senhas, executores, codigo remoto nem dados do servidor.",57)
+            ui.section(pages.BACKUP,"EXPORTAR")
+            local exportField=ui.box(pages.BACKUP,"Clique em GERAR JSON para exportar",127,true)
+            exportField.ClearTextOnFocus=false
+            groupButtons(pages.BACKUP,{
+                {"GERAR JSON",function()
+                    exportField.Text=m.backupExport() or ""
+                end},
+                {"COPIAR JSON",function()copyText(exportField.Text)end}
+            })
+            ui.section(pages.BACKUP,"IMPORTAR")
+            local importField=ui.box(pages.BACKUP,"Cole aqui o backup BRAB0X-V17...",130,true)
+            importField.ClearTextOnFocus=false
+            local pendingImport=false
+            groupButtons(pages.BACKUP,{
+                {"IMPORTAR BACKUP",function()
+                    if not pendingImport then
+                        pendingImport=true
+                        notify("Clique novamente em IMPORTAR para confirmar a mesclagem.","info")
+                        return
+                    end
+                    pendingImport=false
+                    m.backupImport(importField.Text)
+                end},
+                {"LIMPAR CAMPOS",function()
+                    importField.Text=""
+                    exportField.Text=""
+                    pendingImport=false
+                end}
+            })
+            info(pages.BACKUP,
+                "A importacao mescla os itens aceitos com os atuais. Os macros sao validados contra comandos locais conhecidos.",49)
+            m.pages.BACKUP=function()end
+
+            -- Diagnostico de compatibilidade + historico de jogos.
+            ui.title(pages.DIAGNOSTICS,"◎  DIAGNOSTICO DO HUB",
+                "Informacoes locais, dados salvos e compatibilidade")
+            local diagnosticsInfo=ui.section(pages.DIAGNOSTICS,"DIAGNOSTICO ATIVO")
+            groupButtons(pages.DIAGNOSTICS,{
+                {"ATUALIZAR TESTES",function()
+                    if m.refresh then m.refresh("DIAGNOSTICS")end
+                end},
+                {"ABRIR BACKUP",function()show("BACKUP")end},
+                {"GUIA",function()show("GUIDE")end}
+            })
+            local details=ui.holder(pages.DIAGNOSTICS)
+            m.pages.DIAGNOSTICS=function()
+                clear(details)
+                local d=m.diagnostic()
+                diagnosticsInfo.Text=("VERSAO %s  •  PLACE ID %s"):format(d.version,d.placeId)
+                local rows={
+                    "GUI: "..(d.gui and "OK" or "FALHA")..
+                        "  |  CAMERA: "..(d.camera and "OK" or "INDISPONIVEL"),
+                    "PERSONAGEM: "..(d.character and "OK" or "AGUARDANDO")..
+                        "  |  JOGADORES: "..d.players,
+                    "ARQUIVO LOCAL: "..(d.fileRead and "LEITURA" or "N/A")..
+                        " / "..(d.fileWrite and "GRAVACAO" or "N/A"),
+                    "CLIPBOARD: "..(d.clipboard and "DISPONIVEL" or "MANUAL"),
+                    "COMANDOS: "..d.totalCommands.."  |  WAYPOINTS: "..d.waypoints,
+                    "FAVORITOS DO JOGO: "..d.bookmarks.."  |  NOTAS: "..d.notesSize.." caracteres",
+                    "SESSOES NESTE JOGO: "..d.sessionCount..
+                        "  |  COMANDOS NESTE JOGO: "..d.totalUserCommands
+                }
+                for _,row in ipairs(rows) do info(details,row,34) end
+                ui.section(details,"HISTORICO DE JOGOS")
+                local order={}
+                for id,entry in pairs(v13Data.gameSessions) do
+                    if type(entry)=="table" and tostring(id):match("^%d+$") then
+                        order[#order+1]={id=id,entry=entry}
+                    end
+                end
+                table.sort(order,function(a,b)
+                    return (tonumber(a.entry.last) or 0)>(tonumber(b.entry.last) or 0)
+                end)
+                for i=1,math.min(#order,15) do
+                    local e=order[i]
+                    local profile=v13Data.gameProfiles[e.id]
+                    local name=profile and profile.label or ("Jogo "..e.id)
+                    info(details,name.."  |  "..e.id.."  |  "..(e.entry.visits or 0).." visitas",32)
+                end
+            end
+
+            -- Guia e presets pre-definidos, sem execucao de codigo externo.
+            ui.title(pages.GUIDE,"♛  GUIA COMPLETO DO BRAB0X",
+                "Recursos essenciais, atalhos e exemplos para a versao V17")
+            local tips={
+                {"BUSCA RAPIDA","Ctrl+Shift+P abre a paleta. Escreva nome ou descricao, e escolha um resultado."},
+                {"MENU","RightShift abre/fecha. Use a busca na barra lateral e os grupos recolhiveis."},
+                {"COMANDOS","Ctrl+K procura na lista de comandos. 'tab games' abre uma aba."},
+                {"FAVORITOS DO JOGO","'gamefav fly' marca apenas neste PlaceId. 'gamefavs' mostra a lista."},
+                {"NOTAS","'notes' abre suas anotacoes deste jogo. Elas nao aparecem para outros jogadores."},
+                {"BUSSOLA","Salve um waypoint na aba Teleporte. Depois digite 'compass nome'."},
+                {"BACKUP","'backup' abre a exportacao e importacao segura em JSON."},
+                {"CONTROLES","F1 = Ajuda; F2 = Wheel; F6 = Cinema (WASD/E/Q)."},
+                {"MACROS","Na aba Macros use comandos locais permitidos separados por ponto e virgula."},
+                {"LIMITES","Comandos locais dependem do jogo. O hub nao altera a logica do servidor."}
+            }
+            for _,entry in ipairs(tips) do
+                ui.section(pages.GUIDE,entry[1])
+                info(pages.GUIDE,entry[2],39)
+            end
+            ui.section(pages.GUIDE,"PRESETS DE UM CLIQUE")
+            local presetsList=ui.holder(pages.GUIDE)
+            for _,name in ipairs({"visual","claro","noite","leve","restaurar","exploracao"}) do
+                ui.row(presetsList,name:upper().."  •  "..table.concat(m.presets[name],"; "),{
+                    {"USAR",function()m.presetApply(name)end,80}
+                })
+            end
+            groupButtons(pages.GUIDE,{
+                {"BUSCAR COMANDOS",function()m.openPalette()end},
+                {"CENTRAL DE AJUDA",function()show("HELP")end},
+                {"DIAGNOSTICO",function()show("DIAGNOSTICS")end}
+            })
+            m.pages.GUIDE=function()end
+
+            -- Paleta flutuante com resultados reais do catalogo.
+            local overlay=obj("Frame",gui,{
+                Size=UDim2.fromScale(1,1),
+                BackgroundColor3=Color3.fromRGB(6,3,9),
+                BackgroundTransparency=.16,
+                BorderSizePixel=0,
+                Visible=false,Active=true,ZIndex=95
+            })
+            local dialog=round(obj("Frame",overlay,{
+                AnchorPoint=Vector2.new(.5,0),
+                Position=UDim2.new(.5,0,.17,0),
+                Size=UDim2.fromOffset(552,461),
+                BackgroundColor3=Color3.fromRGB(23,12,24),
+                BorderSizePixel=0,ZIndex=96
+            }),13)
+            obj("UIStroke",dialog,{Color=accent,Thickness=2,Transparency=.12})
+            local heading=txt(dialog,"⌕  BRAB0X  /  BUSCA RAPIDA",34,19,true)
+            heading.Position=UDim2.fromOffset(15,8)
+            heading.Size=UDim2.new(1,-60,0,33)
+            heading.TextColor3=accent
+            heading.ZIndex=97
+            local quit=btn(dialog,"✕",function()m.closePalette()end,30)
+            quit.Position=UDim2.new(1,-43,0,9)
+            quit.Size=UDim2.fromOffset(32,30)
+            quit.ZIndex=99
+            local box=round(obj("TextBox",dialog,{
+                Position=UDim2.fromOffset(13,49),
+                Size=UDim2.new(1,-26,0,40),
+                BackgroundColor3=Color3.fromRGB(45,27,39),
+                BorderSizePixel=0,
+                Text="",PlaceholderText="Busque comandos, nomes, categorias...",
+                PlaceholderColor3=muted,TextColor3=white,
+                TextSize=14,Font=Enum.Font.Gotham,
+                ClearTextOnFocus=false,ZIndex=97
+            }),8)
+            obj("UIStroke",box,{Color=accent,Transparency=.5,Thickness=1})
+            local results=obj("ScrollingFrame",dialog,{
+                Position=UDim2.fromOffset(12,100),
+                Size=UDim2.new(1,-24,1,-143),
+                AutomaticCanvasSize=Enum.AutomaticSize.Y,
+                CanvasSize=UDim2.new(),
+                ScrollBarThickness=3,
+                ScrollBarImageColor3=accent,
+                BackgroundTransparency=1,BorderSizePixel=0,ZIndex=97
+            })
+            stack(results,5)
+            local helpText=txt(dialog,
+                "ENTER executa o primeiro resultado  •  ESC fecha a paleta",25,10)
+            helpText.Position=UDim2.new(0,14,1,-34)
+            helpText.Size=UDim2.new(1,-28,0,26)
+            helpText.TextColor3=muted
+            helpText.ZIndex=97
+            m.paletteOverlay=overlay
+            m.paletteInput=box
+            local best=nil
+            local function paletteSearch()
+                clear(results)
+                best=nil
+                local query=trim(box.Text):lower()
+                local matches={}
+                for _,entry in ipairs(registered) do
+                    if moduleEnabled(entry.category) then
+                        local blob=(entry.name.." "..entry.category.." "..entry.description):lower()
+                        local score=entry.name==query and 0 or
+                            entry.name:sub(1,#query)==query and 1 or
+                            blob:find(query,1,true) and 2 or nil
+                        if query=="" then
+                            if m.favorites[entry.name] or v13Data.favorites[entry.name] then
+                                score=0
+                            else score=3 end
+                        end
+                        if score then matches[#matches+1]={entry=entry,score=score} end
+                    end
+                end
+                table.sort(matches,function(a,b)
+                    if a.score~=b.score then return a.score<b.score end
+                    return a.entry.name<b.entry.name
+                end)
+                for i=1,math.min(#matches,30) do
+                    local entry=matches[i].entry
+                    if not best then best=entry end
+                    local label=entry.name:upper().."  •  "..entry.category..
+                        "\n"..entry.description
+                    local result=btn(results,label,function()
+                        m.closePalette()
+                        exec(entry.example)
+                    end,48)
+                    result.Size=UDim2.new(1,-9,0,48)
+                    result.TextWrapped=true
+                    result.TextXAlignment=Enum.TextXAlignment.Left
+                    result.TextSize=11
+                    result.ZIndex=98
+                end
+                if #matches==0 then
+                    local none=info(results,"Nenhum comando encontrado.",35)
+                    none.ZIndex=98
+                end
+            end
+            m.paletteSearch=paletteSearch
+            bind(box:GetPropertyChangedSignal("Text"),paletteSearch)
+            m.closePalette=function()
+                overlay.Visible=false
+                m.isOpen=false
+                box:ReleaseFocus()
+            end
+            m.openPalette=function()
+                if stopped then return end
+                m.isOpen=true
+                overlay.Visible=true
+                box.Text=""
+                paletteSearch()
+                box:CaptureFocus()
+            end
+            m.onInput=function(input,used)
+                local key=input.KeyCode
+                if m.isOpen then
+                    if key==Enum.KeyCode.Escape then
+                        m.closePalette()
+                        return true
+                    end
+                    if key==Enum.KeyCode.Return or key==Enum.KeyCode.KeypadEnter then
+                        local entry=best
+                        m.closePalette()
+                        if entry then exec(entry.example) end
+                        return true
+                    end
+                end
+                if key==Enum.KeyCode.P and not used and
+                    (UIS:IsKeyDown(Enum.KeyCode.LeftControl) or
+                        UIS:IsKeyDown(Enum.KeyCode.RightControl)) and
+                    (UIS:IsKeyDown(Enum.KeyCode.LeftShift) or
+                        UIS:IsKeyDown(Enum.KeyCode.RightShift)) then
+                    if m.isOpen then m.closePalette() else m.openPalette() end
+                    return true
+                end
+                return false
+            end
+            m.refresh=function(page)
+                if m.pages[page] and pages[page] and pages[page].Visible then
+                    local ok,err=pcall(m.pages[page])
+                    if not ok then warn("[BRAB0X V17] Falha em "..page..": "..tostring(err)) end
+                end
+            end
+            m.renderConnection=Run.Heartbeat:Connect(function()
+                if stopped or not gui.Parent then return end
+                local now=os.clock()
+                if now-m.compassUpdated<.32 then return end
+                m.compassUpdated=now
+                if m.compassEnabled then m.updateCompass() end
+            end)
+            local oldCleanup=v14.cleanup
+            v14.cleanup=function()
+                if m.renderConnection then
+                    m.renderConnection:Disconnect()
+                    m.renderConnection=nil
+                end
+                if oldCleanup then oldCleanup() end
+            end
+        end
+    end
+end
+
 -- ABA CONFIGURACOES
 
 do
