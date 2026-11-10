@@ -291,6 +291,7 @@ end
 local applyV13Appearance
 local openModulePicker
 local refreshCommandList
+local keyCaptureHandler
 local refreshV13Page
 local v13Log
 local addHistory
@@ -2826,7 +2827,10 @@ end
 for _,entry in ipairs(registered) do
     local g=accordion[entry.category]
     if g then
-        local b=btn(g.content,
+        local cell=obj("Frame",g.content,{
+            BackgroundTransparency=1
+        })
+        local b=btn(cell,
             entry.example.."  |  "..entry.description,
             function()
                 local needsArgs=(entry.name=="goto" or entry.name=="to" or entry.name=="tp")
@@ -2837,10 +2841,24 @@ for _,entry in ipairs(registered) do
                     exec(entry.example)
                 end
             end,46)
+        b.Size=UDim2.new(1,-43,1,0)
         b.TextWrapped=true
-        b.TextSize=11
+        b.TextSize=10
+        local star=btn(cell,"",nil,46)
+        star.Position=UDim2.new(1,-40,0,0)
+        star.Size=UDim2.fromOffset(40,46)
+        star.TextSize=19
+        bind(star.MouseButton1Click,function()
+            v13Data.favorites[entry.name]=not (v13Data.favorites[entry.name]==true)
+            if v13Data.favorites[entry.name]==false then
+                v13Data.favorites[entry.name]=nil
+            end
+            favoritesChanged()
+        end)
         g.items[#g.items+1]={
-            button=b,
+            button=cell,
+            favoriteButton=star,
+            commandName=entry.name,
             lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
         }
     end
@@ -2855,6 +2873,8 @@ refreshCommandList=function()
         for _,item in ipairs(g.items) do
             local match=categoryAllowed and (q=="" or item.lookup:find(q,1,true)~=nil)
             item.button.Visible=match
+            item.favoriteButton.Text=v13Data.favorites[item.commandName] and "★" or "☆"
+            item.favoriteButton.TextColor3=v13Data.favorites[item.commandName] and accent or muted
             if match then count=count+1 end
         end
         g.counter.Text=tostring(count)
@@ -3580,6 +3600,9 @@ end
 -- CONSOLE: sugestoes, pesquisa e historico de comandos.
 heading(pages.CONSOLE,"⌘  CONSOLE INTELIGENTE","Busca, autocomplete, historico e retorno de comandos")
 local consoleInput=editBox(pages.CONSOLE,"Escreva um comando: goto nearest, fly, speed 75...")
+local v13History={}
+local v13HistoryIndex=0
+local v13Logs={}
 actionRow(pages.CONSOLE,{
     {"EXECUTAR",function()if consoleInput.Text~="" then exec(consoleInput.Text) end end},
     {"ANTERIOR",function()
@@ -3594,9 +3617,6 @@ local suggestionTitle=titleRow(pages.CONSOLE,"SUGESTOES")
 local suggestionHolder=dynamicHolder(pages.CONSOLE)
 local consoleLogsTitle=titleRow(pages.CONSOLE,"HISTORICO DE EXECUCAO")
 local consoleLogsHolder=dynamicHolder(pages.CONSOLE)
-local v13History={}
-local v13HistoryIndex=0
-local v13Logs={}
 addHistory=function(raw)
     if raw=="" then return end
     table.insert(v13History,1,raw)
@@ -3709,6 +3729,110 @@ refreshV13Page=function(page)
 end
 
 -- ABA CONFIGURACOES
+
+-- Personalizacao premium, teclas e atalhos.
+local advancedTitle=titleRow(pages.SETTINGS,"✦  PERSONALIZACAO PREMIUM")
+toggleControl(pages.SETTINGS,"ANIMACOES DA INTERFACE","Transicoes suaves entre paginas",
+    function()return config.animations end,"animations on","animations off")
+toggleControl(pages.SETTINGS,"MODO COMPACTO","Painel menor sem perder comandos",
+    function()return config.compact end,"compact","compact")
+sliderControl(pages.SETTINGS,"TRANSPARENCIA","Transparencia do fundo do hub",
+    0,.45,.05,function()return config.opacity end,"opacity","%.2f")
+sliderControl(pages.SETTINGS,"INTENSIDADE DO NEON","Bordas vermelhas ajustaveis",
+    .25,2,.05,function()return config.neon end,"neon","%.2f")
+actionRow(pages.SETTINGS,{
+    {"PERFIS",function()show("PROFILES")end},
+    {"DESEMPENHO",function()show("PERFORMANCE")end},
+    {"FAVORITOS",function()show("FAVORITES")end}
+})
+titleRow(pages.SETTINGS,"⌨  KEYBINDS PERSONALIZADOS")
+local keyButtons={}
+local captureAction=nil
+local actions={
+    {"FLY","Voar"},{"MENU","Abrir menu"},{"NOCLIP","Noclip"},
+    {"BOOST","Boost"},{"INVIS","Invisibilidade local"}
+}
+for _,entry in ipairs(actions) do
+    local name=entry[1]
+    local row=round(obj("Frame",pages.SETTINGS,{
+        Size=UDim2.new(1,-8,0,50),
+        BackgroundColor3=control,BorderSizePixel=0
+    }),8)
+    local label=txt(row,entry[2],27,13,true)
+    label.Position=UDim2.fromOffset(14,11)
+    label.Size=UDim2.new(1,-230,0,27)
+    local keyButton=btn(row,v13Data.keybinds[name],function()
+        captureAction=name
+        keyButtons[name].Text="PRESSIONE..."
+        notify("Pressione uma tecla para "..name.." (Esc cancela)")
+    end,34)
+    keyButton.Position=UDim2.new(1,-190,0,8)
+    keyButton.Size=UDim2.fromOffset(175,34)
+    keyButtons[name]=keyButton
+end
+local function updateKeyLabels()
+    for name,b in pairs(keyButtons) do
+        if b.Parent then b.Text="⌨  "..(v13Data.keybinds[name] or "SEM TECLA") end
+    end
+end
+keyCaptureHandler=function(input)
+    if not captureAction then return false end
+    if input.UserInputType~=Enum.UserInputType.Keyboard then return false end
+    local action=captureAction
+    captureAction=nil
+    if input.KeyCode==Enum.KeyCode.Escape then
+        updateKeyLabels()
+        notify("Alteracao de tecla cancelada")
+        return true
+    end
+    local key=input.KeyCode.Name
+    if input.KeyCode==Enum.KeyCode.Backspace then
+        key=defaultKeys[action]
+    end
+    if input.KeyCode==Enum.KeyCode.Unknown then return true end
+    for other,bound in pairs(v13Data.keybinds) do
+        if other~=action and bound==key then
+            notify("Tecla "..key.." ja usada por "..other)
+            updateKeyLabels()
+            return true
+        end
+    end
+    v13Data.keybinds[action]=key
+    saveV13()
+    updateKeyLabels()
+    notify("Tecla "..key.." configurada para "..action)
+    return true
+end
+actionRow(pages.SETTINGS,{
+    {"RESTAURAR TECLAS",function()exec("resetkeys") updateKeyLabels()end},
+    {"COMANDOS",function()show("COMMANDS")end}
+})
+applyV13Appearance=function()
+    accent=palette[config.theme] or palette.red
+    main.BackgroundTransparency=config.opacity
+    right.BackgroundTransparency=math.clamp(config.opacity*.55,0,.4)
+    sidebar.BackgroundTransparency=math.clamp(config.opacity*.55,0,.4)
+    stroke.Color=accent
+    stroke.Thickness=1.9*config.neon
+    stroke.Transparency=math.clamp(.18/config.neon,0,.65)
+    topState.TextColor3=accent
+    fpsLabel.TextColor3=accent
+    crosshair.TextColor3=accent
+    for _,frame in pairs(pages) do
+        frame.ScrollBarImageColor3=accent
+    end
+    for _,node in ipairs(gui:GetDescendants()) do
+        if node:IsA("UIStroke") and node~=stroke then
+            if node:GetAttribute("V13BaseTransparency")==nil then
+                node:SetAttribute("V13BaseTransparency",node.Transparency)
+            end
+            local base=node:GetAttribute("V13BaseTransparency") or .5
+            node.Color=accent
+            node.Transparency=math.clamp(1-(1-base)*config.neon,0,.98)
+        end
+    end
+    responsive()
+end
 
 local settingLabel = titleRow(
     pages.SETTINGS,
@@ -3832,6 +3956,7 @@ end)
 closeHub = function()
     if stopped then return end
 
+    saveV13()
     resetAll()
     stopped = true
 
@@ -3853,25 +3978,27 @@ bind(close.MouseButton1Click,closeHub)
 -- ATALHOS
 
 bind(UIS.InputBegan,function(key,used)
+    if keyCaptureHandler and keyCaptureHandler(key) then return end
     if UIS:GetFocusedTextBox() then return end
-
-    if key.KeyCode == Enum.KeyCode.RightShift then
-        main.Visible = not main.Visible
-        reopen.Visible = not main.Visible
-
-    elseif key.KeyCode == Enum.KeyCode.F
-        and not used then
-
-        exec("toggle")
-
-    elseif key.KeyCode == Enum.KeyCode.K
-        and UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-
-        main.Visible = true
-        reopen.Visible = false
-
+    local name=key.KeyCode.Name
+    if name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
+        or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
+        main.Visible=true
+        reopen.Visible=false
         show("COMMANDS")
         search:CaptureFocus()
+    elseif name==v13Data.keybinds.MENU then
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
+    elseif not used then
+        if name==v13Data.keybinds.FLY then exec("toggle")
+        elseif name==v13Data.keybinds.NOCLIP then
+            exec(S.noclip and "clip" or "noclip")
+        elseif name==v13Data.keybinds.BOOST then
+            exec(S.boost and "unboost" or "boost")
+        elseif name==v13Data.keybinds.INVIS then
+            exec(S.invisible and "visible" or "invisible")
+        end
     end
 end)
 
@@ -4130,6 +4257,7 @@ end)
 
 rebuildEmotes()
 relabel()
+if applyV13Appearance then applyV13Appearance() end
 show("HOME")
 refresh()
 
