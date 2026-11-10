@@ -4479,6 +4479,324 @@ refreshV13Page=function(page)
 end
 
 end -- fim do escopo V13
+-- V14 / COMPONENTES DE INTERFACE + RECENTES, MACROS E ROTAS
+do
+    v14.panelRefresh={}
+    v14.localeLabels={}
+    local dictionary={
+        ["RECENTES"]={en="RECENT COMMANDS",es="COMANDOS RECIENTES"},
+        ["Ultimos comandos executados na sessao"]={en="Recently executed commands this session",es="Comandos recientes de esta sesion"},
+        ["Ainda nao ha comandos recentes."]={en="No recent commands yet.",es="Aun no hay comandos recientes."},
+        ["EXECUTAR"]={en="RUN",es="EJECUTAR"},
+        ["FAVORITO"]={en="FAVORITE",es="FAVORITO"},
+        ["MACROS DE COMANDOS"]={en="COMMAND MACROS",es="MACROS DE COMANDOS"},
+        ["Apenas comandos locais permitidos, separados por ponto e virgula"]={en="Only permitted local commands, separated by semicolons",es="Solo comandos locales permitidos, separados por punto y coma"},
+        ["Nome da macro"]={en="Macro name",es="Nombre de macro"},
+        ["Exemplo: speed 60; fov 80; crosshair on"]={en="Example: speed 60; fov 80; crosshair on",es="Ejemplo: speed 60; fov 80; crosshair on"},
+        ["SALVAR MACRO"]={en="SAVE MACRO",es="GUARDAR MACRO"},
+        ["Nenhuma macro salva."]={en="No saved macros.",es="No hay macros guardadas."},
+        ["RODAS DE EXPLORACAO"]={en="EXPLORATION ROUTES",es="RUTAS DE EXPLORACION"},
+        ["Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte"]={en="Build routes from saved waypoints in the Teleport Manager",es="Crea rutas con puntos guardados en Teletransporte"},
+        ["Nome da rota"]={en="Route name",es="Nombre de la ruta"},
+        ["Waypoints separados por espaco: casa spawn loja"]={en="Waypoints separated by spaces: home spawn shop",es="Puntos separados por espacios: casa spawn tienda"},
+        ["SALVAR ROTA"]={en="SAVE ROUTE",es="GUARDAR RUTA"},
+        ["PROXIMO PONTO"]={en="NEXT POINT",es="SIGUIENTE PUNTO"},
+        ["Nenhuma rota salva. Salve waypoints primeiro."]={en="No routes. Save waypoints first.",es="No hay rutas. Guarda puntos primero."},
+        ["ABRIR TELEPORTE"]={en="OPEN TELEPORT",es="ABRIR TELETRANSPORTE"},
+        ["INICIAR"]={en="START",es="INICIAR"},
+        ["EXCLUIR"]={en="DELETE",es="BORRAR"},
+        ["SELECIONADA"]={en="SELECTED",es="SELECCIONADA"},
+        ["PRESSIONE F2 OU ABRA PELO COMANDO WHEEL"]={en="PRESS F2 OR USE THE WHEEL COMMAND",es="PULSA F2 O USA EL COMANDO WHEEL"},
+        ["Dashboard"]={en="Dashboard",es="Panel"},
+        ["Rotas"]={en="Routes",es="Rutas"},
+        ["Recentes"]={en="Recent",es="Recientes"},
+        ["Avatar"]={en="Avatar",es="Avatar"},
+        ["Audio"]={en="Audio",es="Audio"},
+        ["Estatisticas"]={en="Statistics",es="Estadisticas"},
+        ["Cinema"]={en="Cinema",es="Cine"},
+        ["Macros"]={en="Macros",es="Macros"},
+        ["Ajuda"]={en="Help",es="Ayuda"},
+        ["Comandos"]={en="Commands",es="Comandos"},
+        ["Jogadores"]={en="Players",es="Jugadores"},
+        ["Favoritos"]={en="Favorites",es="Favoritos"},
+        ["Teleporte"]={en="Teleport",es="Teletransporte"},
+        ["Desempenho"]={en="Performance",es="Rendimiento"},
+        ["Ajustes"]={en="Settings",es="Ajustes"}
+    }
+    v14.t=function(key)
+        local lang=config.lang
+        if lang=="pt" then return key end
+        local item=dictionary[key]
+        return item and item[lang] or key
+    end
+    v14.addTranslation=function(key,translations)
+        dictionary[key]=translations
+    end
+    v14.tr=function(component,key)
+        v14.localeLabels[#v14.localeLabels+1]={obj=component,key=key}
+        component.Text=v14.t(key)
+        return component
+    end
+    v14.translate=function()
+        for _,entry in ipairs(v14.localeLabels) do
+            if entry.obj.Parent then entry.obj.Text=v14.t(entry.key) end
+        end
+        if v14.refresh then v14.refresh(selected) end
+    end
+    local function box(parent,w,h,textPlaceholder,multi)
+        local b=round(obj("TextBox",parent,{
+            Size=UDim2.new(1,-8,0,h or 37),
+            Text="",PlaceholderText=v14.t(textPlaceholder),
+            PlaceholderColor3=muted,TextColor3=white,
+            BackgroundColor3=control,BorderSizePixel=0,
+            ClearTextOnFocus=false,
+            Font=Enum.Font.Gotham,TextSize=12,
+            TextWrapped=multi==true,MultiLine=multi==true,
+            TextXAlignment=Enum.TextXAlignment.Left,
+            TextYAlignment=multi and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
+        }),8)
+        obj("UIStroke",b,{Color=accent,Transparency=.65,Thickness=1})
+        return b
+    end
+    local function title(page,titleText,desc)
+        local c=round(obj("Frame",page,{
+            Size=UDim2.new(1,-8,0,69),
+            BackgroundColor3=Color3.fromRGB(38,11,21),BorderSizePixel=0
+        }),10)
+        obj("UIStroke",c,{Color=accent,Transparency=.4,Thickness=1})
+        local heading=txt(c,v14.t(titleText),30,18,true)
+        heading.Position=UDim2.fromOffset(16,8)
+        heading.Size=UDim2.new(1,-31,0,29)
+        heading.TextColor3=accent
+        v14.tr(heading,titleText)
+        local small=txt(c,v14.t(desc),23,11)
+        small.Position=UDim2.fromOffset(16,40)
+        small.Size=UDim2.new(1,-31,0,24)
+        small.TextColor3=muted
+        v14.tr(small,desc)
+        return c
+    end
+    local function section(page,label)
+        return v14.tr(titleRow(page,v14.t(label)),label)
+    end
+    local function holder(page)
+        local c=obj("Frame",page,{
+            Size=UDim2.new(1,-8,0,0),AutomaticSize=Enum.AutomaticSize.Y,
+            BackgroundTransparency=1
+        })
+        stack(c,7)
+        return c
+    end
+    local function row(parent,label,options)
+        local cell=round(obj("Frame",parent,{
+            Size=UDim2.new(1,-8,0,55),BackgroundColor3=control,
+            BorderSizePixel=0
+        }),9)
+        local textLabel=txt(cell,label,33,12,true)
+        textLabel.Position=UDim2.fromOffset(11,6)
+        textLabel.Size=UDim2.new(1,-260,0,42)
+        textLabel.TextColor3=white
+        for i,entry in ipairs(options or {}) do
+            local w=entry[3] or 77
+            local b=btn(cell,v14.t(entry[1]),entry[2],32)
+            b.Position=UDim2.new(1,-12-(#options-i+1)*(w+7),0,11)
+            b.Size=UDim2.fromOffset(w,32)
+            b.TextSize=10
+            if not entry[4] then v14.tr(b,entry[1]) end
+        end
+        return cell
+    end
+    v14.ui={box=box,title=title,section=section,holder=holder,row=row}
+
+    -- Command Wheel acessivel por F2, gamepad R1 ou comando 'wheel'.
+    local wheelDefaults={"fly","unfly","noclip","clip","invisible","visible","goto nearest","manual"}
+    v14.wheelCommands={}
+    v14.wheelRefresh=function()
+        local seen={}
+        local list={}
+        local fav={}
+        for name,on in pairs(v13Data.favorites) do
+            if on and byName[name] then fav[#fav+1]=name end
+        end
+        table.sort(fav)
+        for _,command in ipairs(fav) do
+            if not seen[command] then list[#list+1]=command seen[command]=true end
+        end
+        for _,command in ipairs(wheelDefaults) do
+            if not seen[command] then list[#list+1]=command seen[command]=true end
+        end
+        v14.wheelCommands={}
+        for i=1,math.min(8,#list) do v14.wheelCommands[i]=list[i] end
+    end
+    v14.toggleWheel=function()
+        if stopped then return end
+        if v14.wheelOpen then
+            v14.wheelOpen=false
+            if v14.wheelFrame and v14.wheelFrame.Parent then v14.wheelFrame:Destroy() end
+            v14.wheelFrame=nil
+            return
+        end
+        v14.wheelRefresh()
+        v14.wheelOpen=true
+        local overlay=obj("Frame",gui,{
+            Size=UDim2.fromScale(1,1),BackgroundColor3=ink,
+            BackgroundTransparency=.22,Active=true,ZIndex=70,
+            BorderSizePixel=0
+        })
+        v14.wheelFrame=overlay
+        local center=round(obj("Frame",overlay,{
+            AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+            Size=UDim2.fromOffset(156,156),
+            BackgroundColor3=Color3.fromRGB(35,7,17),
+            BorderSizePixel=0,ZIndex=71
+        }),75)
+        obj("UIStroke",center,{Color=accent,Thickness=2,Transparency=.08})
+        local logo=txt(center,"♛\nBRAB0X\nWHEEL",100,17,true)
+        logo.TextXAlignment=Enum.TextXAlignment.Center
+        logo.Position=UDim2.fromOffset(9,24)
+        logo.Size=UDim2.new(1,-18,0,109)
+        logo.TextColor3=accent
+        logo.ZIndex=72
+        for i,cmd in ipairs(v14.wheelCommands) do
+            local angle=(i-1)*math.pi/4-math.pi/2
+            local x=math.cos(angle)*235
+            local y=math.sin(angle)*200
+            local label=cmd:upper()
+            local b=btn(overlay,label,function()
+                v14.toggleWheel()
+                exec(cmd)
+            end,44)
+            b.AnchorPoint=Vector2.new(.5,.5)
+            b.Position=UDim2.new(.5,x,.5,y)
+            b.Size=UDim2.fromOffset(142,44)
+            b.BackgroundColor3=Color3.fromRGB(50,14,26)
+            b.TextSize=11
+            b.ZIndex=75
+            obj("UIStroke",b,{Color=accent,Thickness=1.2,Transparency=.18})
+        end
+        local close=btn(overlay,"✕",v14.toggleWheel,35)
+        close.Position=UDim2.new(.5,87,.5,-17)
+        close.Size=UDim2.fromOffset(38,38)
+        close.ZIndex=75
+    end
+
+    v14.buildCore=function()
+        -- Recentes: acesso imediato e repeticao sem duplicar comandos.
+        title(pages.RECENT,"RECENTES","Ultimos comandos executados na sessao")
+        section(pages.RECENT,"PRESSIONE F2 OU ABRA PELO COMANDO WHEEL")
+        local recentHolder=holder(pages.RECENT)
+        v14.panelRefresh.RECENT=function()
+            clear(recentHolder)
+            if #v14.recent==0 then
+                local none=txt(recentHolder,v14.t("Ainda nao ha comandos recentes."),44,12)
+                none.TextColor3=muted
+                return
+            end
+            for i=1,math.min(18,#v14.recent) do
+                local item=v14.recent[i]
+                row(recentHolder,item.time.."  |  "..item.raw,{
+                    {"EXECUTAR",function()exec(item.raw)end,90},
+                    {"FAVORITO",function()
+                        v13Data.favorites[item.command]=true
+                        saveV13()
+                        if refreshCommandList then refreshCommandList() end
+                        notify("Adicionado aos favoritos: "..item.command)
+                    end,83}
+                })
+            end
+        end
+
+        -- Macros: apenas lista segura de comandos predefinidos, sem Lua arbitrario.
+        title(pages.MACROS,"MACROS DE COMANDOS","Apenas comandos locais permitidos, separados por ponto e virgula")
+        local macroName=box(pages.MACROS,"Nome da macro",38)
+        local macroBody=box(pages.MACROS,"Exemplo: speed 60; fov 80; crosshair on",74,true)
+        local macroControls=obj("Frame",pages.MACROS,{Size=UDim2.new(1,-8,0,42),BackgroundTransparency=1})
+        local saveMacroButton=btn(macroControls,"SALVAR MACRO",function()
+            v14.macroSave(macroName.Text,macroBody.Text)
+        end,41)
+        saveMacroButton.Size=UDim2.new(.5,-4,1,0)
+        v14.tr(saveMacroButton,"SALVAR MACRO")
+        local demo=btn(macroControls,"EXEMPLO",function()
+            macroName.Text="explorar"
+            macroBody.Text="speed 65; fov 80; crosshair on"
+        end,41)
+        demo.Position=UDim2.new(.5,4,0,0)
+        demo.Size=UDim2.new(.5,-4,1,0)
+        section(pages.MACROS,"MACROS")
+        local macroHolder=holder(pages.MACROS)
+        v14.panelRefresh.MACROS=function()
+            clear(macroHolder)
+            local names={}
+            for name in pairs(v14.macros) do names[#names+1]=name end
+            table.sort(names)
+            if #names==0 then
+                local none=txt(macroHolder,v14.t("Nenhuma macro salva."),44,12)
+                none.TextColor3=muted
+            end
+            for _,name in ipairs(names) do
+                local commands=v14.macros[name]
+                row(macroHolder,name.."  •  "..(type(commands)=="table" and #commands or 0).." comandos",{
+                    {"EXECUTAR",function()v14.macroRun(name)end,91},
+                    {"EXCLUIR",function()v14.macroDelete(name)end,83}
+                })
+            end
+        end
+
+        -- Rotas: waypoint existentes; o usuario avanca manualmente.
+        title(pages.ROUTES,"RODAS DE EXPLORACAO",
+            "Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte")
+        local routeName=box(pages.ROUTES,"Nome da rota",36)
+        local routeBody=box(pages.ROUTES,"Waypoints separados por espaco: casa spawn loja",36)
+        local routeControls=obj("Frame",pages.ROUTES,{Size=UDim2.new(1,-8,0,42),BackgroundTransparency=1})
+        local saveRoute=btn(routeControls,"SALVAR ROTA",function()
+            v14.routeSave(routeName.Text.." "..routeBody.Text)
+        end,41)
+        saveRoute.Size=UDim2.new(1/3,-5,1,0)
+        v14.tr(saveRoute,"SALVAR ROTA")
+        local nextPoint=btn(routeControls,"PROXIMO PONTO",function()
+            v14.routeNext()
+        end,41)
+        nextPoint.Position=UDim2.new(1/3,2,0,0)
+        nextPoint.Size=UDim2.new(1/3,-5,1,0)
+        v14.tr(nextPoint,"PROXIMO PONTO")
+        local openTeleport=btn(routeControls,"ABRIR TELEPORTE",function()show("TELEPORT")end,41)
+        openTeleport.Position=UDim2.new(2/3,3,0,0)
+        openTeleport.Size=UDim2.new(1/3,-4,1,0)
+        v14.tr(openTeleport,"ABRIR TELEPORTE")
+        local routeStatus=titleRow(pages.ROUTES,"Rota nao selecionada.")
+        local routeHolder=holder(pages.ROUTES)
+        v14.panelRefresh.ROUTES=function()
+            clear(routeHolder)
+            local names={}
+            for name in pairs(v14.routes) do names[#names+1]=name end
+            table.sort(names)
+            if #names==0 then
+                local none=txt(routeHolder,v14.t("Nenhuma rota salva. Salve waypoints primeiro."),47,12)
+                none.TextColor3=muted
+            end
+            local chosen=v14.selectedRoute and v14.routes[v14.selectedRoute]
+            local nextName=chosen and chosen[v14.routeIndex or 1] or nil
+            local dist=""
+            if nextName and extraState.savedWaypoints[nextName] then
+                local _,_,root=chars()
+                if root then
+                    dist="  •  "..math.floor((root.Position-extraState.savedWaypoints[nextName].Position).Magnitude).." studs"
+                end
+            end
+            routeStatus.Text=chosen and
+                ("Rota: "..v14.selectedRoute.."  |  "..(v14.routeIndex or 1).."/"..#chosen..dist)
+                or "Nenhuma rota selecionada"
+            for _,name in ipairs(names) do
+                local route=v14.routes[name]
+                row(routeHolder,name.."  •  "..#route.." pontos",{
+                    {"INICIAR",function()v14.routeStart(name)end,88},
+                    {"EXCLUIR",function()v14.routeDelete(name)end,83}
+                })
+            end
+        end
+    end
+end
+
 -- ABA CONFIGURACOES
 
 do
