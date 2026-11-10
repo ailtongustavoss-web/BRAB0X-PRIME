@@ -3845,7 +3845,7 @@ do
         return true
     end
     m.onCommand=function(name)
-        m.session.commands=(tonumber(m.session.commands) or 0)+1
+        m.session.commands=math.clamp((tonumber(m.session.commands) or 0)+1,0,1e9)
         if m.refresh and (selected=="DIAGNOSTICS" or selected=="BOOKMARKS") then
             m.refresh(selected)
         end
@@ -5456,17 +5456,25 @@ do
             Size=UDim2.new(1,-8,0,55),BackgroundColor3=control,
             BorderSizePixel=0
         }),9)
+        local items=options or {}
+        local reserve=12
+        for _,entry in ipairs(items) do
+            reserve=reserve+(entry[3] or 77)+7
+        end
         local textLabel=txt(cell,label,33,12,true)
         textLabel.Position=UDim2.fromOffset(11,6)
-        textLabel.Size=UDim2.new(1,-260,0,42)
+        textLabel.Size=UDim2.new(1,-reserve-14,0,42)
         textLabel.TextColor3=white
-        for i,entry in ipairs(options or {}) do
+        local cursor=12
+        for i=#items,1,-1 do
+            local entry=items[i]
             local w=entry[3] or 77
             local b=btn(cell,v14.t(entry[1]),entry[2],32)
-            b.Position=UDim2.new(1,-12-(#options-i+1)*(w+7),0,11)
+            b.Position=UDim2.new(1,-cursor-w,0,11)
             b.Size=UDim2.fromOffset(w,32)
             b.TextSize=10
             if not entry[4] then v14.tr(b,entry[1]) end
+            cursor=cursor+w+7
         end
         return cell
     end
