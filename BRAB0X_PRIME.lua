@@ -469,15 +469,25 @@ local function show(page)
     selected = page
 
     for name,p in pairs(pages) do
-        p.Visible = name == page
+        local active = name == page
+        p.Visible = active
+        if active then
+            p.Position = UDim2.fromOffset(24,10)
+            Tween:Create(p,TweenInfo.new(.17,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+                Position = UDim2.fromOffset(11,10)
+            }):Play()
+        end
     end
 
     for name,b in pairs(navButtons) do
         b.Visible = moduleEnabled(name)
-        b.BackgroundColor3 =
-            name == page and Color3.fromRGB(112,13,31) or control
-        b.TextColor3 =
-            white
+        b.BackgroundColor3 = name == page and Color3.fromRGB(112,13,31) or control
+        b.TextColor3 = white
+        local border = b:FindFirstChildOfClass("UIStroke")
+        if border then
+            border.Color = name == page and accent or Color3.fromRGB(88,38,45)
+            border.Transparency = name == page and .08 or .56
+        end
     end
 end
 
@@ -518,6 +528,7 @@ end
 local exec
 local closeHub
 local refresh
+local homeFilter
 
 -- Comandos em duas colunas
 local itemRowCache = {}
@@ -1717,104 +1728,227 @@ exec = function(raw)
     refresh()
 end
 
--- ABA DE COMANDOS
-
+-- COMANDOS / NOVA INTERFACE COM CONTROLES REAIS
 local cmdPage = pages.COMMANDS
+local cmdHeader = round(obj("Frame",cmdPage,{
+    Size = UDim2.new(1,-8,0,66),
+    BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
+}),10)
+obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS PREMIUM",29,19,true)
+cmdTitle.Position=UDim2.fromOffset(16,7)
+cmdTitle.Size=UDim2.new(1,-28,0,29)
+local cmdHint = txt(cmdHeader,"Funcoes organizadas • Ajustes instantaneos",22,11)
+cmdHint.Position=UDim2.fromOffset(17,37)
+cmdHint.Size=UDim2.new(1,-28,0,22)
+cmdHint.TextColor3=muted
 
 local search = round(obj("TextBox",cmdPage,{
-    Size = UDim2.new(1,-10,0,35),
-    BackgroundColor3 = control,
-    Text = "",
-    PlaceholderText = "Buscar comandos: fly, zoom, emote...",
-    TextColor3 = white,
-    PlaceholderColor3 = muted,
-    ClearTextOnFocus = false,
-    Font = Enum.Font.Gotham,
-    TextSize = 13
-}),8)
+    Size=UDim2.new(1,-8,0,40),BackgroundColor3=control,
+    Text="",PlaceholderText="⌕  Buscar comando...",
+    TextColor3=white,PlaceholderColor3=muted,
+    ClearTextOnFocus=false,Font=Enum.Font.Gotham,TextSize=13,
+    BorderSizePixel=0
+}),9)
+obj("UIStroke",search,{Color=accent,Thickness=1,Transparency=.55})
 
-local filterRow = obj("Frame",cmdPage,{
-    Size = UDim2.new(1,-8,0,36),
-    BackgroundTransparency = 1
-})
+local filterRow = obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,43),BackgroundTransparency=1})
 obj("UIListLayout",filterRow,{
-    FillDirection = Enum.FillDirection.Horizontal,
-    Padding = UDim.new(0,5),
-    SortOrder = Enum.SortOrder.LayoutOrder
+    FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,6),
+    SortOrder=Enum.SortOrder.LayoutOrder
 })
-local activeFilter = "ALL"
-local filters = {
-    {"ALL","TODOS"},{"FLY","VOO"},{"PLAYER","JOGADOR"},
-    {"CAMERA","CAMERA"},{"WORLD","MUNDO"},{"EMOTES","EMOTES"}
-}
-local filterButtons = {}
+local activeFilter="ALL"
+local filters={{"ALL","TODOS"},{"FLY","VOO"},{"PLAYER","JOGADOR"},
+    {"CAMERA","CAMERA"},{"WORLD","MUNDO"},{"EMOTES","EMOTES"}}
+local filterButtons={}
 for _,entry in ipairs(filters) do
-    local b = btn(filterRow,entry[2],nil,33)
-    b.Size = UDim2.new(1/6,-5,0,33)
-    filterButtons[entry[1]] = b
+    local b=btn(filterRow,entry[2],nil,40)
+    b.Size=UDim2.new(1/6,-5,0,40)
+    filterButtons[entry[1]]=b
     bind(b.MouseButton1Click,function()
-        activeFilter = entry[1]
+        activeFilter=entry[1]
         if refreshCommandList then refreshCommandList() end
     end)
 end
 
-local commandGrid = obj("Frame",cmdPage,{
-    Size = UDim2.new(1,-8,0,0),
-    AutomaticSize = Enum.AutomaticSize.Y,
-    BackgroundTransparency = 1
+local visualUpdates={}
+local function trackVisual(fn)
+    visualUpdates[#visualUpdates+1]=fn
+end
+local quickTitle=titleRow(cmdPage,"⚡  CONTROLES RAPIDOS")
+local quickGrid=obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,0),BackgroundTransparency=1})
+local quickLayout=obj("UIGridLayout",quickGrid,{
+    CellSize=UDim2.new(.5,-6,0,90),
+    CellPadding=UDim2.fromOffset(9,9),
+    SortOrder=Enum.SortOrder.LayoutOrder
 })
-local commandLayout = obj("UIGridLayout",commandGrid,{
-    CellSize = UDim2.new(.5,-5,0,46),
-    CellPadding = UDim2.fromOffset(9,8),
-    SortOrder = Enum.SortOrder.LayoutOrder
+local function sizeQuick()
+    quickGrid.Size=UDim2.new(1,-8,0,quickLayout.AbsoluteContentSize.Y+10)
+end
+bind(quickLayout:GetPropertyChangedSignal("AbsoluteContentSize"),sizeQuick)
+
+local function controlCard(parent,name,desc,height)
+    local isGrid=parent==quickGrid
+    local p=round(obj("Frame",parent,{
+        Size=isGrid and UDim2.fromOffset(340,90) or UDim2.new(1,-8,0,height or 86),
+        BackgroundColor3=Color3.fromRGB(26,21,29),
+        BorderSizePixel=0
+    }),11)
+    obj("UIStroke",p,{Color=accent,Thickness=1,Transparency=.65})
+    local h=txt(p,name,27,13,true)
+    h.Position=UDim2.fromOffset(14,9)
+    h.Size=UDim2.new(1,-30,0,27)
+    local d=txt(p,desc,25,10)
+    d.Position=UDim2.fromOffset(14,34)
+    d.Size=UDim2.new(1,-30,0,25)
+    d.TextColor3=muted
+    return p
+end
+
+local function toggleControl(parent,title,desc,get,onCmd,offCmd)
+    local p=controlCard(parent,title,desc,77)
+    local b=btn(p,"",nil,29)
+    b.AnchorPoint=Vector2.new(1,.5)
+    b.Position=UDim2.new(1,-12,.5,0)
+    b.Size=UDim2.fromOffset(76,29)
+    local function redraw()
+        local on=get()
+        b.Text=on and "● ON" or "○ OFF"
+        b.BackgroundColor3=on and Color3.fromRGB(147,14,35) or control
+    end
+    trackVisual(redraw)
+    redraw()
+    bind(b.MouseButton1Click,function()
+        exec(get() and offCmd or onCmd)
+        redraw()
+    end)
+    return p
+end
+
+local function sliderControl(parent,title,desc,lo,hi,step,get,command,fmt)
+    local p=controlCard(parent,title,desc,103)
+    local valueText=txt(p,"",24,12,true)
+    valueText.Position=UDim2.new(1,-88,1,-32)
+    valueText.Size=UDim2.fromOffset(77,24)
+    valueText.TextColor3=accent
+    valueText.TextXAlignment=Enum.TextXAlignment.Right
+    local bar=round(obj("Frame",p,{
+        Position=UDim2.new(0,16,1,-25),
+        Size=UDim2.new(1,-120,0,9),
+        BackgroundColor3=Color3.fromRGB(69,54,63),
+        BorderSizePixel=0,Active=true
+    }),8)
+    local fill=round(obj("Frame",bar,{
+        Size=UDim2.fromScale(0,1),
+        BackgroundColor3=accent,BorderSizePixel=0
+    }),8)
+    local dot=round(obj("Frame",bar,{
+        AnchorPoint=Vector2.new(.5,.5),
+        Position=UDim2.fromScale(0,.5),
+        Size=UDim2.fromOffset(16,16),
+        BackgroundColor3=white,BorderSizePixel=0
+    }),10)
+    local dragging=false
+    local draft
+    local function display(value)
+        local k=math.clamp((value-lo)/(hi-lo),0,1)
+        fill.Size=UDim2.fromScale(k,1)
+        dot.Position=UDim2.fromScale(k,.5)
+        valueText.Text=string.format(fmt or "%.0f",value)
+    end
+    local function update()
+        if not dragging then display(get()) end
+    end
+    local function move(x)
+        local x0=bar.AbsolutePosition.X
+        local width=math.max(1,bar.AbsoluteSize.X)
+        local k=math.clamp((x-x0)/width,0,1)
+        draft=math.clamp(math.floor((lo+k*(hi-lo))/step+.5)*step,lo,hi)
+        display(draft)
+    end
+    trackVisual(update)
+    update()
+    bind(bar.InputBegan,function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1
+            or input.UserInputType==Enum.UserInputType.Touch then
+            dragging=true
+            move(input.Position.X)
+        end
+    end)
+    bind(UIS.InputChanged,function(input)
+        if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement
+            or input.UserInputType==Enum.UserInputType.Touch) then
+            move(input.Position.X)
+        end
+    end)
+    bind(UIS.InputEnded,function(input)
+        if dragging and (input.UserInputType==Enum.UserInputType.MouseButton1
+            or input.UserInputType==Enum.UserInputType.Touch) then
+            dragging=false
+            if draft~=nil then exec(command.." "..tostring(draft)) end
+            update()
+        end
+    end)
+    return p
+end
+
+toggleControl(quickGrid,"↗  FLY","Voo livre",function()return S.fly end,"fly","unfly")
+toggleControl(quickGrid,"◇  NOCLIP","Colisao local",function()return S.noclip end,"noclip","clip")
+toggleControl(quickGrid,"⚡  BOOST","Turbo do voo",function()return S.boost end,"boost","unboost")
+toggleControl(quickGrid,"✧  GLOW","Brilho no personagem",function()return S.glow end,"glow","unglow")
+sliderControl(quickGrid,"➤  SPEED","Velocidade de voo",10,300,5,
+    function()return S.speed end,"speed","%.0f")
+sliderControl(quickGrid,"◉  FOV","Campo de visao",40,120,5,
+    function()local c=workspace.CurrentCamera return c and c.FieldOfView or 70 end,
+    "fov","%.0f")
+
+titleRow(cmdPage,"▦  CATALOGO COMPLETO")
+local commandGrid=obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,0),BackgroundTransparency=1})
+local commandLayout=obj("UIGridLayout",commandGrid,{
+    CellSize=UDim2.new(.5,-6,0,44),CellPadding=UDim2.fromOffset(9,8),
+    SortOrder=Enum.SortOrder.LayoutOrder
 })
 local function sizeCommands()
-    commandGrid.Size = UDim2.new(1,-8,0,commandLayout.AbsoluteContentSize.Y+12)
+    commandGrid.Size=UDim2.new(1,-8,0,commandLayout.AbsoluteContentSize.Y+12)
 end
 bind(commandLayout:GetPropertyChangedSignal("AbsoluteContentSize"),sizeCommands)
-local commandRows = {}
-
+local commandRows={}
 for _,entry in ipairs(registered) do
-    local b = btn(
-        commandGrid,
+    local b=btn(commandGrid,
         "["..entry.category.."]  "..entry.example.."  •  "..entry.description,
-        function()
-            exec(entry.example)
-        end,
-        42
-    )
-    b.TextXAlignment = Enum.TextXAlignment.Center
-
-    commandRows[#commandRows+1] = {
-        b = b,
-        category = entry.category,
-        lookup = (
-            entry.name.." "
-            ..entry.description.." "
-            ..entry.category
-        ):lower()
+        function()exec(entry.example)end,44)
+    b.TextWrapped=true
+    commandRows[#commandRows+1]={
+        b=b,category=entry.category,
+        lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
     }
 end
-
-refreshCommandList = function()
-    local textQuery = search.Text:lower()
-    for _,v in ipairs(commandRows) do
-        v.b.Visible = moduleEnabled(v.category)
-            and (activeFilter == "ALL" or v.category == activeFilter)
-            and (textQuery == "" or v.lookup:find(textQuery,1,true) ~= nil)
+refreshCommandList=function()
+    local term=search.Text:lower()
+    for _,it in ipairs(commandRows)do
+        it.b.Visible=moduleEnabled(it.category)
+            and (activeFilter=="ALL" or activeFilter==it.category)
+            and (term=="" or it.lookup:find(term,1,true)~=nil)
     end
-    for name,b in pairs(filterButtons) do
-        local active = name == activeFilter
-        b.BackgroundColor3 = active and accent or control
-        b.TextColor3 = active and ink or white
+    for name,b in pairs(filterButtons)do
+        b.BackgroundColor3=name==activeFilter and Color3.fromRGB(148,15,35) or control
     end
+    quickGrid.Visible=term=="" and activeFilter=="ALL"
+    quickTitle.Visible=quickGrid.Visible
+    sizeQuick()
     sizeCommands()
 end
-
-bind(
-    search:GetPropertyChangedSignal("Text"),
-    refreshCommandList
-)
+bind(search:GetPropertyChangedSignal("Text"),refreshCommandList)
+homeFilter=function(filter)
+    if filter=="SETTINGS" then
+        show("SETTINGS")
+    else
+        activeFilter=filter or "ALL"
+        search.Text=""
+        show("COMMANDS")
+        refreshCommandList()
+    end
+end
 
 -- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
 local hero = round(obj("Frame",pages.HOME,{
@@ -1877,7 +2011,6 @@ obj("UIGridLayout",homeTiles,{
     CellPadding = UDim2.fromOffset(9,10),
     SortOrder = Enum.SortOrder.LayoutOrder
 })
-local homeFilter
 local function makeHomeTile(icon,title,desc,filter)
     local t = btn(homeTiles,"",function()
         if homeFilter then homeFilter(filter) end
@@ -1924,11 +2057,7 @@ quick("■  FLY OFF","unfly")
 quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 
--- A categoria de cada atalho da HOME sera ligada ao filtro de comandos
--- apos a criacao da pagina de comandos.
-_G.BRAB0X_V11_HOME_TILE_HOOK = function(fn)
-    homeFilter = fn
-end
+-- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
 -- ABA FLY
 
@@ -2219,56 +2348,26 @@ local function rebuildEmotes()
     )
 end
 
--- ABA AIM
-
-local aimTitle = titleRow(
-    pages.AIM,
-    "AIM PARA NPCs DE TREINO: OFF"
-)
-
-line(
-    pages.AIM,
-    "AIM ON",
-    function() exec("aim on") end,
-    "AIM OFF",
-    function() exec("aim off") end
-)
-
-line(
-    pages.AIM,
-    "FOV -",
-    function()
-        exec("aimfov "..(S.aimRadius-25))
-    end,
-    "FOV +",
-    function()
-        exec("aimfov "..(S.aimRadius+25))
-    end
-)
-
-line(
-    pages.AIM,
-    "SMOOTH -",
-    function()
-        exec("smooth "..(S.aimSmooth-.04))
-    end,
-    "SMOOTH +",
-    function()
-        exec("smooth "..(S.aimSmooth+.04))
-    end
-)
-
-item(pages.AIM,"ALTERNAR RMB","aimhold")
-item(pages.AIM,"CIRCULO DA MIRA ON","aimcircle on")
-item(pages.AIM,"CIRCULO DA MIRA OFF","aimcircle off")
-
-local aimExplain = txt(
-    pages.AIM,
-    "Requer NPC com atributo PracticeTarget=true. Nao mira em outros jogadores.",
-    48,12
-)
-
-aimExplain.TextColor3 = muted
+-- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
+local aimTitle=titleRow(pages.AIM,"◎  AIM PARA NPCs DE TREINO")
+local info=txt(pages.AIM,
+    "Camera assistida somente para NPCs com atributo PracticeTarget=true.",
+    49,12)
+info.TextColor3=muted
+toggleControl(pages.AIM,"◎  AIM DE TREINO","Assistencia visual para NPCs",
+    function()return S.aim end,"aim on","aim off")
+toggleControl(pages.AIM,"◌  CIRCULO FOV","Exibir area de busca",
+    function()return S.aimCircle end,"aimcircle on","aimcircle off")
+toggleControl(pages.AIM,"▣  SEGURAR RMB","Requer botao direito pressionado",
+    function()return S.aimHold end,"aimholdmode on","aimholdmode off")
+sliderControl(pages.AIM,"◎  RAIO DO AIM","Raio da area de treino",30,350,10,
+    function()return S.aimRadius end,"aimfov","%.0f")
+sliderControl(pages.AIM,"≋  SUAVIDADE","Movimento suave da camera",.02,1,.02,
+    function()return S.aimSmooth end,"smooth","%.2f")
+local aimExplain=txt(pages.AIM,
+    "Nao seleciona outros jogadores e nao dispara automaticamente.",
+    45,12)
+aimExplain.TextColor3=muted
 
 -- ABA CONFIGURACOES
 
@@ -2290,7 +2389,7 @@ line(
 )
 
 for _,theme in ipairs({
-    "blue","cyan","teal","whiteblue"
+    "red","crimson","ember","ruby"
 }) do
     item(
         pages.SETTINGS,
@@ -2345,12 +2444,9 @@ refresh = function()
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
     aimTitle.Text = (
-        "AIM TREINO %s • FOV %d • SMOOTH %.2f"
-    ):format(
-        S.aim and "ON" or "OFF",
-        S.aimRadius,
-        S.aimSmooth
-    )
+        "◎  AIM NPC TREINO %s  |  RAIO %d  |  SMOOTH %.2f"
+    ):format(S.aim and "ON" or "OFF",S.aimRadius,S.aimSmooth)
+    for _,fn in ipairs(visualUpdates) do fn() end
 
     settingLabel.Text =
         "TAMANHO: "..
@@ -2531,7 +2627,7 @@ logo.ZIndex = 52
 logo.TextXAlignment = Enum.TextXAlignment.Center
 
 local splashSubtitle = txt(
-    splash,"BLUE EDITION  •  CARREGANDO PAINEL",25,13
+    splash,"RED NEON EDITION  •  CARREGANDO",25,13
 )
 
 splashSubtitle.Position = UDim2.fromOffset(40,83)
