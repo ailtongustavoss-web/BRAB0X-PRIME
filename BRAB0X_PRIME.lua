@@ -3186,6 +3186,7 @@ do
             end
         end
         router.modules[id]=desc
+        if router.detect then router.detect() end
         return true
     end
     router.detect=function()
@@ -3194,6 +3195,7 @@ do
             mod=router.modules["universe:"..router.universeId]
         end
         router.currentModule=mod
+        router.moduleQuick=mod and mod.quick or nil
         router.detected=mod and mod.name or
             (router.profile.mode=="custom" and "PERFIL DO JOGO" or "MODO UNIVERSAL")
         return router.detected
@@ -3240,9 +3242,11 @@ do
         return true
     end
     router.applyProfile=function()
-        if router.profile.mode~="custom" or type(router.profile.preferences)~="table" then
+        if type(router.profile.preferences)~="table" then
+            notify("Salve um perfil para este jogo antes de carregar.","info")
             return false
         end
+        router.profile.mode="custom"
         for _,key in ipairs(prefKeys) do
             if router.profile.preferences[key]~=nil then
                 config[key]=router.profile.preferences[key]
@@ -3259,6 +3263,8 @@ do
         end
         relabel()
         if v14.translate then v14.translate() end
+        router.detect()
+        router.save()
         if applyV13Appearance then applyV13Appearance() end
         if refresh then refresh() end
         notify("Perfil carregado para o jogo "..router.placeId,"info")
@@ -3294,6 +3300,7 @@ do
         end
         if #out<1 then return false end
         router.profile.quick=out
+        router.profile.customQuick=true
         router.save()
         notify("Atalhos salvos para "..router.profile.label,"success")
         return true
@@ -3328,6 +3335,15 @@ do
             notify("PlaceId nao cadastrado.","error")
             return false
         end
+        if v14.safe then
+            local pending=router.pendingRemove
+            if not pending or pending.id~=id or os.clock()-pending.time>8 then
+                router.pendingRemove={id=id,time=os.clock()}
+                notify("Confirme a exclusao clicando novamente em ate 8 segundos.","info")
+                return false
+            end
+        end
+        router.pendingRemove=nil
         router.profiles[id]=nil
         router.save()
         notify("Jogo removido da lista local: "..id,"info")
@@ -3376,6 +3392,7 @@ do
         end
         local quick=router.profile.quick
         quick[index]=safeQuick(command)
+        router.profile.customQuick=true
         router.save()
         notify("Atalho "..index.." definido para "..quick[index],"success")
         return true
@@ -4107,7 +4124,7 @@ quick("■  FLY OFF","unfly")
 quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
-item(pages.HOME,"▣  JOGOS COMPATIVEIS E PERFIS","games")
+item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
@@ -5588,9 +5605,12 @@ do
             moduleInfo.Text="MODO: "..(profile.mode=="custom" and "PERFIL DO JOGO" or "UNIVERSAL")..
                 "     |     MODULO: "..(router.currentModule and router.currentModule.name or "PADRAO")
             if UIS:GetFocusedTextBox()~=labelBox then labelBox.Text=profile.label or "" end
+            local selectedQuicks=(router.currentModule
+                and not profile.customQuick and router.moduleQuick
+                and #router.moduleQuick>0) and router.moduleQuick or profile.quick
             for index,field in ipairs(inputs) do
                 if UIS:GetFocusedTextBox()~=field then
-                    field.Text=tostring(profile.quick[index] or "")
+                    field.Text=tostring(selectedQuicks[index] or "")
                 end
             end
             clear(holder)
