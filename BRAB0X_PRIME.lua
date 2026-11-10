@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17.2 | JANELA RESPONSIVA + ARRASTE SEGURO
+-- BRAB0X PRIME V17.3 | INTERFACE SIMPLIFICADA
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_3_STOP",
     "BRAB0X_V17_2_STOP",
     "BRAB0X_V17_1_STOP",
     "BRAB0X_V17_STOP",
@@ -57,7 +58,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_2")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_3")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -331,17 +332,17 @@ local L = {
 
 local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
-    "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
+    "AIM","SETTINGS","COMMANDS","PLAYERS",
     "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES",
-    "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD",
-    "PALETTE","COMPASS","NOTES","BACKUP","DIAGNOSTICS","GUIDE","BOOKMARKS"
+    "RECENT","MACROS","CINEMA","AVATAR","AUDIO","STATS",
+    "NOTES","BACKUP","DIAGNOSTICS","GUIDE"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
 local navOrder = {
-    "HOME","GAMES","COMMANDS","PALETTE","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
-    "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","BOOKMARKS","TELEPORT",
-    "COMPASS","NOTES","BACKUP","DIAGNOSTICS","GUIDE","CONSOLE","PROFILES",
+    "HOME","GAMES","COMMANDS","RECENT","MACROS","CINEMA",
+    "AVATAR","AUDIO","STATS","PLAYERS","TELEPORT",
+    "NOTES","BACKUP","DIAGNOSTICS","GUIDE","CONSOLE","PROFILES",
     "PERFORMANCE","HELP","SETTINGS","AIM"
 }
 local function moduleEnabled(name)
@@ -399,7 +400,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_2",
+    Name = "BRAB0X_PRIME_V17_3",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -445,7 +446,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.2  |  RESPONSIVE UI   /   BY @wendezao05153nh",
+    "V17.3  |  SIMPLIFIED UI   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -577,9 +578,9 @@ do
     if type(v13Data.layout.groups)~="table" then v13Data.layout.groups={} end
     local navGroupData={
         {key="MAIN",pt="PRINCIPAL",en="MAIN",es="PRINCIPAL",
-            pages={"HOME","COMMANDS","PALETTE","GAMES","DASHBOARD"}},
+            pages={"HOME","COMMANDS","GAMES"}},
         {key="PLAYER",pt="JOGADOR",en="PLAYER",es="JUGADOR",
-            pages={"PLAYERS","TELEPORT","COMPASS","FAVORITES","BOOKMARKS","RECENT","ROUTES"}},
+            pages={"PLAYERS","TELEPORT","RECENT"}},
         {key="TOOLS",pt="FERRAMENTAS",en="TOOLS",es="HERRAMIENTAS",
             pages={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
         {key="SYSTEM",pt="SISTEMA",en="SYSTEM",es="SISTEMA",
@@ -1570,7 +1571,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_2_AIM"
+local aimKey = "BRAB0X_V17_3_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2679,7 +2680,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.2 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.3 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -2709,11 +2710,6 @@ end)
 -- FIM DOS UTILITARIOS
 
 -- V13: comandos para favoritos, perfis, teclas e desempenho.
-local function favoritesChanged()
-    saveV13()
-    if updateFavoritePanel then updateFavoritePanel() end
-    if refreshCommandList then refreshCommandList() end
-end
 local function profileSnapshot()
     local _,hum=chars()
     local camera=workspace.CurrentCamera
@@ -2776,24 +2772,6 @@ local function loadProfile(a)
     notify("Perfil aplicado: "..name)
     return false
 end
-register("favorite","SETTINGS","Adicionar comando aos favoritos",function(a)
-    local name=tostring(a or ""):lower():match("^%s*(%S+)")
-    if not name or not byName[name] then notify("Use: favorite fly"); return false end
-    v13Data.favorites[name]=true
-    favoritesChanged()
-    notify("Favorito: "..name)
-    return false
-end,"favorite fly")
-alias("fav","SETTINGS","Alias favorito","favorite","fav fly")
-register("unfavorite","SETTINGS","Remover favorito",function(a)
-    local name=tostring(a or ""):lower():match("^%s*(%S+)")
-    if not name then return false end
-    v13Data.favorites[name]=nil
-    favoritesChanged()
-    notify("Favorito removido: "..name)
-    return false
-end,"unfavorite fly")
-register("favorites","SETTINGS","Abrir favoritos",function()show("FAVORITES")end)
 register("openplayers","SETTINGS","Abrir lista de jogadores",function()show("PLAYERS")end)
 register("openteleport","SETTINGS","Abrir waypoints",function()show("TELEPORT")end)
 register("openconsole","SETTINGS","Abrir console",function()show("CONSOLE")end)
@@ -3030,73 +3008,6 @@ do
         save()
         return true
     end
-    v14.routeSave=function(raw)
-        local parts=argParts(raw)
-        local route=validName(table.remove(parts,1))
-        if not route or #parts==0 or #parts>20 then
-            notify("Use: routesave rota ponto1 ponto2 (1 a 20 pontos salvos).","error")
-            return false
-        end
-        local steps={}
-        for _,name in ipairs(parts) do
-            name=validName(name)
-            if not name or not extraState.savedWaypoints[name] then
-                notify("Waypoint nao encontrado: "..tostring(name),"error")
-                return false
-            end
-            steps[#steps+1]=name
-        end
-        v14.routes[route]=steps
-        v14.selectedRoute=route
-        v14.routeIndex=1
-        save()
-        notify("Rota salva: "..route.." ("..#steps.." pontos).","success")
-        return true
-    end
-    v14.routeStart=function(name)
-        name=validName(name)
-        local route=name and v14.routes[name]
-        if type(route)~="table" or #route<1 then
-            notify("Rota nao encontrada.","error")
-            return false
-        end
-        v14.selectedRoute=name
-        v14.routeIndex=1
-        notify("Rota "..name..": proximo ponto "..route[1]..". Use routenext.","info")
-        if v14.refresh then v14.refresh("ROUTES") end
-        return true
-    end
-    v14.routeNext=function()
-        local route=v14.selectedRoute and v14.routes[v14.selectedRoute]
-        if type(route)~="table" then
-            notify("Abra uma rota com routestart nome.","error")
-            return false
-        end
-        local index=v14.routeIndex or 1
-        if index>#route then notify("Rota concluida!","success");return false end
-        local wp=route[index]
-        if not extraState.savedWaypoints[wp] then
-            notify("Ponto removido: "..wp,"error");return false
-        end
-        local entry=byName.gowp
-        if not entry then return false end
-        local success,result=pcall(entry.run,wp)
-        if not success or result==false then
-            notify("Falha ao acessar waypoint: "..tostring(result),"error")
-            return false
-        end
-        v14.routeIndex=index+1
-        notify("Rota: "..wp.." ("..index.."/"..#route..")","success")
-        return true
-    end
-    v14.routeDelete=function(name)
-        name=validName(name)
-        if not name or not v14.routes[name] then return false end
-        v14.routes[name]=nil
-        if v14.selectedRoute==name then v14.selectedRoute=nil end
-        save()
-        return true
-    end
     v14.cinemaSpeed=18
     v14.cinemaLook=nil
     v14.startCinema=function()
@@ -3252,19 +3163,6 @@ do
     register("cinemaspeed","CAMERA","Ajustar velocidade da camera livre",function(a)
         v14.cinemaSpeed=math.clamp(tonumber(a) or 18,2,70)
     end,"cinemaspeed 20")
-    register("routes","PLAYER","Abrir rotas de exploracao",function()show("ROUTES")end)
-    register("routesave","PLAYER","Salvar rota de waypoints",function(a)
-        return v14.routeSave(a)
-    end,"routesave passeio casa loja")
-    register("routestart","PLAYER","Selecionar rota de exploracao",function(a)
-        return v14.routeStart(a)
-    end,"routestart passeio")
-    register("routenext","PLAYER","Avancar para proximo waypoint",function()
-        return v14.routeNext()
-    end)
-    register("routedelete","PLAYER","Excluir rota",function(a)
-        return v14.routeDelete(a)
-    end,"routedelete passeio")
     register("avatarlocal","PLAYER","Cor local do avatar",function(a)
         return v14.avatarApply(trimmed(a):lower())
     end,"avatarlocal red")
@@ -3286,7 +3184,6 @@ do
         notify("Modo seguro: "..(v14.safe and "ON" or "OFF"))
         return false
     end,"safemode on")
-    register("dashboard","SETTINGS","Dashboard de atalhos",function()show("DASHBOARD")end)
     register("hubstats","SETTINGS","Estatisticas do hub",function()show("STATS")end)
     register("gamepad","SETTINGS","Modo navegacao por controle",function(a)
         v14.controllerMode=a=="on" or (a~="off" and not v14.controllerMode)
@@ -4625,7 +4522,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.2 / RESPONSIVE",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.3 / CLEAN",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5151,50 +5048,6 @@ end)
 bind(Players.PlayerAdded,function() if pages.PLAYERS.Visible then updatePlayerManager() end end)
 bind(Players.PlayerRemoving,function() if pages.PLAYERS.Visible then task.defer(updatePlayerManager) end end)
 
--- FAVORITOS: comandos com execucao imediata e remocao.
-heading(pages.FAVORITES,"★  MEUS FAVORITOS","Marque a estrela dos comandos e acesse aqui")
-actionRow(pages.FAVORITES,{
-    {"VER TODOS OS COMANDOS",function()show("COMMANDS")end},
-    {"LIMPAR FAVORITOS",function()
-        v13Data.favorites={}
-        favoritesChanged()
-    end}
-})
-local favoriteHolder=dynamicHolder(pages.FAVORITES)
-updateFavoritePanel=function()
-    if stopped or not favoriteHolder.Parent then return end
-    if not pages.FAVORITES.Visible then return end
-    clear(favoriteHolder)
-    local names={}
-    for name,value in pairs(v13Data.favorites) do
-        if value==true and byName[name] then names[#names+1]=name end
-    end
-    table.sort(names)
-    if #names==0 then
-        emptyMessage(favoriteHolder,"Nenhum favorito. Abra Comandos e clique em ★.")
-        return
-    end
-    for _,name in ipairs(names) do
-        local entry=byName[name]
-        local row=round(obj("Frame",favoriteHolder,{
-            Size=UDim2.new(1,-8,0,52),
-            BackgroundColor3=control,BorderSizePixel=0
-        }),8)
-        local desc=txt(row,"★  "..name.."  |  "..entry.description,30,12,true)
-        desc.Position=UDim2.fromOffset(12,10)
-        desc.Size=UDim2.new(1,-218,0,31)
-        local run=btn(row,"EXECUTAR",function()exec(entry.example)end,32)
-        run.Position=UDim2.new(1,-199,0,10)
-        run.Size=UDim2.fromOffset(105,32)
-        local remove=btn(row,"REMOVER",function()
-            v13Data.favorites[name]=nil
-            favoritesChanged()
-        end,32)
-        remove.Position=UDim2.new(1,-89,0,10)
-        remove.Size=UDim2.fromOffset(79,32)
-    end
-end
-
 -- TELEPORTE: nomes para waypoints, ultima posicao e retorno.
 heading(pages.TELEPORT,"⌾  GERENCIADOR DE TELEPORTE","Posicoes salvas, retorno e atalhos")
 local wpName=editBox(pages.TELEPORT,"Nome do ponto: casa, escola, spawn...")
@@ -5692,58 +5545,6 @@ do
             end
         end
 
-        -- Rotas: waypoint existentes; o usuario avanca manualmente.
-        title(pages.ROUTES,"ROTAS DE EXPLORACAO",
-            "Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte")
-        local routeName=box(pages.ROUTES,"Nome da rota",36)
-        local routeBody=box(pages.ROUTES,"Waypoints separados por espaco: casa spawn loja",36)
-        local routeControls=obj("Frame",pages.ROUTES,{Size=UDim2.new(1,-8,0,42),BackgroundTransparency=1})
-        local saveRoute=btn(routeControls,"SALVAR ROTA",function()
-            v14.routeSave(routeName.Text.." "..routeBody.Text)
-        end,41)
-        saveRoute.Size=UDim2.new(1/3,-5,1,0)
-        v14.tr(saveRoute,"SALVAR ROTA")
-        local nextPoint=btn(routeControls,"PROXIMO PONTO",function()
-            v14.routeNext()
-        end,41)
-        nextPoint.Position=UDim2.new(1/3,2,0,0)
-        nextPoint.Size=UDim2.new(1/3,-5,1,0)
-        v14.tr(nextPoint,"PROXIMO PONTO")
-        local openTeleport=btn(routeControls,"ABRIR TELEPORTE",function()show("TELEPORT")end,41)
-        openTeleport.Position=UDim2.new(2/3,3,0,0)
-        openTeleport.Size=UDim2.new(1/3,-4,1,0)
-        v14.tr(openTeleport,"ABRIR TELEPORTE")
-        local routeStatus=titleRow(pages.ROUTES,"Rota nao selecionada.")
-        local routeHolder=holder(pages.ROUTES)
-        v14.panelRefresh.ROUTES=function()
-            clear(routeHolder)
-            local names={}
-            for name in pairs(v14.routes) do names[#names+1]=name end
-            table.sort(names)
-            if #names==0 then
-                local none=txt(routeHolder,v14.t("Nenhuma rota salva. Salve waypoints primeiro."),47,12)
-                none.TextColor3=muted
-            end
-            local chosen=v14.selectedRoute and v14.routes[v14.selectedRoute]
-            local nextName=chosen and chosen[v14.routeIndex or 1] or nil
-            local dist=""
-            if nextName and extraState.savedWaypoints[nextName] then
-                local _,_,root=chars()
-                if root then
-                    dist="  •  "..math.floor((root.Position-extraState.savedWaypoints[nextName].Position).Magnitude).." studs"
-                end
-            end
-            routeStatus.Text=chosen and
-                ("Rota: "..v14.selectedRoute.."  |  "..(v14.routeIndex or 1).."/"..#chosen..dist)
-                or "Nenhuma rota selecionada"
-            for _,name in ipairs(names) do
-                local route=v14.routes[name]
-                row(routeHolder,name.."  •  "..#route.." pontos",{
-                    {"INICIAR",function()v14.routeStart(name)end,88},
-                    {"EXCLUIR",function()v14.routeDelete(name)end,83}
-                })
-            end
-        end
     end
 end
 
@@ -5927,45 +5728,6 @@ do
             end
         end
 
-        -- Dashboard: quatro botoes com atalhos selecionaveis, salvos em JSON.
-        ui.title(pages.DASHBOARD,"DASHBOARD PERSONALIZAVEL",
-            "Quatro atalhos editaveis com acesso direto")
-        local available={
-            "fly","unfly","noclip","clip","boost","unboost",
-            "invisible","visible","goto nearest","manual","wheel",
-            "favorites","recent","cinema","uncinema","fullbright","unfullbright"
-        }
-        local defaults={"fly","noclip","wheel","favorites"}
-        local saved=v14.dashboard.slots
-        if type(saved)~="table" then saved={} v14.dashboard.slots=saved end
-        for i=1,4 do if type(saved[i])~="string" then saved[i]=defaults[i] end end
-        local dashboardStats=ui.section(pages.DASHBOARD,"DASHBOARD PERSONALIZAVEL")
-        local dashHolder=ui.holder(pages.DASHBOARD)
-        controls(pages.DASHBOARD,{
-            {"ABRIR WHEEL",function()v14.toggleWheel()end},
-            {"ULTIMOS",function()show("RECENT")end},
-            {"MODO SEGURO",function()
-                v14.safe=not v14.safe
-                notify("Modo seguro "..(v14.safe and "ON" or "OFF"))
-            end}
-        })
-        v14.panelRefresh.DASHBOARD=function()
-            if not pages.DASHBOARD.Visible then return end
-            clear(dashHolder)
-            dashboardStats.Text="V17.2  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
-            for i=1,4 do
-                local command=saved[i]
-                ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
-                    {"EXECUTAR",function()exec(saved[i])end,87},
-                    {"ALTERAR",function()
-                        local at=table.find(available,saved[i]) or 0
-                        saved[i]=available[at%#available+1]
-                        saveV13()
-                        v14.panelRefresh.DASHBOARD()
-                    end,80}
-                })
-            end
-        end
         -- Indicador do modo seguro e gamepad em Ajustes.
         ui.section(pages.SETTINGS,"MODO SEGURO")
         note(pages.SETTINGS,
@@ -5993,7 +5755,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.2] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.3] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6995,8 +6757,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_2_STOP == closeHub then
-        _G.BRAB0X_V17_2_STOP = nil
+    if _G.BRAB0X_V17_3_STOP == closeHub then
+        _G.BRAB0X_V17_3_STOP = nil
     end
 end
 
@@ -7085,7 +6847,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_2_STOP = closeHub
+_G.BRAB0X_V17_3_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -7251,7 +7013,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.2 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.3 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -7301,6 +7063,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.2 | "
+    "BRAB0X PRIME V17.3 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
