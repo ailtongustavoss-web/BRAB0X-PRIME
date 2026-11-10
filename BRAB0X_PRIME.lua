@@ -4566,7 +4566,7 @@ do
         end
         if v14.refresh then v14.refresh(selected) end
     end
-    local function box(parent,w,h,textPlaceholder,multi)
+    local function box(parent,textPlaceholder,h,multi)
         local b=round(obj("TextBox",parent,{
             Size=UDim2.new(1,-8,0,h or 37),
             Text="",PlaceholderText=v14.t(textPlaceholder),
