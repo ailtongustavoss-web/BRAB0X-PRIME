@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V10 | PAINEL AZUL + AIM OPCIONAL
+-- BRAB0X PRIME V11 | RED NEON PREMIUM + AIM OPCIONAL
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -21,6 +21,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V11_STOP",
     "BRAB0X_V10_STOP",
     "BRAB0X_V9_STOP",
     "BRAB0X_V8_STOP",
@@ -33,7 +34,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V10")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V11")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -41,9 +42,11 @@ if previous then previous:Destroy() end
 local config = _G.BRAB0X_PRIME_PREFS or {}
 config.scale = tonumber(config.scale) or 1
 config.lang = config.lang or "pt"
--- Migracao de tema: cores antigas nao sao mais o padrao.
-if config.theme == nil or config.theme == "violet" or config.theme == "rose" then
-    config.theme = "blue"
+-- Preferencia visual: vermelho neon sempre que a versao anterior era azul.
+if config.theme == nil or config.theme == "blue" or config.theme == "cyan"
+    or config.theme == "teal" or config.theme == "whiteblue"
+    or config.theme == "violet" or config.theme == "rose" then
+    config.theme = "red"
 end
 if config.aimEnabled == nil then
     config.aimEnabled = false
@@ -71,17 +74,17 @@ local S = {
 }
 
 local palette = {
-    blue = Color3.fromRGB(0,163,255),
-    cyan = Color3.fromRGB(0,220,235),
-    teal = Color3.fromRGB(0,206,170),
-    whiteblue = Color3.fromRGB(116,188,255)
+    red = Color3.fromRGB(238,36,58),
+    crimson = Color3.fromRGB(195,22,41),
+    ember = Color3.fromRGB(255,87,55),
+    ruby = Color3.fromRGB(255,66,97)
 }
-local ink = Color3.fromRGB(5,10,19)
-local card = Color3.fromRGB(10,19,32)
-local control = Color3.fromRGB(18,34,52)
-local white = Color3.fromRGB(238,248,255)
-local muted = Color3.fromRGB(152,176,195)
-local accent = palette[config.theme] or palette.blue
+local ink = Color3.fromRGB(6,6,9)
+local card = Color3.fromRGB(13,12,18)
+local control = Color3.fromRGB(27,24,32)
+local white = Color3.fromRGB(247,245,249)
+local muted = Color3.fromRGB(164,155,166)
+local accent = palette[config.theme] or palette.red
 
 local connections = {}
 local flyParts = {}
@@ -179,7 +182,11 @@ local function btn(p,s,fn,h)
         TextSize = 12,
         AutoButtonColor = true
     }),8)
-
+    obj("UIStroke",b,{
+        Color = Color3.fromRGB(88,38,45),
+        Transparency = .56,
+        Thickness = 1
+    })
     if fn then
         bind(b.MouseButton1Click,fn)
     end
@@ -237,14 +244,14 @@ local refreshCommandList
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V10",
+    Name = "BRAB0X_PRIME_V11",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
 
 local main = round(obj("Frame",gui,{
-    Size = UDim2.fromOffset(800,530),
-    Position = UDim2.new(.5,-400,.5,-265),
+    Size = UDim2.fromOffset(960,625),
+    Position = UDim2.new(.5,-480,.5,-312),
     BackgroundColor3 = ink,
     BorderSizePixel = 0,
     Active = true,
@@ -253,14 +260,14 @@ local main = round(obj("Frame",gui,{
 
 local stroke = obj("UIStroke",main,{
     Color = accent,
-    Thickness = 1.6,
-    Transparency = .05
+    Thickness = 1.9,
+    Transparency = .08
 })
 
 local uiScale = obj("UIScale",main,{Scale=1})
 
 local header = obj("Frame",main,{
-    Size = UDim2.new(1,0,0,64),
+    Size = UDim2.new(1,0,0,69),
     BackgroundColor3 = card,
     BorderSizePixel = 0,
     Active = true
@@ -270,38 +277,38 @@ round(header,15)
 
 obj("UIGradient",header,{
     Color = ColorSequence.new(
-        card,Color3.fromRGB(6,48,69)
+        card,Color3.fromRGB(65,12,22)
     )
 })
 
 local brand = txt(
-    header,"BRAB0X  /  PRIME",35,23,true
+    header,"♛  BRAB0X  PRIME",38,25,true
 )
-brand.Position = UDim2.fromOffset(16,4)
-brand.Size = UDim2.fromOffset(340,34)
+brand.Position = UDim2.fromOffset(19,4)
+brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V10  •  BLUE EDITION   /   TODOS OS COMANDOS EM UM LUGAR",
+    "V11  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
     16,10
 )
 sub.TextColor3 = muted
-sub.Position = UDim2.fromOffset(17,38)
-sub.Size = UDim2.fromOffset(440,17)
+sub.Position = UDim2.fromOffset(25,43)
+sub.Size = UDim2.fromOffset(520,17)
 
 local topState = txt(header,"FLY OFF",23,12,true)
 topState.TextColor3 = accent
 topState.TextXAlignment = Enum.TextXAlignment.Right
-topState.Position = UDim2.new(1,-250,0,18)
-topState.Size = UDim2.fromOffset(150,23)
+topState.Position = UDim2.new(1,-280,0,22)
+topState.Size = UDim2.fromOffset(171,23)
 
 local minimize = btn(header,"—",nil,30)
 minimize.Size = UDim2.fromOffset(31,30)
-minimize.Position = UDim2.new(1,-77,0,13)
+minimize.Position = UDim2.new(1,-78,0,19)
 
 local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
-close.Position = UDim2.new(1,-40,0,13)
+close.Position = UDim2.new(1,-40,0,19)
 
 local reopen = btn(gui,"BRAB0X +",nil,35)
 reopen.Size = UDim2.fromOffset(150,35)
@@ -354,8 +361,8 @@ end
 -- MENU LATERAL
 
 local sidebar = round(obj("Frame",main,{
-    Position = UDim2.fromOffset(12,76),
-    Size = UDim2.fromOffset(174,393),
+    Position = UDim2.fromOffset(13,82),
+    Size = UDim2.fromOffset(195,463),
     BackgroundColor3 = card,
     BorderSizePixel = 0
 }),11)
@@ -368,8 +375,8 @@ local nav = obj("Frame",sidebar,{
 stack(nav,7)
 
 local right = round(obj("Frame",main,{
-    Position = UDim2.fromOffset(197,76),
-    Size = UDim2.fromOffset(590,393),
+    Position = UDim2.fromOffset(220,82),
+    Size = UDim2.fromOffset(727,463),
     BackgroundColor3 = card,
     BorderSizePixel = 0
 }),11)
@@ -394,8 +401,29 @@ for _,id in ipairs(sections) do
 end
 
 for _,id in ipairs(navOrder) do
-    navButtons[id] = btn(nav,id,nil,44)
+    navButtons[id] = btn(nav,id,nil,52)
 end
+
+-- Identidade visual na base da barra lateral.
+local sidePanel = round(obj("Frame",sidebar,{
+    Position = UDim2.new(0,9,1,-121),
+    Size = UDim2.new(1,-18,0,111),
+    BackgroundColor3 = Color3.fromRGB(33,8,17),
+    BorderSizePixel = 0
+}),10)
+obj("UIStroke",sidePanel,{Color=accent,Transparency=.4,Thickness=1})
+local sideLogo = txt(sidePanel,"♛  BRAB0X",29,18,true)
+sideLogo.Position = UDim2.fromOffset(12,12)
+sideLogo.Size = UDim2.new(1,-24,0,29)
+sideLogo.TextColor3 = accent
+local sideSub = txt(sidePanel,"PRIME  •  RED EDITION",22,10,true)
+sideSub.Position = UDim2.fromOffset(12,47)
+sideSub.Size = UDim2.new(1,-24,0,22)
+sideSub.TextColor3 = white
+local sideTip = txt(sidePanel,"Comandos e ajustes no mesmo hub",29,10)
+sideTip.Position = UDim2.fromOffset(12,77)
+sideTip.Size = UDim2.new(1,-24,0,29)
+sideTip.TextColor3 = muted
 
 local status = txt(
     main,
@@ -404,12 +432,12 @@ local status = txt(
 )
 
 status.TextColor3 = muted
-status.Position = UDim2.fromOffset(15,480)
+status.Position = UDim2.fromOffset(17,556)
 status.Size = UDim2.new(1,-28,0,17)
 
 local cmdInput = round(obj("TextBox",main,{
-    Position = UDim2.fromOffset(13,500),
-    Size = UDim2.fromOffset(652,27),
+    Position = UDim2.fromOffset(14,585),
+    Size = UDim2.fromOffset(790,29),
     BackgroundColor3 = control,
     BorderSizePixel = 0,
     Text = "",
@@ -422,8 +450,8 @@ local cmdInput = round(obj("TextBox",main,{
 }),7)
 
 local execute = btn(main,"EXEC",nil,26)
-execute.Position = UDim2.fromOffset(674,500)
-execute.Size = UDim2.fromOffset(113,27)
+execute.Position = UDim2.fromOffset(816,585)
+execute.Size = UDim2.fromOffset(130,29)
 
 local selected = "HOME"
 
@@ -447,9 +475,9 @@ local function show(page)
     for name,b in pairs(navButtons) do
         b.Visible = moduleEnabled(name)
         b.BackgroundColor3 =
-            name == page and accent or control
+            name == page and Color3.fromRGB(112,13,31) or control
         b.TextColor3 =
-            name == page and ink or white
+            white
     end
 end
 
@@ -464,7 +492,7 @@ local function relabel()
 
     for _,name in ipairs(navOrder) do
         local i = table.find(sections,name)
-        navButtons[name].Text = "   "..(labels[i] or name)
+        navButtons[name].Text = "   "..({HOME="⌂  ",COMMANDS="▤  ",AIM="◎  ",SETTINGS="⚙  "})[name]..(labels[i] or name)
     end
 end
 
@@ -474,7 +502,7 @@ local function responsive()
         or Vector2.new(1280,720)
 
     uiScale.Scale = math.clamp(
-        math.min(view.X/825,view.Y/560),
+        math.min(view.X/983,view.Y/662),
         .5,1
     )*config.scale
 end
@@ -1084,7 +1112,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V10_AIM"
+local aimKey = "BRAB0X_V11_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -1788,69 +1816,119 @@ bind(
     refreshCommandList
 )
 
--- HOME
-
+-- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
 local hero = round(obj("Frame",pages.HOME,{
-    Size = UDim2.new(1,-9,0,174),
-    BackgroundColor3 = Color3.fromRGB(8,36,58),
+    Size = UDim2.new(1,-9,0,202),
+    BackgroundColor3 = Color3.fromRGB(29,6,15),
+    ClipsDescendants = true,
     BorderSizePixel = 0
-}),14)
+}),15)
 obj("UIGradient",hero,{
-    Rotation = 12,
+    Rotation = 8,
     Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(5,34,57)),
-        ColorSequenceKeypoint.new(.55,Color3.fromRGB(11,74,101)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(2,16,34))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(12,3,8)),
+        ColorSequenceKeypoint.new(.40,Color3.fromRGB(90,9,24)),
+        ColorSequenceKeypoint.new(.74,Color3.fromRGB(26,3,10)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(7,4,9))
     })
 })
-obj("UIStroke",hero,{Color=accent,Transparency=.35,Thickness=1.3})
-round(obj("Frame",hero,{
-    Position = UDim2.fromOffset(18,20),
-    Size = UDim2.fromOffset(5,112),
-    BackgroundColor3 = accent,
-    BorderSizePixel = 0
-}),3)
-local code = txt(hero,"B",156,160,true)
-code.Position = UDim2.new(1,-180,0,-13)
-code.Size = UDim2.fromOffset(160,162)
-code.TextColor3 = accent
-code.TextTransparency = .84
-code.TextXAlignment = Enum.TextXAlignment.Center
-local bannerBrand = txt(hero,"BRAB0X PRIME",51,32,true)
-bannerBrand.Position = UDim2.fromOffset(38,18)
-bannerBrand.Size = UDim2.new(1,-75,0,52)
-local bannerSub = txt(hero,"CONTROL CENTER  /  BLUE EDITION",26,13,true)
-bannerSub.Position = UDim2.fromOffset(41,70)
-bannerSub.Size = UDim2.new(1,-70,0,24)
+obj("UIStroke",hero,{Color=accent,Transparency=.15,Thickness=1.5})
+for i=1,7 do
+    local beam = obj("Frame",hero,{
+        Size = UDim2.fromOffset(5+i*4,330),
+        Position = UDim2.new(1,-i*48,-.3,-32),
+        Rotation = 30,
+        BackgroundColor3 = i%2==0 and accent or Color3.fromRGB(132,12,32),
+        BackgroundTransparency = .77,
+        BorderSizePixel = 0
+    })
+end
+local crown = txt(hero,"♛",132,116,true)
+crown.Position = UDim2.new(1,-190,0,-10)
+crown.Size = UDim2.fromOffset(180,156)
+crown.TextXAlignment = Enum.TextXAlignment.Center
+crown.TextColor3 = accent
+crown.TextTransparency = .13
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V11",22,12,true)
+bannerSmall.Position = UDim2.fromOffset(27,24)
+bannerSmall.Size = UDim2.fromOffset(425,22)
+bannerSmall.TextColor3 = accent
+local bannerBrand = txt(hero,"BRAB0X PRIME",59,36,true)
+bannerBrand.Position = UDim2.fromOffset(26,59)
+bannerBrand.Size = UDim2.new(1,-60,0,60)
+local bannerSub = txt(hero,"RED NEON CONTROL CENTER",28,16,true)
+bannerSub.Position = UDim2.fromOffset(29,120)
+bannerSub.Size = UDim2.new(1,-60,0,28)
 bannerSub.TextColor3 = accent
-local bannerDesc = txt(hero,"VOO  •  AVATAR  •  CAMERA  •  EMOTES  •  AIM OPCIONAL",42,12)
-bannerDesc.Position = UDim2.fromOffset(41,102)
-bannerDesc.Size = UDim2.new(1,-75,0,38)
+local bannerDesc = txt(hero,"VOO  •  JOGADOR  •  CAMERA  •  MUNDO  •  EMOTES",24,11,true)
+bannerDesc.Position = UDim2.fromOffset(29,157)
+bannerDesc.Size = UDim2.new(1,-58,0,24)
 bannerDesc.TextColor3 = white
-local bannerTag = round(obj("TextLabel",hero,{
-    Position = UDim2.new(1,-110,0,13),
-    Size = UDim2.fromOffset(87,26),
-    BackgroundColor3 = Color3.fromRGB(4,22,36),
-    Text = "V10  /  ON",
-    TextColor3 = accent,
-    TextSize = 12,
-    Font = Enum.Font.GothamBold,
-    BorderSizePixel = 0
-}),9)
 
-local live = titleRow(
-    pages.HOME,
-    "Fly OFF • Speed 55 • Aim OFF"
-)
+local live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
+titleRow(pages.HOME,"PAINEL DE ACOES RAPIDAS  /  ESCOLHA SUA FUNCAO")
 
-titleRow(
-    pages.HOME,
-    "ATALHOS  •  F = VOAR  |  RightShift = MENU  |  Ctrl+K = BUSCAR"
-)
+local homeTiles = obj("Frame",pages.HOME,{
+    Size = UDim2.new(1,-9,0,218),
+    BackgroundTransparency = 1
+})
+obj("UIGridLayout",homeTiles,{
+    CellSize = UDim2.new(.5,-7,0,65),
+    CellPadding = UDim2.fromOffset(9,10),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
+local homeFilter
+local function makeHomeTile(icon,title,desc,filter)
+    local t = btn(homeTiles,"",function()
+        if homeFilter then homeFilter(filter) end
+    end,65)
+    t.BackgroundColor3 = Color3.fromRGB(26,20,29)
+    obj("UIStroke",t,{Color=accent,Thickness=1,Transparency=.48})
+    local ico = txt(t,icon,39,29,true)
+    ico.Position = UDim2.fromOffset(13,9)
+    ico.Size = UDim2.fromOffset(46,42)
+    ico.TextColor3 = accent
+    local ttl = txt(t,title,24,15,true)
+    ttl.Position = UDim2.fromOffset(62,10)
+    ttl.Size = UDim2.new(1,-82,0,24)
+    local sb = txt(t,desc,22,11)
+    sb.Position = UDim2.fromOffset(62,35)
+    sb.Size = UDim2.new(1,-82,0,22)
+    sb.TextColor3 = muted
+end
+makeHomeTile("↗","MOVIMENTO","Fly, velocidade e noclip","FLY")
+makeHomeTile("♙","JOGADOR","Pulo, visual e posicoes","PLAYER")
+makeHomeTile("◉","CAMERA","FOV, zoom e mira","CAMERA")
+makeHomeTile("◈","MUNDO","Tempo e iluminacao","WORLD")
+makeHomeTile("♫","EMOTES","Animacoes autorizadas","EMOTES")
+makeHomeTile("⚙","AJUSTES","Configuracoes do hub","SETTINGS")
 
-item(pages.HOME,"ABRIR COMANDOS","help")
-item(pages.HOME,"ABRIR EMOTES","emotes")
-item(pages.HOME,"CONFIGURAR ABA AIM","modules")
+local quickRow = obj("Frame",pages.HOME,{
+    Size = UDim2.new(1,-9,0,43),
+    BackgroundTransparency = 1
+})
+obj("UIListLayout",quickRow,{
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0,8),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
+local function quick(label,command)
+    local b = btn(quickRow,label,function()
+        if exec then exec(command) end
+    end,42)
+    b.Size = UDim2.new(.25,-6,0,42)
+    return b
+end
+quick("↗  FLY ON","fly")
+quick("■  FLY OFF","unfly")
+quick("⚡  BOOST","boost")
+quick("⌖  AIM OPCIONAL","modules")
+
+-- A categoria de cada atalho da HOME sera ligada ao filtro de comandos
+-- apos a criacao da pagina de comandos.
+_G.BRAB0X_V11_HOME_TILE_HOOK = function(fn)
+    homeFilter = fn
+end
 
 -- ABA FLY
 
@@ -2330,8 +2408,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V10_STOP == closeHub then
-        _G.BRAB0X_V10_STOP = nil
+    if _G.BRAB0X_V11_STOP == closeHub then
+        _G.BRAB0X_V11_STOP = nil
     end
 end
 
@@ -2413,7 +2491,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V10_STOP = closeHub
+_G.BRAB0X_V11_STOP = closeHub
 
 -- ABERTURA ANIMADA
 
@@ -2577,7 +2655,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V10 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V11 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -2624,6 +2702,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V10 | "
+    "BRAB0X PRIME V11 | "
     ..#registered.." comandos"
 )
