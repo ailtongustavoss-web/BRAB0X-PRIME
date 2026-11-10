@@ -3109,6 +3109,272 @@ do
     end,"gamepad on")
 end
 
+-- V15 / SISTEMA UNIVERSAL DE JOGOS - ROTAS DECLARATIVAS, SEM EXECUCAO REMOTA
+-- O mesmo arquivo BRAB0X_PRIME.lua escolhe o perfil pelo PlaceId.
+-- API opcional para futuras atualizacoes:
+-- v14.router.registerModule("123456789",{
+--     name="Modulo de Meu Jogo",
+--     description="Recursos permitidos do meu proprio jogo",
+--     quick={"fly","unfly","manual","gameinfo"}
+-- })
+-- Nunca importar codigo desconhecido por URL nem contornar a logica do servidor.
+do
+    local router=v14.router
+    local forbiddenQuick={
+        close=true, resetall=true, clearwps=true, delwp=true,
+        deleteprofile=true, resetkeys=true, worldreset=true,
+        macrodelete=true, routedelete=true, gameremove=true,
+        gameprofile=true
+    }
+    local prefKeys={"theme","lang","scale","aimEnabled","compact","animations",
+        "opacity","neon","notifications"}
+
+    local function cleaned(text,maxLen)
+        return tostring(text or ""):gsub("[%c]",""):gsub("^%s+","")
+            :gsub("%s+$",""):sub(1,maxLen or 38)
+    end
+    local function validPlace(text)
+        local id=cleaned(text,22)
+        if #id<1 or #id>19 or id:match("^%d+$")==nil then return nil end
+        return tostring(tonumber(id) or id)
+    end
+    local function currentSnapshot()
+        local camera=workspace.CurrentCamera
+        return {
+            speed=S.speed,boostX=S.boostX,
+            fov=camera and camera.FieldOfView or 70,
+            focus=selected,
+            updated=os.time()
+        }
+    end
+    local function capturePrefs()
+        local output={}
+        for _,key in ipairs(prefKeys) do output[key]=config[key] end
+        return output
+    end
+    local function safeQuick(input)
+        local cmd=cleaned(input,90)
+        if #cmd==0 then return nil end
+        local first=cmd:match("^(%S+)")
+        if not first or not byName[first:lower()] or forbiddenQuick[first:lower()] then
+            return nil
+        end
+        if first:lower()=="aim" and not config.aimEnabled then return nil end
+        return cmd
+    end
+    router.safeQuick=safeQuick
+    router.registerModule=function(placeId,module)
+        local id=validPlace(placeId)
+        if not id or type(module)~="table" or type(module.name)~="string" then
+            return false
+        end
+        local desc={
+            name=cleaned(module.name,42),
+            description=cleaned(module.description or "",110),
+            quick={}
+        }
+        if type(module.quick)=="table" then
+            for _,cmd in ipairs(module.quick) do
+                local safe=safeQuick(cmd)
+                if safe and #desc.quick<6 then desc.quick[#desc.quick+1]=safe end
+            end
+        end
+        router.modules[id]=desc
+        return true
+    end
+    router.detect=function()
+        local mod=router.modules[router.placeId]
+        if not mod and router.universeId~="0" then
+            mod=router.modules["universe:"..router.universeId]
+        end
+        router.currentModule=mod
+        router.detected=mod and mod.name or
+            (router.profile.mode=="custom" and "PERFIL DO JOGO" or "MODO UNIVERSAL")
+        return router.detected
+    end
+    -- Modulos incluidos neste arquivo podem ser registrados ANTES do initialize.
+    -- Exemplo: v14.router.registerModule("SEU_PLACE_ID",{name="Meu Jogo",quick={"fly"}})
+    -- Sem PlaceId fornecido, nao ha modulo personalizado predefinido.
+    router.detect()
+    router.capture=currentSnapshot
+    router.save=function()
+        saveV13()
+        if v14.refresh then v14.refresh("GAMES") end
+    end
+    router.setLabel=function(newName)
+        local name=cleaned(newName,36)
+        if name=="" then
+            notify("Digite um nome de 1 a 36 caracteres para este jogo.","error")
+            return false
+        end
+        router.profile.label=name
+        router.save()
+        notify("Nome do jogo salvo: "..name,"success")
+        return true
+    end
+    router.setMode=function(mode)
+        if mode~="universal" and mode~="custom" then return false end
+        router.profile.mode=mode
+        if mode=="custom" then
+            router.profile.preferences=capturePrefs()
+            router.profile.runtime=currentSnapshot()
+        end
+        router.detect()
+        router.save()
+        notify("Jogo "..router.placeId.." agora usa "..router.detected,"success")
+        return true
+    end
+    router.saveProfile=function()
+        router.profile.mode="custom"
+        router.profile.preferences=capturePrefs()
+        router.profile.runtime=currentSnapshot()
+        router.detect()
+        router.save()
+        notify("Preferencias e velocidade salvas para o jogo "..router.placeId,"success")
+        return true
+    end
+    router.applyProfile=function()
+        if router.profile.mode~="custom" or type(router.profile.preferences)~="table" then
+            return false
+        end
+        for _,key in ipairs(prefKeys) do
+            if router.profile.preferences[key]~=nil then
+                config[key]=router.profile.preferences[key]
+            end
+        end
+        local runtime=router.profile.runtime
+        if type(runtime)=="table" then
+            S.speed=math.clamp(tonumber(runtime.speed) or S.speed,10,300)
+            S.boostX=math.clamp(tonumber(runtime.boostX) or S.boostX,1,5)
+            local camera=workspace.CurrentCamera
+            if camera then
+                camera.FieldOfView=math.clamp(tonumber(runtime.fov) or camera.FieldOfView,40,120)
+            end
+        end
+        if applyV13Appearance then applyV13Appearance() end
+        if refresh then refresh() end
+        notify("Perfil carregado para o jogo "..router.placeId,"info")
+        return true
+    end
+    router.useUniversal=function()
+        router.profile.mode="universal"
+        for _,key in ipairs(prefKeys) do
+            if v13Data.universalPrefs[key]~=nil then
+                config[key]=v13Data.universalPrefs[key]
+            end
+        end
+        router.detect()
+        router.save()
+        if applyV13Appearance then applyV13Appearance() end
+        if refresh then refresh() end
+        notify("BRAB0X universal ativado. Comandos antigos preservados.","success")
+        return true
+    end
+    router.setQuicks=function(commands)
+        if type(commands)~="table" then return false end
+        local out={}
+        for _,command in ipairs(commands) do
+            local cmd=safeQuick(command)
+            if not cmd then
+                notify("Atalho invalido: "..tostring(command),"error")
+                return false
+            end
+            out[#out+1]=cmd
+            if #out>=6 then break end
+        end
+        if #out<1 then return false end
+        router.profile.quick=out
+        router.save()
+        notify("Atalhos salvos para "..router.profile.label,"success")
+        return true
+    end
+    router.registerGame=function(placeId,label)
+        local id=validPlace(placeId)
+        local name=cleaned(label,38)
+        if not id or name=="" then
+            notify("Use gameadd PlaceId NomeDoJogo, com ID numerico.","error")
+            return false
+        end
+        if type(router.profiles[id])~="table" then
+            router.profiles[id]={
+                label=name,universeId="",
+                quick={"fly","unfly","noclip","manual"},
+                mode="universal",created=os.time(),lastVisit=0
+            }
+        else
+            router.profiles[id].label=name
+        end
+        router.save()
+        notify("Jogo cadastrado: "..name.." ("..id..").","success")
+        return true
+    end
+    router.removeGame=function(placeId)
+        local id=validPlace(placeId)
+        if not id or id==router.placeId then
+            notify("Nao e possivel remover o jogo atualmente aberto.","error")
+            return false
+        end
+        if not router.profiles[id] then
+            notify("PlaceId nao cadastrado.","error")
+            return false
+        end
+        router.profiles[id]=nil
+        router.save()
+        notify("Jogo removido da lista local: "..id,"info")
+        return true
+    end
+    router.info=function()
+        notify("JOGO: "..router.profile.label..
+            " | PlaceId "..router.placeId.." | UniverseId "..router.universeId..
+            " | "..router.detected,"info")
+    end
+    router.initialize=function()
+        router.detect()
+        if router.profile.mode=="custom" then router.applyProfile() end
+        router.ready=true
+    end
+    register("games","SETTINGS","Abrir Gerenciador Universal de Jogos",function()
+        show("GAMES")
+    end)
+    register("gameinfo","SETTINGS","PlaceId, UniverseId e modulo atual",function()
+        router.info()
+        return false
+    end)
+    register("gameadd","SETTINGS","Cadastrar PlaceId de outro jogo",function(arg)
+        local id,label=tostring(arg or ""):match("^(%S+)%s+(.+)$")
+        return router.registerGame(id,label)
+    end,"gameadd 12345678 MeuJogo")
+    register("gamelabel","SETTINGS","Alterar nome do jogo atual",function(arg)
+        return router.setLabel(arg)
+    end,"gamelabel MeuJogo")
+    register("gameprofile","SETTINGS","Perfil: save, load ou universal",function(arg)
+        local mode=cleaned(arg,18):lower()
+        if mode=="save" then return router.saveProfile()
+        elseif mode=="load" then return router.applyProfile()
+        elseif mode=="universal" then return router.useUniversal()
+        else
+            notify("Use: gameprofile save | load | universal","info")
+            return false
+        end
+    end,"gameprofile save")
+    register("gamequick","SETTINGS","Configurar atalho do jogo atual",function(arg)
+        local pos,command=tostring(arg or ""):match("^(%d+)%s+(.+)$")
+        local index=tonumber(pos)
+        if not index or index<1 or index>6 or not safeQuick(command) then
+            notify("Use: gamequick 1 fly (slots de 1 a 6)","error")
+            return false
+        end
+        local quick=router.profile.quick
+        quick[index]=safeQuick(command)
+        router.save()
+        notify("Atalho "..index.." definido para "..quick[index],"success")
+        return true
+    end,"gamequick 1 fly")
+    register("gameremove","SETTINGS","Remover jogo cadastrado que nao esta aberto",function(arg)
+        return router.removeGame(arg)
+    end,"gameremove 12345678")
+end
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
