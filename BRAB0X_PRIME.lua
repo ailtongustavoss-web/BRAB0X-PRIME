@@ -380,7 +380,7 @@ local v14={
     recent={}, commandsInSession=0, sessionStarted=os.clock(),
     safe=true, macroRunning=false, cinematic=false,
     cinemaConnection=nil, cinemaSaved=nil, music=nil, musicId="",
-    avatarParts={}, wheelOpen=false, selectedRoute=nil,
+    avatarParts={}, wheelOpen=false,
     controllerMode=false
 }
 for _,key in ipairs({"commandCount","totalSessions","frequency"}) do
@@ -392,8 +392,6 @@ for _,key in ipairs({"commandCount","totalSessions","frequency"}) do
 end
 v13Data.stats.totalSessions=v13Data.stats.totalSessions+1
 v14.stats=v13Data.stats
-v14.dashboard=v13Data.dashboard
-v14.routes=v13Data.routes
 v14.macros=v13Data.macros
 local noticeCounter=0
 
@@ -2948,7 +2946,7 @@ do
         table.insert(v14.recent,1,{command=name,raw=raw,time=os.date("%H:%M:%S")})
         if #v14.recent>35 then table.remove(v14.recent) end
         if v14.commandsInSession%5==0 then saveV13() end
-        if v14.refresh and (selected=="RECENT" or selected=="STATS" or selected=="DASHBOARD") then
+        if v14.refresh and (selected=="RECENT" or selected=="STATS") then
             v14.refresh(selected)
         end
     end
@@ -3206,7 +3204,7 @@ do
     local forbiddenQuick={
         close=true, resetall=true, clearwps=true, delwp=true,
         deleteprofile=true, resetkeys=true, worldreset=true,
-        macrodelete=true, routedelete=true, gameremove=true,
+        macrodelete=true, gameremove=true,
         gameprofile=true
     }
     local prefKeys={"theme","lang","scale","aimEnabled","compact","animations",
@@ -4219,29 +4217,17 @@ for _,entry in ipairs(registered) do
                     exec(entry.example)
                 end
             end,46)
-        b.Size=UDim2.new(1,-81,1,0)
+        b.Size=UDim2.new(1,-42,1,0)
         b.TextWrapped=true
         b.TextSize=10
-        local star=btn(cell,"",nil,46)
-        star.Position=UDim2.new(1,-78,0,0)
-        star.Size=UDim2.fromOffset(37,46)
-        star.TextSize=18
         local helpButton=btn(cell,"?",function()
             if openCommandHelp then openCommandHelp(entry.name) end
         end,46)
         helpButton.Position=UDim2.new(1,-38,0,0)
         helpButton.Size=UDim2.fromOffset(37,46)
         helpButton.TextSize=18
-        bind(star.MouseButton1Click,function()
-            v13Data.favorites[entry.name]=not (v13Data.favorites[entry.name]==true)
-            if v13Data.favorites[entry.name]==false then
-                v13Data.favorites[entry.name]=nil
-            end
-            favoritesChanged()
-        end)
         g.items[#g.items+1]={
             button=cell,
-            favoriteButton=star,
             commandName=entry.name,
             lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
         }
@@ -4257,8 +4243,6 @@ refreshCommandList=function()
         for _,item in ipairs(g.items) do
             local match=categoryAllowed and (q=="" or item.lookup:find(q,1,true)~=nil)
             item.button.Visible=match
-            item.favoriteButton.Text=v13Data.favorites[item.commandName] and "★" or "☆"
-            item.favoriteButton.TextColor3=v13Data.favorites[item.commandName] and accent or muted
             if match then count=count+1 end
         end
         g.counter.Text=tostring(count)
@@ -4357,11 +4341,7 @@ do
     detailNote.TextColor3=muted
     local prepareButton=btn(details,"USAR EXEMPLO",nil,32)
     prepareButton.Position=UDim2.new(0,16,1,-42)
-    prepareButton.Size=UDim2.new(.5,-23,0,32)
-    local favoriteButton=btn(details,"☆  FAVORITAR",nil,32)
-    favoriteButton.Position=UDim2.new(.5,5,1,-42)
-    favoriteButton.Size=UDim2.new(.5,-23,0,32)
-
+    prepareButton.Size=UDim2.new(1,-32,0,32)
     local resultLabel=txt(helpPage,"COMANDOS DISPONIVEIS",27,13,true)
     resultLabel.TextColor3=accent
     local results=obj("Frame",helpPage,{
@@ -4413,7 +4393,6 @@ do
         detailDescription.Text=customText[entry.name] or entry.description
         detailExample.Text="EXEMPLO:  "..entry.example
         detailNote.Text=notes[entry.category] or "Consulte os limites e permissoes do jogo."
-        favoriteButton.Text=v13Data.favorites[entry.name] and "★  REMOVER FAVORITO" or "☆  FAVORITAR"
     end
     bind(prepareButton.MouseButton1Click,function()
         if not current then return end
@@ -4422,16 +4401,6 @@ do
         cmdInput:CaptureFocus()
         notify("Exemplo pronto para editar ou executar: "..current.example,"info")
     end)
-    bind(favoriteButton.MouseButton1Click,function()
-        if not current then return end
-        local name=current.name
-        if v13Data.favorites[name] then v13Data.favorites[name]=nil
-        else v13Data.favorites[name]=true end
-        favoritesChanged()
-        detailFor(current)
-        notify("Favorito atualizado: "..name,"success")
-    end)
-
     refreshHelpPage=function()
         if stopped or not helpPage.Parent then return end
         if not helpPage.Visible then return end
@@ -4601,9 +4570,6 @@ quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
-item(pages.HOME,"⌕  BUSCA RAPIDA DE COMANDOS","palette")
-item(pages.HOME,"★  FAVORITOS DESTE JOGO","gamefavs")
-item(pages.HOME,"⌖  BUSSOLA DE WAYPOINTS","tab compass")
 item(pages.HOME,"▣  BACKUP E RESTAURACAO","backup")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
@@ -5258,7 +5224,6 @@ end)
 -- Atualizacao somente da pagina aberta, evitando trabalho desnecessario.
 refreshV13Page=function(page)
     if page=="PLAYERS" and updatePlayerManager then updatePlayerManager()
-    elseif page=="FAVORITES" and updateFavoritePanel then updateFavoritePanel()
     elseif page=="TELEPORT" and updateTeleportPanel then updateTeleportPanel()
     elseif page=="PROFILES" and updateProfilePanel then updateProfilePanel()
     elseif page=="CONSOLE" and updateConsolePanel then updateConsolePanel()
@@ -5412,21 +5377,13 @@ do
     local wheelDefaults={"fly","unfly","noclip","clip","invisible","visible","goto nearest","manual"}
     v14.wheelCommands={}
     v14.wheelRefresh=function()
-        local seen={}
-        local list={}
-        local fav={}
-        for name,on in pairs(v13Data.favorites) do
-            if on and byName[name] then fav[#fav+1]=name end
-        end
-        table.sort(fav)
-        for _,command in ipairs(fav) do
-            if not seen[command] then list[#list+1]=command seen[command]=true end
-        end
-        for _,command in ipairs(wheelDefaults) do
-            if not seen[command] then list[#list+1]=command seen[command]=true end
-        end
         v14.wheelCommands={}
-        for i=1,math.min(8,#list) do v14.wheelCommands[i]=list[i] end
+        for i,command in ipairs(wheelDefaults) do
+            if i>8 then break end
+            if byName[command:match("^(%S+)")] then
+                v14.wheelCommands[#v14.wheelCommands+1]=command
+            end
+        end
     end
     v14.toggleWheel=function()
         if stopped then return end
@@ -5498,13 +5455,7 @@ do
             for i=1,math.min(18,#v14.recent) do
                 local item=v14.recent[i]
                 row(recentHolder,item.time.."  |  "..item.raw,{
-                    {"EXECUTAR",function()exec(item.raw)end,90},
-                    {"FAVORITO",function()
-                        v13Data.favorites[item.command]=true
-                        saveV13()
-                        if refreshCommandList then refreshCommandList() end
-                        notify("Adicionado aos favoritos: "..item.command)
-                    end,83}
+                    {"EXECUTAR",function()exec(item.raw)end,90}
                 })
             end
         end
@@ -5708,10 +5659,9 @@ do
             statsHeader.Text=string.format(
                 "SESSAO: %dm %ds  |  COMANDOS: %d  |  TOTAL: %d",
                 math.floor(seconds/60),seconds%60,seen,v14.stats.commandCount or 0)
-            local favCount=0
-            for _,active in pairs(v13Data.favorites) do if active then favCount=favCount+1 end end
             ui.row(statsHolder,
-                "SESSOES: "..tostring(v14.stats.totalSessions).."  |  FAVORITOS: "..favCount,{})
+                "SESSOES: "..tostring(v14.stats.totalSessions)..
+                "  |  COMANDOS NO TOTAL: "..tostring(v14.stats.commandCount),{})
             local order={}
             for name,count in pairs(v14.stats.frequency) do
                 if byName[name] and type(count)=="number" then
@@ -5736,13 +5686,13 @@ do
             function()return v14.safe end,"safemode on","safemode off")
         ui.section(pages.SETTINGS,"CONTROLE / GAMEPAD")
         note(pages.SETTINGS,
-            "START menu, R1 wheel, B voltar, Y recentes, X favoritos",40)
+            "START menu, R1 wheel, B voltar, Y recentes",40)
         toggleControl(pages.SETTINGS,"ATIVAR GAMEPAD","Atalho Start, R1, X, Y",
             function()return v14.controllerMode end,"gamepad on","gamepad off")
         controls(pages.SETTINGS,{
             {"ABRIR WHEEL",function()v14.toggleWheel()end},
             {"MACROS",function()show("MACROS")end},
-            {"DASHBOARD",function()show("DASHBOARD")end}
+            {"NOTAS",function()show("NOTES")end}
         })
     end
 
@@ -5765,7 +5715,7 @@ do
         task.spawn(function()
             while not stopped and gui.Parent do
                 task.wait(3)
-                if (selected=="STATS" or selected=="DASHBOARD") and v14.refresh then
+                if selected=="STATS" and v14.refresh then
                     v14.refresh(selected)
                 end
             end
@@ -5814,7 +5764,7 @@ do
                 show("RECENT")
                 return true
             elseif key==Enum.KeyCode.ButtonX and main.Visible then
-                show("FAVORITES")
+                show("COMMANDS")
                 return true
             end
         end
@@ -6519,7 +6469,7 @@ sliderControl(pages.SETTINGS,"INTENSIDADE DO NEON","Bordas vermelhas ajustaveis"
 actionRow(pages.SETTINGS,{
     {"PERFIS",function()show("PROFILES")end},
     {"DESEMPENHO",function()show("PERFORMANCE")end},
-    {"FAVORITOS",function()show("FAVORITES")end}
+    {"COMANDOS",function()show("COMMANDS")end}
 })
 titleRow(pages.SETTINGS,"✦  NOTIFICACOES")
 toggleControl(pages.SETTINGS,"AVISOS PREMIUM","Mostra mensagens animadas ao usar comandos",
