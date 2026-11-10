@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V12 | IY-STYLE UTILITIES + ACCORDION
+-- BRAB0X PRIME V13 | PREMIUM MANAGER + 8 MODULOS
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -12,6 +12,8 @@ local Lighting = game:GetService("Lighting")
 local Avatar = game:GetService("AvatarEditorService")
 local Tween = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
+local HttpService = game:GetService("HttpService")
+local Stats = game:GetService("Stats")
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -21,6 +23,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V13_STOP",
     "BRAB0X_V12_STOP",
     "BRAB0X_V11_STOP",
     "BRAB0X_V10_STOP",
@@ -35,7 +38,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V12")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V13")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -54,6 +57,46 @@ if config.aimEnabled == nil then
 end
 _G.BRAB0X_PRIME_PREFS = config
 
+-- Preferencias locais em JSON quando o ambiente permite ler e gravar arquivos.
+local dataFile="BRAB0X_PRIME_V13_PREFS.json"
+local v13Data=_G.BRAB0X_V13_DATA
+if type(v13Data)~="table" then v13Data={} end
+if type(readfile)=="function" then
+    local ok,raw=pcall(readfile,dataFile)
+    if ok and type(raw)=="string" and #raw<150000 then
+        local ok2,parsed=pcall(function() return HttpService:JSONDecode(raw) end)
+        if ok2 and type(parsed)=="table" then v13Data=parsed end
+    end
+end
+for _,field in ipairs({"favorites","keybinds","profiles","waypoints"}) do
+    if type(v13Data[field])~="table" then v13Data[field]={} end
+end
+if type(v13Data.preferences)=="table" then
+    for _,key in ipairs({"theme","lang","scale","aimEnabled","compact","animations","opacity","neon"}) do
+        if v13Data.preferences[key]~=nil then config[key]=v13Data.preferences[key] end
+    end
+end
+config.theme=type(config.theme)=="string" and config.theme or "red"
+config.scale=math.clamp(tonumber(config.scale) or 1,.6,1.25)
+config.compact=config.compact==true
+config.animations=config.animations~=false
+config.opacity=math.clamp(tonumber(config.opacity) or 0,0,.45)
+config.neon=math.clamp(tonumber(config.neon) or 1,.25,2)
+local defaultKeys={FLY="F",MENU="RightShift",NOCLIP="N",BOOST="B",INVIS="I"}
+for name,key in pairs(defaultKeys) do
+    if type(v13Data.keybinds[name])~="string" then v13Data.keybinds[name]=key end
+end
+_G.BRAB0X_V13_DATA=v13Data
+local function saveV13()
+    v13Data.preferences={
+        theme=config.theme,scale=config.scale,lang=config.lang,
+        aimEnabled=config.aimEnabled,compact=config.compact,
+        animations=config.animations,opacity=config.opacity,neon=config.neon
+    }
+    if type(writefile)=="function" then
+        pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
+    end
+end
 local S = {
     fly = false,
     speed = 55,
@@ -234,24 +277,32 @@ local L = {
 }
 
 local sections = {
-    "HOME","FLY","PLAYER","CAMERA",
-    "WORLD","EMOTES","AIM",
-    "SETTINGS","COMMANDS"
+    "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
+    "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
+    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
-local navOrder = {"HOME", "COMMANDS", "AIM", "SETTINGS"}
+local navOrder = {"HOME","COMMANDS","PLAYERS","FAVORITES","TELEPORT","CONSOLE","PROFILES","PERFORMANCE","SETTINGS","AIM"}
 local function moduleEnabled(name)
     return name ~= "AIM" or config.aimEnabled == true
 end
 
 local openModulePicker
 local refreshCommandList
+local refreshV13Page
+local v13Log
+local addHistory
+local updatePlayerManager
+local updateFavoritePanel
+local updateTeleportPanel
+local updateProfilePanel
+local updateConsolePanel
 
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V12",
+    Name = "BRAB0X_PRIME_V13",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -296,7 +347,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V12  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
+    "V13  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
     16,10
 )
 sub.TextColor3 = muted
@@ -374,12 +425,13 @@ local sidebar = round(obj("Frame",main,{
     BorderSizePixel = 0
 }),11)
 
-local nav = obj("Frame",sidebar,{
-    Position = UDim2.fromOffset(8,8),
-    Size = UDim2.new(1,-16,1,-16),
-    BackgroundTransparency = 1
+local nav = obj("ScrollingFrame",sidebar,{
+    Position=UDim2.fromOffset(8,8),Size=UDim2.new(1,-16,1,-135),
+    BackgroundTransparency=1,BorderSizePixel=0,
+    ScrollBarThickness=3,ScrollBarImageColor3=accent,
+    AutomaticCanvasSize=Enum.AutomaticSize.Y,CanvasSize=UDim2.new()
 })
-stack(nav,7)
+stack(nav,5)
 
 local right = round(obj("Frame",main,{
     Position = UDim2.fromOffset(220,82),
@@ -408,7 +460,7 @@ for _,id in ipairs(sections) do
 end
 
 for _,id in ipairs(navOrder) do
-    navButtons[id] = btn(nav,id,nil,52)
+    navButtons[id] = btn(nav,id,nil,39)
 end
 
 -- Identidade visual na base da barra lateral.
@@ -449,7 +501,7 @@ local cmdInput = round(obj("TextBox",main,{
     BorderSizePixel = 0,
     Text = "",
     TextColor3 = white,
-    PlaceholderText = "Digite: fly | speed 90 | emote dance | theme blue",
+    PlaceholderText = "Digite: fly | goto nearest | fav fly | saveprofile...",
     PlaceholderColor3 = muted,
     ClearTextOnFocus = false,
     Font = Enum.Font.Code,
@@ -464,7 +516,8 @@ local selected = "HOME"
 
 local function notify(message)
     if not stopped and status.Parent then
-        status.Text = tostring(message)
+        status.Text=tostring(message)
+        if v13Log then v13Log(tostring(message)) end
     end
 end
 
@@ -479,10 +532,12 @@ local function show(page)
         local active = name == page
         p.Visible = active
         if active then
-            p.Position = UDim2.fromOffset(24,10)
-            Tween:Create(p,TweenInfo.new(.17,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
-                Position = UDim2.fromOffset(11,10)
-            }):Play()
+            if config.animations then
+                p.Position=UDim2.fromOffset(24,10)
+                Tween:Create(p,TweenInfo.new(.17,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+                    Position=UDim2.fromOffset(11,10)
+                }):Play()
+            else p.Position=UDim2.fromOffset(11,10) end
         end
     end
 
@@ -496,6 +551,7 @@ local function show(page)
             border.Transparency = name == page and .08 or .56
         end
     end
+    if refreshV13Page then refreshV13Page(page) end
 end
 
 for name,b in pairs(navButtons) do
@@ -507,9 +563,14 @@ end
 local function relabel()
     local labels = L[config.lang] or L.en
 
+    local more={
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance"}
+    }
     for _,name in ipairs(navOrder) do
-        local i = table.find(sections,name)
-        navButtons[name].Text = "   "..(labels[i] or name)
+        local i=table.find(sections,name)
+        local label=more[config.lang] and more[config.lang][name] or nil
+        navButtons[name].Text="   "..(label or (i and i<=9 and labels[i]) or name)
     end
 end
 
@@ -521,7 +582,7 @@ local function responsive()
     uiScale.Scale = math.clamp(
         math.min(view.X/983,view.Y/662),
         .5,1
-    )*config.scale
+    )*config.scale*(config.compact and .88 or 1)
 end
 
 responsive()
@@ -1131,7 +1192,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V12_AIM"
+local aimKey = "BRAB0X_V13_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2201,7 +2262,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V12 | utilitarios inspirados no Infinite Yield")
+    notify("BRAB0X PRIME V13 | Premium Manager")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -2241,6 +2302,7 @@ exec = function(raw)
     command = command:lower()
 
     local entry = byName[command]
+    if addHistory then addHistory(tostring(raw)) end
 
     if not entry then
         notify("Comando desconhecido: "..command)
@@ -2664,7 +2726,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V12",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V13",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -3185,8 +3247,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V12_STOP == closeHub then
-        _G.BRAB0X_V12_STOP = nil
+    if _G.BRAB0X_V13_STOP == closeHub then
+        _G.BRAB0X_V13_STOP = nil
     end
 end
 
@@ -3268,7 +3330,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V12_STOP = closeHub
+_G.BRAB0X_V13_STOP = closeHub
 
 -- ABERTURA ANIMADA
 
@@ -3432,7 +3494,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V12 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V13 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -3479,6 +3541,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V12 | "
+    "BRAB0X PRIME V13 | "
     ..#registered.." comandos"
 )
