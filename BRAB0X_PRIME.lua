@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V13.2 | AJUDA INTERATIVA + NOTIFICACOES PREMIUM
+-- BRAB0X PRIME V14 | 12 RECURSOS PREMIUM
 -- Criado por @wendezao05153nh
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
@@ -24,6 +24,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V14_STOP",
     "BRAB0X_V13_STOP",
     "BRAB0X_V12_STOP",
     "BRAB0X_V11_STOP",
@@ -39,7 +40,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V13")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V14")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -69,7 +70,7 @@ if type(readfile)=="function" then
         if ok2 and type(parsed)=="table" then v13Data=parsed end
     end
 end
-for _,field in ipairs({"favorites","keybinds","profiles","waypoints"}) do
+for _,field in ipairs({"favorites","keybinds","profiles","waypoints","macros","routes","dashboard","stats"}) do
     if type(v13Data[field])~="table" then v13Data[field]={} end
 end
 if type(v13Data.preferences)=="table" then
@@ -282,11 +283,16 @@ local L = {
 local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
-    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP"
+    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP",
+    "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
-local navOrder = {"HOME","COMMANDS","HELP","PLAYERS","FAVORITES","TELEPORT","CONSOLE","PROFILES","PERFORMANCE","SETTINGS","AIM"}
+local navOrder = {
+    "HOME","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
+    "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","TELEPORT",
+    "CONSOLE","PROFILES","PERFORMANCE","HELP","SETTINGS","AIM"
+}
 local function moduleEnabled(name)
     return name ~= "AIM" or config.aimEnabled == true
 end
@@ -312,12 +318,32 @@ local updateConsolePanel
 local premiumNotify
 local openCommandHelp
 local refreshHelpPage
+-- Estado unico V14: evita excesso de variaveis locais no script extenso.
+local v14={
+    recent={}, commandsInSession=0, sessionStarted=os.clock(),
+    safe=true, macroRunning=false, cinematic=false,
+    cinemaConnection=nil, cinemaSaved=nil, music=nil, musicId="",
+    avatarParts={}, wheelOpen=false, selectedRoute=nil,
+    controllerMode=false
+}
+for _,key in ipairs({"commandCount","totalSessions","frequency"}) do
+    if key=="frequency" and type(v13Data.stats[key])~="table" then
+        v13Data.stats[key]={}
+    elseif key~="frequency" then
+        v13Data.stats[key]=tonumber(v13Data.stats[key]) or 0
+    end
+end
+v13Data.stats.totalSessions=v13Data.stats.totalSessions+1
+v14.stats=v13Data.stats
+v14.dashboard=v13Data.dashboard
+v14.routes=v13Data.routes
+v14.macros=v13Data.macros
 local noticeCounter=0
 
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V13",
+    Name = "BRAB0X_PRIME_V14",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -362,7 +388,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V13.2  •  RED NEON EDITION   /   BY @wendezao05153nh",
+    "V14  •  RED NEON EDITION   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -700,6 +726,7 @@ local function show(page)
     end
     if refreshV13Page then refreshV13Page(page) end
     if page=="HELP" and refreshHelpPage then refreshHelpPage() end
+    if v14.refresh then v14.refresh(page) end
 end
 
 for name,b in pairs(navButtons) do
@@ -712,8 +739,8 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help"}
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -1340,7 +1367,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V13_AIM"
+local aimKey = "BRAB0X_V14_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2448,7 +2475,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V13.2 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V14 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -2702,6 +2729,9 @@ exec = function(raw)
     end
 
     local noticesBefore=noticeCounter
+    if v14.safe and v14.requiresConfirmation and v14.requiresConfirmation(command,arg) then
+        return
+    end
     local ok,result = pcall(entry.run,arg)
 
     if not ok then
@@ -2709,6 +2739,7 @@ exec = function(raw)
         notify("Erro em "..command..": "..tostring(err),"error")
         return
     end
+    if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if result == false then return end
     if type(result)=="string" then
         notify(result)
@@ -4339,6 +4370,7 @@ end)
 closeHub = function()
     if stopped then return end
 
+    if v14.cleanup then pcall(v14.cleanup) end
     saveV13()
     resetAll()
     stopped = true
@@ -4351,8 +4383,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V13_STOP == closeHub then
-        _G.BRAB0X_V13_STOP = nil
+    if _G.BRAB0X_V14_STOP == closeHub then
+        _G.BRAB0X_V14_STOP = nil
     end
 end
 
@@ -4362,6 +4394,7 @@ bind(close.MouseButton1Click,closeHub)
 
 bind(UIS.InputBegan,function(key,used)
     if keyCaptureHandler and keyCaptureHandler(key) then return end
+    if v14.onInput and v14.onInput(key,used) then return end
     if UIS:GetFocusedTextBox() then return end
     local name=key.KeyCode.Name
     if name=="F1" and not used then
@@ -4440,7 +4473,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V13_STOP = closeHub
+_G.BRAB0X_V14_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -4606,7 +4639,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V13 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V14 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -4646,6 +4679,7 @@ end -- fim do escopo abertura
 
 rebuildEmotes()
 relabel()
+if v14.install then v14.install() end
 if applyV13Appearance then applyV13Appearance() end
 show("HOME")
 refresh()
@@ -4655,6 +4689,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V13.2 | "
+    "BRAB0X PRIME V14 | "
     ..#registered.." comandos"
 )
