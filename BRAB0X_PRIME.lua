@@ -900,9 +900,9 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos",PALETTE="Busca rapida",COMPASS="Bussola",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia",BOOKMARKS="Fav. do jogo"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games",PALETTE="Quick search",COMPASS="Compass",NOTES="Notes",BACKUP="Backup",DIAGNOSTICS="Diagnostics",GUIDE="Guide",BOOKMARKS="Game favorites"},
-        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos",PALETTE="Busqueda",COMPASS="Brujula",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia",BOOKMARKS="Favoritos juego"},
+        pt={PLAYERS="Jogadores",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",GAMES="Jogos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
+        en={PLAYERS="Players",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",GAMES="Games",NOTES="Notes",BACKUP="Backup",DIAGNOSTICS="Diagnostics",GUIDE="Guide"},
+        es={PLAYERS="Jugadores",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",GAMES="Juegos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -2907,11 +2907,6 @@ end)
 do
     local function trimmed(a)
         return tostring(a or ""):gsub("^%s+",""):gsub("%s+$","")
-    end
-    local function argParts(raw)
-        local pieces={}
-        for part in tostring(raw or ""):gmatch("%S+") do pieces[#pieces+1]=part end
-        return pieces
     end
     local function validName(x)
         x=trimmed(x):lower()
@@ -5106,7 +5101,7 @@ refreshV13Page=function(page)
 end
 
 end -- fim do escopo V13
--- V14 / COMPONENTES DE INTERFACE + RECENTES, MACROS E ROTAS
+-- V14 / COMPONENTES DE INTERFACE + RECENTES E MACROS
 do
     v14.panelRefresh={}
     v14.localeLabels={}
@@ -5116,27 +5111,15 @@ do
         ["Ultimos comandos executados na sessao"]={en="Recently executed commands this session",es="Comandos recientes de esta sesion"},
         ["Ainda nao ha comandos recentes."]={en="No recent commands yet.",es="Aun no hay comandos recientes."},
         ["EXECUTAR"]={en="RUN",es="EJECUTAR"},
-        ["FAVORITO"]={en="FAVORITE",es="FAVORITO"},
         ["MACROS DE COMANDOS"]={en="COMMAND MACROS",es="MACROS DE COMANDOS"},
         ["Apenas comandos locais permitidos, separados por ponto e virgula"]={en="Only permitted local commands, separated by semicolons",es="Solo comandos locales permitidos, separados por punto y coma"},
         ["Nome da macro"]={en="Macro name",es="Nombre de macro"},
         ["Exemplo: speed 60; fov 80; crosshair on"]={en="Example: speed 60; fov 80; crosshair on",es="Ejemplo: speed 60; fov 80; crosshair on"},
         ["SALVAR MACRO"]={en="SAVE MACRO",es="GUARDAR MACRO"},
         ["Nenhuma macro salva."]={en="No saved macros.",es="No hay macros guardadas."},
-        ["ROTAS DE EXPLORACAO"]={en="EXPLORATION ROUTES",es="RUTAS DE EXPLORACION"},
-        ["Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte"]={en="Build routes from saved waypoints in the Teleport Manager",es="Crea rutas con puntos guardados en Teletransporte"},
-        ["Nome da rota"]={en="Route name",es="Nombre de la ruta"},
-        ["Waypoints separados por espaco: casa spawn loja"]={en="Waypoints separated by spaces: home spawn shop",es="Puntos separados por espacios: casa spawn tienda"},
-        ["SALVAR ROTA"]={en="SAVE ROUTE",es="GUARDAR RUTA"},
-        ["PROXIMO PONTO"]={en="NEXT POINT",es="SIGUIENTE PUNTO"},
-        ["Nenhuma rota salva. Salve waypoints primeiro."]={en="No routes. Save waypoints first.",es="No hay rutas. Guarda puntos primero."},
-        ["ABRIR TELEPORTE"]={en="OPEN TELEPORT",es="ABRIR TELETRANSPORTE"},
         ["INICIAR"]={en="START",es="INICIAR"},
         ["EXCLUIR"]={en="DELETE",es="BORRAR"},
-        ["SELECIONADA"]={en="SELECTED",es="SELECCIONADA"},
         ["PRESSIONE F2 OU ABRA PELO COMANDO WHEEL"]={en="PRESS F2 OR USE THE WHEEL COMMAND",es="PULSA F2 O USA EL COMANDO WHEEL"},
-        ["Dashboard"]={en="Dashboard",es="Panel"},
-        ["Rotas"]={en="Routes",es="Rutas"},
         ["Recentes"]={en="Recent",es="Recientes"},
         ["Avatar"]={en="Avatar",es="Avatar"},
         ["Audio"]={en="Audio",es="Audio"},
@@ -5146,7 +5129,6 @@ do
         ["Ajuda"]={en="Help",es="Ayuda"},
         ["Comandos"]={en="Commands",es="Comandos"},
         ["Jogadores"]={en="Players",es="Jugadores"},
-        ["Favoritos"]={en="Favorites",es="Favoritos"},
         ["Teleporte"]={en="Teleport",es="Teletransporte"},
         ["Desempenho"]={en="Performance",es="Rendimiento"},
         ["Ajustes"]={en="Settings",es="Ajustes"}
@@ -5374,7 +5356,7 @@ do
     end
 end
 
--- V14 / CINEMA, AVATAR, AUDIO, DASHBOARD, ESTATISTICAS E GAMEPAD
+-- V14 / CINEMA, AVATAR, AUDIO, ESTATISTICAS E GAMEPAD
 do
     local function addTranslations()
         local words={
@@ -5406,8 +5388,6 @@ do
             ["O audio pode falhar por privacidade ou permissao do asset."]={en="Audio may fail due to asset privacy or permissions.",es="El sonido puede fallar por privacidad o permisos."},
             ["ESTATISTICAS DO HUB"]={en="HUB STATISTICS",es="ESTADISTICAS DEL HUB"},
             ["Uso nesta sessao, totais locais e comandos frequentes"]={en="Session usage, local totals and most-used commands",es="Uso de esta sesion, totales y comandos frecuentes"},
-            ["DASHBOARD PERSONALIZAVEL"]={en="CUSTOM DASHBOARD",es="PANEL PERSONALIZABLE"},
-            ["Quatro atalhos editaveis com acesso direto"]={en="Four editable shortcuts with direct access",es="Cuatro accesos directos editables"},
             ["ALTERAR"]={en="CHANGE",es="CAMBIAR"},
             ["ULTIMOS"]={en="RECENT",es="RECIENTES"},
             ["ABRIR WHEEL"]={en="OPEN WHEEL",es="ABRIR RUEDA"},
@@ -5416,7 +5396,7 @@ do
             ["ATIVADO"]={en="ENABLED",es="ACTIVADO"},
             ["DESATIVADO"]={en="DISABLED",es="DESACTIVADO"},
             ["CONTROLE / GAMEPAD"]={en="CONTROLLER / GAMEPAD",es="MANDO / GAMEPAD"},
-            ["START menu, R1 wheel, B voltar, Y recentes, X favoritos"]={en="START menu, R1 wheel, B back, Y recent, X favorites",es="START menu, R1 rueda, B volver, Y recientes, X favoritos"}
+            ["START menu, R1 wheel, B voltar, Y recentes"]={en="START menu, R1 wheel, B back, Y recent",es="START menu, R1 rueda, B volver, Y recientes"}
         }
         for key,value in pairs(words) do v14.addTranslation(key,value) end
     end
