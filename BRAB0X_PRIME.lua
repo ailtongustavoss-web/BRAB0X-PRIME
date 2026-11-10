@@ -539,8 +539,102 @@ for _,id in ipairs(sections) do
     stack(pages[id],6)
 end
 
-for _,id in ipairs(navOrder) do
-    navButtons[id] = btn(nav,id,nil,39)
+-- V16 / NAVEGACAO ORGANIZADA: GRUPOS RECOLHIVEIS + BUSCA POR PAGINA
+do
+    nav.Position=UDim2.fromOffset(8,48)
+    nav.Size=UDim2.new(1,-16,1,-176)
+    local navSearch=round(obj("TextBox",sidebar,{
+        Position=UDim2.fromOffset(8,8),
+        Size=UDim2.new(1,-16,0,33),
+        BackgroundColor3=Color3.fromRGB(37,16,26),
+        BorderSizePixel=0,
+        Text="",PlaceholderText="⌕  Buscar aba...",
+        TextColor3=white,PlaceholderColor3=muted,
+        TextSize=11,Font=Enum.Font.Gotham,
+        ClearTextOnFocus=false
+    }),8)
+    obj("UIStroke",navSearch,{Color=accent,Transparency=.6,Thickness=1})
+    v14.navigation={groups={},byPage={},searchBox=navSearch}
+    local navGroupData={
+        {key="MAIN",pt="PRINCIPAL",en="MAIN",es="PRINCIPAL",
+            pages={"HOME","COMMANDS","GAMES","DASHBOARD"}},
+        {key="PLAYER",pt="JOGADOR",en="PLAYER",es="JUGADOR",
+            pages={"PLAYERS","TELEPORT","FAVORITES","RECENT","ROUTES"}},
+        {key="TOOLS",pt="FERRAMENTAS",en="TOOLS",es="HERRAMIENTAS",
+            pages={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE"}},
+        {key="SYSTEM",pt="SISTEMA",en="SYSTEM",es="SISTEMA",
+            pages={"CONSOLE","PROFILES","STATS","HELP","SETTINGS","AIM"}}
+    }
+    for index,definition in ipairs(navGroupData) do
+        local shell=obj("Frame",nav,{
+            Size=UDim2.new(1,-6,0,0),AutomaticSize=Enum.AutomaticSize.Y,
+            BackgroundTransparency=1,
+            LayoutOrder=index
+        })
+        stack(shell,4)
+        local head=btn(shell,"",nil,32)
+        head.Size=UDim2.new(1,0,0,32)
+        head.LayoutOrder=1
+        head.BackgroundColor3=Color3.fromRGB(45,14,27)
+        head.TextColor3=accent
+        head.TextSize=11
+        local list=obj("Frame",shell,{
+            Size=UDim2.new(1,0,0,0),
+            AutomaticSize=Enum.AutomaticSize.Y,
+            BackgroundTransparency=1,
+            LayoutOrder=2
+        })
+        stack(list,3)
+        local group={
+            definition=definition,button=head,frame=shell,content=list,
+            expanded=index==1,items={}
+        }
+        v14.navigation.groups[#v14.navigation.groups+1]=group
+        for order,id in ipairs(definition.pages) do
+            local tab=btn(list,id,nil,35)
+            tab.LayoutOrder=order
+            tab.Size=UDim2.new(1,0,0,35)
+            tab.TextSize=11
+            navButtons[id]=tab
+            group.items[#group.items+1]=id
+            v14.navigation.byPage[id]=group
+        end
+        bind(head.MouseButton1Click,function()
+            if navSearch.Text~="" then navSearch.Text="" end
+            group.expanded=not group.expanded
+            if v14.navigation.update then v14.navigation.update() end
+        end)
+    end
+    v14.navigation.update=function(page)
+        local query=navSearch.Text:lower():gsub("^%s+",""):gsub("%s+$","")
+        for _,group in ipairs(v14.navigation.groups) do
+            if query=="" and page and v14.navigation.byPage[page]==group then
+                group.expanded=true
+            end
+            local matching=0
+            for _,id in ipairs(group.items) do
+                local b=navButtons[id]
+                local match=(query==""
+                    or id:lower():find(query,1,true)~=nil
+                    or b.Text:lower():find(query,1,true)~=nil)
+                    and moduleEnabled(id)
+                b.Visible=match
+                if match then matching=matching+1 end
+            end
+            group.frame.Visible=matching>0
+            local open=(query~="" or group.expanded) and matching>0
+            group.content.Visible=open
+            local def=group.definition
+            local language=config.lang
+            local name=def[language] or def.en
+            group.button.Text=(open and "▾  " or "▸  ")..name..
+                "  ("..matching..")"
+        end
+    end
+    bind(navSearch:GetPropertyChangedSignal("Text"),function()
+        if v14.navigation.update then v14.navigation.update() end
+    end)
+    v14.navigation.update("HOME")
 end
 
 -- Identidade visual na base da barra lateral.
@@ -754,7 +848,6 @@ local function show(page)
     end
 
     for name,b in pairs(navButtons) do
-        b.Visible = moduleEnabled(name)
         b.BackgroundColor3 = name == page and Color3.fromRGB(112,13,31) or control
         b.TextColor3 = white
         local border = b:FindFirstChildOfClass("UIStroke")
@@ -762,6 +855,9 @@ local function show(page)
             border.Color = name == page and accent or Color3.fromRGB(88,38,45)
             border.Transparency = name == page and .08 or .56
         end
+    end
+    if v14.navigation and v14.navigation.update then
+        v14.navigation.update(page)
     end
     if refreshV13Page then refreshV13Page(page) end
     if page=="HELP" and refreshHelpPage then refreshHelpPage() end
@@ -786,6 +882,9 @@ local function relabel()
         local i=table.find(sections,name)
         local label=more[config.lang] and more[config.lang][name] or nil
         navButtons[name].Text="   "..(label or (i and i<=9 and labels[i]) or name)
+    end
+    if v14.navigation and v14.navigation.update then
+        v14.navigation.update()
     end
 end
 
