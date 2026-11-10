@@ -1825,6 +1825,7 @@ register("lang","SETTINGS","Idioma do menu",function(a)
     if L[a] then
         config.lang = a
         relabel()
+        if v14.translate then v14.translate() end
         saveV13()
     end
 end,"lang en")
@@ -2879,7 +2880,7 @@ do
         v14.cinematic=true
         cam.CameraType=Enum.CameraType.Scriptable
         -- Segurar botao direito do mouse gira a camera, sem mover o avatar.
-        v14.cinemaLook=bind(UIS.InputChanged,function(input)
+        v14.cinemaLook=UIS.InputChanged:Connect(function(input)
             if not v14.cinematic or not workspace.CurrentCamera then return end
             if input.UserInputType==Enum.UserInputType.MouseMovement
                 and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
@@ -3711,7 +3712,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V13",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V14",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -4498,6 +4499,7 @@ end -- fim do escopo V13
 do
     v14.panelRefresh={}
     v14.localeLabels={}
+    v14.localePlaceholders={}
     local dictionary={
         ["RECENTES"]={en="RECENT COMMANDS",es="COMANDOS RECIENTES"},
         ["Ultimos comandos executados na sessao"]={en="Recently executed commands this session",es="Comandos recientes de esta sesion"},
@@ -4556,6 +4558,9 @@ do
         for _,entry in ipairs(v14.localeLabels) do
             if entry.obj.Parent then entry.obj.Text=v14.t(entry.key) end
         end
+        for _,entry in ipairs(v14.localePlaceholders) do
+            if entry.obj.Parent then entry.obj.PlaceholderText=v14.t(entry.key) end
+        end
         if v14.refresh then v14.refresh(selected) end
     end
     local function box(parent,w,h,textPlaceholder,multi)
@@ -4571,6 +4576,7 @@ do
             TextYAlignment=multi and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
         }),8)
         obj("UIStroke",b,{Color=accent,Transparency=.65,Thickness=1})
+        v14.localePlaceholders[#v14.localePlaceholders+1]={obj=b,key=textPlaceholder}
         return b
     end
     local function title(page,titleText,desc)
@@ -5073,6 +5079,7 @@ do
     -- F2 Wheel, F6 Cinema, gamepad Start/R1/B, botoes nativos do Roblox.
     v14.onInput=function(input,used)
         local key=input.KeyCode
+        if UIS:GetFocusedTextBox() and key~=Enum.KeyCode.ButtonStart then return false end
         if key==Enum.KeyCode.F6 and not used then
             if v14.cinematic then v14.stopCinema() else v14.startCinema() end
             return true
@@ -5094,19 +5101,22 @@ do
                 end
                 return true
             elseif key==Enum.KeyCode.ButtonR1 then
-                v14.toggleWheel()
-                return true
+                if main.Visible or v14.wheelOpen then
+                    v14.toggleWheel()
+                    return true
+                end
             elseif key==Enum.KeyCode.ButtonB then
                 if v14.wheelOpen then v14.toggleWheel()
                 elseif v14.cinematic then v14.stopCinema()
-                elseif selected~="HOME" then show("HOME")
-                else main.Visible=false reopen.Visible=true end
+                elseif main.Visible and selected~="HOME" then show("HOME")
+                elseif main.Visible then main.Visible=false reopen.Visible=true
+                else return false end
                 return true
-            elseif key==Enum.KeyCode.ButtonY then
-                main.Visible=true reopen.Visible=false show("RECENT")
+            elseif key==Enum.KeyCode.ButtonY and main.Visible then
+                show("RECENT")
                 return true
-            elseif key==Enum.KeyCode.ButtonX then
-                main.Visible=true reopen.Visible=false show("FAVORITES")
+            elseif key==Enum.KeyCode.ButtonX and main.Visible then
+                show("FAVORITES")
                 return true
             end
         end
