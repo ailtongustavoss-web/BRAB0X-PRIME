@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17.3 | INTERFACE SIMPLIFICADA
+-- BRAB0X PRIME V17.4 | MINI HUB PREMIUM ARRASTAVEL
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_4_STOP",
     "BRAB0X_V17_3_STOP",
     "BRAB0X_V17_2_STOP",
     "BRAB0X_V17_1_STOP",
@@ -58,7 +59,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_3")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_4")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -397,7 +398,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_3",
+    Name = "BRAB0X_PRIME_V17_4",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -443,7 +444,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.3  |  SIMPLIFIED UI   /   BY @wendezao05153nh",
+    "V17.4  |  MINI HUB PREMIUM   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -464,10 +465,101 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
-local reopen = btn(gui,"BRAB0X +",nil,35)
-reopen.Size = UDim2.fromOffset(150,35)
-reopen.Position = UDim2.new(.5,-75,.09,0)
-reopen.Visible = false
+-- V17.4 / MINI HUB PREMIUM: widget independente e integrado ao mesmo reopen.
+-- Todas as rotinas antigas continuam usando reopen.Visible sem adaptacoes.
+local reopen = round(obj("TextButton",gui,{
+    Name="BRAB0X_MINI_PREMIUM",
+    Size=UDim2.fromOffset(230,64),
+    AnchorPoint=Vector2.new(.5,0),
+    Position=UDim2.new(.5,0,.085,0),
+    BackgroundColor3=Color3.fromRGB(23,12,23),
+    BorderSizePixel=0,
+    Text="",
+    AutoButtonColor=false,
+    Active=true,
+    Visible=false,
+    ZIndex=110
+}),14)
+local miniStroke=obj("UIStroke",reopen,{
+    Color=Color3.fromRGB(234,36,72),
+    Thickness=1.6,
+    Transparency=.13
+})
+obj("UIGradient",reopen,{
+    Rotation=0,
+    Color=ColorSequence.new(
+        Color3.fromRGB(24,18,27),
+        Color3.fromRGB(40,15,27)
+    )
+})
+local miniAccent=obj("Frame",reopen,{
+    Name="AccentBar",
+    Position=UDim2.new(0,9,1,-5),
+    Size=UDim2.new(1,-18,0,2),
+    BorderSizePixel=0,
+    BackgroundColor3=Color3.fromRGB(239,39,74),
+    BackgroundTransparency=.24,
+    ZIndex=111
+})
+round(miniAccent,2)
+local miniIcon=round(obj("Frame",reopen,{
+    Name="Icon",
+    Position=UDim2.fromOffset(10,11),
+    Size=UDim2.fromOffset(42,42),
+    BackgroundColor3=Color3.fromRGB(60,14,30),
+    BorderSizePixel=0,
+    ZIndex=112
+}),10)
+obj("UIStroke",miniIcon,{
+    Color=Color3.fromRGB(252,64,99),
+    Thickness=1.2,
+    Transparency=.15
+})
+local miniLetter=txt(miniIcon,"B",39,26,true)
+miniLetter.Position=UDim2.fromOffset(0,1)
+miniLetter.Size=UDim2.fromScale(1,1)
+miniLetter.TextXAlignment=Enum.TextXAlignment.Center
+miniLetter.TextColor3=Color3.fromRGB(255,73,104)
+miniLetter.ZIndex=113
+local miniTitle=txt(reopen,"BRAB0X PRIME",23,13,true)
+miniTitle.Position=UDim2.fromOffset(62,11)
+miniTitle.Size=UDim2.fromOffset(143,22)
+miniTitle.TextWrapped=false
+miniTitle.TextColor3=Color3.fromRGB(253,245,248)
+miniTitle.ZIndex=112
+local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",16,10)
+miniSubtitle.Position=UDim2.fromOffset(63,34)
+miniSubtitle.Size=UDim2.fromOffset(125,17)
+miniSubtitle.TextColor3=Color3.fromRGB(183,160,174)
+miniSubtitle.TextWrapped=false
+miniSubtitle.ZIndex=112
+local miniArrow=txt(reopen,">",26,18,true)
+miniArrow.Position=UDim2.new(1,-30,0,19)
+miniArrow.Size=UDim2.fromOffset(21,27)
+miniArrow.TextXAlignment=Enum.TextXAlignment.Center
+miniArrow.TextColor3=Color3.fromRGB(251,76,109)
+miniArrow.ZIndex=112
+local miniMoved=false
+bind(reopen.MouseEnter,function()
+    if stopped then return end
+    Tween:Create(miniStroke,TweenInfo.new(.16),{Transparency=0,Thickness=2.2}):Play()
+    Tween:Create(miniIcon,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(90,19,44)
+    }):Play()
+    Tween:Create(miniArrow,TweenInfo.new(.16),{
+        TextColor3=Color3.fromRGB(255,159,177)
+    }):Play()
+end)
+bind(reopen.MouseLeave,function()
+    if stopped then return end
+    Tween:Create(miniStroke,TweenInfo.new(.16),{Transparency=.13,Thickness=1.6}):Play()
+    Tween:Create(miniIcon,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(60,14,30)
+    }):Play()
+    Tween:Create(miniArrow,TweenInfo.new(.16),{
+        TextColor3=Color3.fromRGB(251,76,109)
+    }):Play()
+end)
 
 -- FPS
 
@@ -1568,7 +1660,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_3_AIM"
+local aimKey = "BRAB0X_V17_4_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2677,7 +2769,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.3 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.4 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4361,7 +4453,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.3 / CLEAN",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.4 / MINI HUB",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5560,7 +5652,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.3] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.4] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6253,17 +6345,89 @@ bind(cmdInput.FocusLost,function(enter)
     end
 end)
 
--- MINIMIZAR
-
+-- MINIMIZAR / MINI PAINEL ARRASTAVEL (MOUSE E TOQUE).
+local miniDragging=false
+local miniDragInput=nil
+local miniDragStart=nil
+local miniStartPosition=nil
+local function clampMiniPosition()
+    local view=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+        or Vector2.new(1280,720)
+    local w=math.min(reopen.AbsoluteSize.X,230)
+    local h=math.min(reopen.AbsoluteSize.Y,64)
+    if w<=1 then w=230 end
+    if h<=1 then h=64 end
+    local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
+    local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
+    local minX=math.min(view.X*.5,w*.5+8)
+    local maxX=math.max(view.X*.5,view.X-w*.5-8)
+    local maxY=math.max(8,view.Y-h-8)
+    centerX=math.clamp(centerX,minX,maxX)
+    topY=math.clamp(topY,8,maxY)
+    reopen.Position=UDim2.new(.5,centerX-view.X*.5,0,topY)
+end
+bind(reopen.InputBegan,function(input)
+    if not reopen.Visible then return end
+    local kind=input.UserInputType
+    if kind~=Enum.UserInputType.MouseButton1
+        and kind~=Enum.UserInputType.Touch then return end
+    miniDragging=true
+    miniMoved=false
+    miniDragInput=input
+    miniDragStart=input.Position
+    miniStartPosition=reopen.Position
+end)
+bind(UIS.InputChanged,function(input)
+    if not miniDragging or not miniDragStart or not miniStartPosition then return end
+    local mouse=input.UserInputType==Enum.UserInputType.MouseMovement
+        and miniDragInput and
+        miniDragInput.UserInputType==Enum.UserInputType.MouseButton1
+    local touch=input.UserInputType==Enum.UserInputType.Touch
+        and input==miniDragInput
+    if not mouse and not touch then return end
+    local delta=input.Position-miniDragStart
+    if delta.Magnitude>7 then miniMoved=true end
+    if not miniMoved then return end
+    reopen.Position=UDim2.new(
+        miniStartPosition.X.Scale,miniStartPosition.X.Offset+delta.X,
+        miniStartPosition.Y.Scale,miniStartPosition.Y.Offset+delta.Y
+    )
+    clampMiniPosition()
+end)
+bind(UIS.InputEnded,function(input)
+    if not miniDragging then return end
+    local mouse=input.UserInputType==Enum.UserInputType.MouseButton1
+        and miniDragInput
+        and miniDragInput.UserInputType==Enum.UserInputType.MouseButton1
+    local touch=input.UserInputType==Enum.UserInputType.Touch
+        and input==miniDragInput
+    if not mouse and not touch then return end
+    miniDragging=false
+    miniDragInput=nil
+    miniDragStart=nil
+    miniStartPosition=nil
+    clampMiniPosition()
+end)
 bind(minimize.MouseButton1Click,function()
-    main.Visible = false
-    reopen.Visible = true
+    main.Visible=false
+    reopen.Visible=true
+    clampMiniPosition()
 end)
-
 bind(reopen.MouseButton1Click,function()
-    main.Visible = true
-    reopen.Visible = false
+    -- Arrastar nunca deve abrir o hub por acidente.
+    if miniMoved then
+        miniMoved=false
+        return
+    end
+    main.Visible=true
+    reopen.Visible=false
 end)
+do
+    local camera=workspace.CurrentCamera
+    if camera then bind(camera:GetPropertyChangedSignal("ViewportSize"),function()
+        if reopen.Visible then clampMiniPosition() end
+    end) end
+end
 
 -- ENCERRAMENTO
 
@@ -6283,8 +6447,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_3_STOP == closeHub then
-        _G.BRAB0X_V17_3_STOP = nil
+    if _G.BRAB0X_V17_4_STOP == closeHub then
+        _G.BRAB0X_V17_4_STOP = nil
     end
 end
 
@@ -6373,7 +6537,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_3_STOP = closeHub
+_G.BRAB0X_V17_4_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6539,7 +6703,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.3 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.4 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6589,6 +6753,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.3 | "
+    "BRAB0X PRIME V17.4 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
