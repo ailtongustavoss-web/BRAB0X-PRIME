@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17.4 | MINI HUB PREMIUM ARRASTAVEL
+-- BRAB0X PRIME V17.5 | MINI BANNER CYBER - MODELO 3
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_5_STOP",
     "BRAB0X_V17_4_STOP",
     "BRAB0X_V17_3_STOP",
     "BRAB0X_V17_2_STOP",
@@ -59,7 +60,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_4")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_5")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -398,7 +399,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_4",
+    Name = "BRAB0X_PRIME_V17_5",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -444,7 +445,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.4  |  MINI HUB PREMIUM   /   BY @wendezao05153nh",
+    "V17.5  |  CYBER BANNER #3   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -465,99 +466,171 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V17.4 / MINI HUB PREMIUM: widget independente e integrado ao mesmo reopen.
--- Todas as rotinas antigas continuam usando reopen.Visible sem adaptacoes.
-local reopen = round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM",
-    Size=UDim2.fromOffset(230,64),
+-- V17.5 / MINI BANNER CYBER - MODELO 3 ESCOLHIDO PELO CRIADOR.
+-- Recriacao em componentes nativos do Roblox da arte de referencia.
+-- A imagem PNG nao e um assetId Roblox; este design funciona sem upload externo.
+-- 'reopen.Visible' permanece a API usada por todos os atalhos existentes.
+local reopen=round(obj("TextButton",gui,{
+    Name="BRAB0X_MINI_CYBER_V17_5",
+    Size=UDim2.fromOffset(310,94),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.085,0),
-    BackgroundColor3=Color3.fromRGB(23,12,23),
+    BackgroundColor3=Color3.fromRGB(12,8,15),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
     Active=true,
+    ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),14)
+}),19)
+local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
-    Color=Color3.fromRGB(234,36,72),
-    Thickness=1.6,
-    Transparency=.13
+    Color=Color3.fromRGB(246,28,65),
+    Thickness=2,
+    Transparency=.05,
+    ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 })
 obj("UIGradient",reopen,{
     Rotation=0,
+    Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(16,9,18)),
+        ColorSequenceKeypoint.new(.55,Color3.fromRGB(6,6,11)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(31,8,17))
+    })
+})
+-- Faixas e circuitos: estilo do terceiro banner (HUD futurista).
+do
+    local function stripe(x,y,w,h,color,transparency,rotation,z)
+        local item=obj("Frame",reopen,{
+            Position=UDim2.fromOffset(x,y),
+            Size=UDim2.fromOffset(w,h),
+            BackgroundColor3=color or Color3.fromRGB(251,38,73),
+            BackgroundTransparency=transparency or 0,
+            BorderSizePixel=0,
+            Rotation=rotation or 0,
+            ZIndex=z or 111
+        })
+        return item
+    end
+    stripe(16,7,108,2,nil,.15)
+    stripe(184,7,59,2,nil,.18)
+    stripe(263,7,25,2,nil,.18)
+    stripe(8,82,64,2,nil,.22)
+    stripe(104,87,106,3,Color3.fromRGB(255,47,77),.04)
+    stripe(237,82,49,2,nil,.16)
+    stripe(85,15,1,61,Color3.fromRGB(255,48,81),.38)
+    for i=0,3 do
+        stripe(216+i*14,13,7,3,nil,.30)
+    end
+    for i=0,3 do
+        stripe(106+i*13,78,6,2,nil,.62)
+    end
+    -- Detalhes tecnicos discretos nas bordas, abaixo das legendas.
+    stripe(252,22,35,1,nil,.55)
+    stripe(258,26,26,1,nil,.75)
+    stripe(229,68,35,1,nil,.60)
+    stripe(260,70,28,1,nil,.78)
+end
+local miniIcon=round(obj("Frame",reopen,{
+    Name="NeonEmblem",
+    Position=UDim2.fromOffset(12,15),
+    Size=UDim2.fromOffset(61,61),
+    BackgroundColor3=Color3.fromRGB(42,9,25),
+    BorderSizePixel=0,
+    ZIndex=113
+}),13)
+local miniIconStroke=obj("UIStroke",miniIcon,{
+    Color=Color3.fromRGB(253,42,79),
+    Thickness=1.8,
+    Transparency=.03
+})
+obj("UIGradient",miniIcon,{
+    Rotation=45,
     Color=ColorSequence.new(
-        Color3.fromRGB(24,18,27),
-        Color3.fromRGB(40,15,27)
+        Color3.fromRGB(70,10,28),
+        Color3.fromRGB(22,8,21)
     )
 })
-local miniAccent=obj("Frame",reopen,{
-    Name="AccentBar",
-    Position=UDim2.new(0,9,1,-5),
-    Size=UDim2.new(1,-18,0,2),
-    BorderSizePixel=0,
-    BackgroundColor3=Color3.fromRGB(239,39,74),
-    BackgroundTransparency=.24,
-    ZIndex=111
-})
-round(miniAccent,2)
-local miniIcon=round(obj("Frame",reopen,{
-    Name="Icon",
-    Position=UDim2.fromOffset(10,11),
-    Size=UDim2.fromOffset(42,42),
-    BackgroundColor3=Color3.fromRGB(60,14,30),
-    BorderSizePixel=0,
-    ZIndex=112
-}),10)
-obj("UIStroke",miniIcon,{
-    Color=Color3.fromRGB(252,64,99),
-    Thickness=1.2,
-    Transparency=.15
-})
-local miniLetter=txt(miniIcon,"B",39,26,true)
-miniLetter.Position=UDim2.fromOffset(0,1)
+local miniLetter=txt(miniIcon,"B",56,43,true)
+miniLetter.Position=UDim2.fromOffset(0,0)
 miniLetter.Size=UDim2.fromScale(1,1)
+miniLetter.TextColor3=Color3.fromRGB(255,51,87)
 miniLetter.TextXAlignment=Enum.TextXAlignment.Center
-miniLetter.TextColor3=Color3.fromRGB(255,73,104)
-miniLetter.ZIndex=113
-local miniTitle=txt(reopen,"BRAB0X PRIME",23,13,true)
-miniTitle.Position=UDim2.fromOffset(62,11)
-miniTitle.Size=UDim2.fromOffset(143,22)
+miniLetter.Font=Enum.Font.GothamBlack
+miniLetter.ZIndex=114
+local miniTitle=txt(reopen,"BRAB0X",30,20,true)
+miniTitle.Position=UDim2.fromOffset(91,23)
+miniTitle.Size=UDim2.fromOffset(96,30)
 miniTitle.TextWrapped=false
-miniTitle.TextColor3=Color3.fromRGB(253,245,248)
-miniTitle.ZIndex=112
-local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",16,10)
-miniSubtitle.Position=UDim2.fromOffset(63,34)
-miniSubtitle.Size=UDim2.fromOffset(125,17)
-miniSubtitle.TextColor3=Color3.fromRGB(183,160,174)
+miniTitle.Font=Enum.Font.GothamBlack
+miniTitle.TextColor3=Color3.fromRGB(255,251,251)
+miniTitle.ZIndex=115
+local miniPrime=txt(reopen,"PRIME",30,20,true)
+miniPrime.Position=UDim2.fromOffset(190,23)
+miniPrime.Size=UDim2.fromOffset(79,30)
+miniPrime.TextWrapped=false
+miniPrime.Font=Enum.Font.GothamBlack
+miniPrime.TextColor3=Color3.fromRGB(254,47,78)
+miniPrime.ZIndex=115
+local miniUnderline=obj("Frame",reopen,{
+    Position=UDim2.fromOffset(94,55),
+    Size=UDim2.fromOffset(166,1),
+    BackgroundColor3=Color3.fromRGB(245,40,70),
+    BackgroundTransparency=.30,
+    BorderSizePixel=0,
+    ZIndex=114
+})
+local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",17,10,true)
+miniSubtitle.Position=UDim2.fromOffset(105,61)
+miniSubtitle.Size=UDim2.fromOffset(153,17)
 miniSubtitle.TextWrapped=false
-miniSubtitle.ZIndex=112
-local miniArrow=txt(reopen,">",26,18,true)
-miniArrow.Position=UDim2.new(1,-30,0,19)
-miniArrow.Size=UDim2.fromOffset(21,27)
+miniSubtitle.TextColor3=Color3.fromRGB(220,206,216)
+miniSubtitle.ZIndex=115
+local miniArrowPanel=round(obj("Frame",reopen,{
+    Name="ArrowPanel",
+    Position=UDim2.fromOffset(271,31),
+    Size=UDim2.fromOffset(29,36),
+    BackgroundColor3=Color3.fromRGB(67,8,26),
+    BackgroundTransparency=.12,
+    BorderSizePixel=0,
+    ZIndex=114
+}),8)
+local miniArrow=txt(miniArrowPanel,">",29,24,true)
+miniArrow.Position=UDim2.fromOffset(0,1)
+miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
-miniArrow.TextColor3=Color3.fromRGB(251,76,109)
-miniArrow.ZIndex=112
+miniArrow.TextColor3=Color3.fromRGB(255,62,94)
+miniArrow.ZIndex=115
 local miniMoved=false
 bind(reopen.MouseEnter,function()
     if stopped then return end
-    Tween:Create(miniStroke,TweenInfo.new(.16),{Transparency=0,Thickness=2.2}):Play()
-    Tween:Create(miniIcon,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(90,19,44)
+    Tween:Create(miniStroke,TweenInfo.new(.16),{
+        Transparency=0,Thickness=2.6
+    }):Play()
+    Tween:Create(miniIconStroke,TweenInfo.new(.16),{
+        Thickness=2.2
     }):Play()
     Tween:Create(miniArrow,TweenInfo.new(.16),{
-        TextColor3=Color3.fromRGB(255,159,177)
+        TextColor3=Color3.fromRGB(255,180,190)
+    }):Play()
+    Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(110,13,39)
     }):Play()
 end)
 bind(reopen.MouseLeave,function()
     if stopped then return end
-    Tween:Create(miniStroke,TweenInfo.new(.16),{Transparency=.13,Thickness=1.6}):Play()
-    Tween:Create(miniIcon,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(60,14,30)
+    Tween:Create(miniStroke,TweenInfo.new(.16),{
+        Transparency=.05,Thickness=2
+    }):Play()
+    Tween:Create(miniIconStroke,TweenInfo.new(.16),{
+        Thickness=1.8
     }):Play()
     Tween:Create(miniArrow,TweenInfo.new(.16),{
-        TextColor3=Color3.fromRGB(251,76,109)
+        TextColor3=Color3.fromRGB(255,62,94)
+    }):Play()
+    Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(67,8,26)
     }):Play()
 end)
 
@@ -1660,7 +1733,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_4_AIM"
+local aimKey = "BRAB0X_V17_5_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2769,7 +2842,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.4 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.5 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4453,7 +4526,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.4 / MINI HUB",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.5 / CYBER",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5652,7 +5725,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.4] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.5] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6353,10 +6426,12 @@ local miniStartPosition=nil
 local function clampMiniPosition()
     local view=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
         or Vector2.new(1280,720)
-    local w=math.min(reopen.AbsoluteSize.X,230)
-    local h=math.min(reopen.AbsoluteSize.Y,64)
-    if w<=1 then w=230 end
-    if h<=1 then h=64 end
+    -- Mantem todo o banner visivel em telas pequenas, inclusive no celular.
+    miniUIScale.Scale=math.clamp(math.min(
+        1,(view.X-20)/310,(view.Y-20)/94
+    ),.35,1)
+    local w=310*miniUIScale.Scale
+    local h=94*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
@@ -6447,8 +6522,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_4_STOP == closeHub then
-        _G.BRAB0X_V17_4_STOP = nil
+    if _G.BRAB0X_V17_5_STOP == closeHub then
+        _G.BRAB0X_V17_5_STOP = nil
     end
 end
 
@@ -6537,7 +6612,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_4_STOP = closeHub
+_G.BRAB0X_V17_5_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6703,7 +6778,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.4 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.5 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6753,6 +6828,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.4 | "
+    "BRAB0X PRIME V17.5 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
