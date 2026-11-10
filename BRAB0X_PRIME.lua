@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V9 | PAINEL REFEITO + MODULOS
+-- BRAB0X PRIME V10 | PAINEL AZUL + AIM OPCIONAL
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -21,6 +21,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V10_STOP",
     "BRAB0X_V9_STOP",
     "BRAB0X_V8_STOP",
     "BRAB0X_V7_STOP",
@@ -32,26 +33,21 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V9")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V10")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
 
-local config = _G.BRAB0X_PRIME_PREFS or {
-    theme = "violet",
-    scale = 1,
-    lang = "pt"
-}
-
-config.modules = config.modules or {
-    FLY = true,
-    PLAYER = true,
-    CAMERA = true,
-    WORLD = true,
-    EMOTES = true,
-    AIM = true
-}
-
+local config = _G.BRAB0X_PRIME_PREFS or {}
+config.scale = tonumber(config.scale) or 1
+config.lang = config.lang or "pt"
+-- Migracao de tema: cores antigas nao sao mais o padrao.
+if config.theme == nil or config.theme == "violet" or config.theme == "rose" then
+    config.theme = "blue"
+end
+if config.aimEnabled == nil then
+    config.aimEnabled = false
+end
 _G.BRAB0X_PRIME_PREFS = config
 
 local S = {
@@ -75,19 +71,17 @@ local S = {
 }
 
 local palette = {
-    violet = Color3.fromRGB(177,86,255),
-    ice = Color3.fromRGB(42,208,254),
-    rose = Color3.fromRGB(255,80,164),
-    mint = Color3.fromRGB(43,231,166)
+    blue = Color3.fromRGB(0,163,255),
+    cyan = Color3.fromRGB(0,220,235),
+    teal = Color3.fromRGB(0,206,170),
+    whiteblue = Color3.fromRGB(116,188,255)
 }
-
-local ink = Color3.fromRGB(7,9,18)
-local card = Color3.fromRGB(15,19,36)
-local control = Color3.fromRGB(25,30,51)
-local white = Color3.fromRGB(245,247,255)
-local muted = Color3.fromRGB(157,171,195)
-
-local accent = palette[config.theme] or palette.violet
+local ink = Color3.fromRGB(5,10,19)
+local card = Color3.fromRGB(10,19,32)
+local control = Color3.fromRGB(18,34,52)
+local white = Color3.fromRGB(238,248,255)
+local muted = Color3.fromRGB(152,176,195)
+local accent = palette[config.theme] or palette.blue
 
 local connections = {}
 local flyParts = {}
@@ -231,20 +225,10 @@ local sections = {
     "SETTINGS","COMMANDS"
 }
 
-local selectorOrder = {
-    {"FLY","VOO / MOVIMENTO","Fly, boost, velocidade, noclip"},
-    {"AIM","AIM LOCK / TREINO","Camera assistida somente em NPCs de treino"},
-    {"EMOTES","EMOTES / ANIMACOES","Dancas e emotes do avatar"},
-    {"PLAYER","JOGADOR","Movimento, visual, posicoes"},
-    {"CAMERA","CAMERA","Zoom, FOV e visao"},
-    {"WORLD","MUNDO","Tempo, gravidade e iluminacao"}
-}
-
+-- A unica categoria opcional e AIM; todas as outras permanecem juntas.
+local navOrder = {"HOME", "COMMANDS", "AIM", "SETTINGS"}
 local function moduleEnabled(name)
-    return name == "HOME"
-        or name == "SETTINGS"
-        or name == "COMMANDS"
-        or config.modules[name] ~= false
+    return name ~= "AIM" or config.aimEnabled == true
 end
 
 local openModulePicker
@@ -253,7 +237,7 @@ local refreshCommandList
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V9",
+    Name = "BRAB0X_PRIME_V10",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -286,7 +270,7 @@ round(header,15)
 
 obj("UIGradient",header,{
     Color = ColorSequence.new(
-        card,Color3.fromRGB(40,15,63)
+        card,Color3.fromRGB(6,48,69)
     )
 })
 
@@ -298,7 +282,7 @@ brand.Size = UDim2.fromOffset(340,34)
 
 local sub = txt(
     header,
-    "V9  •  CONTROL CENTER  /  ORGANIZADO POR CATEGORIAS",
+    "V10  •  BLUE EDITION   /   TODOS OS COMANDOS EM UM LUGAR",
     16,10
 )
 sub.TextColor3 = muted
@@ -394,8 +378,6 @@ local pages = {}
 local navButtons = {}
 
 for _,id in ipairs(sections) do
-    navButtons[id] = btn(nav,id,nil,35)
-
     pages[id] = obj("ScrollingFrame",right,{
         Size = UDim2.new(1,-22,1,-20),
         Position = UDim2.fromOffset(11,10),
@@ -409,6 +391,10 @@ for _,id in ipairs(sections) do
     })
 
     stack(pages[id],6)
+end
+
+for _,id in ipairs(navOrder) do
+    navButtons[id] = btn(nav,id,nil,44)
 end
 
 local status = txt(
@@ -428,7 +414,7 @@ local cmdInput = round(obj("TextBox",main,{
     BorderSizePixel = 0,
     Text = "",
     TextColor3 = white,
-    PlaceholderText = "Digite: fly | speed 90 | emote dance | theme ice",
+    PlaceholderText = "Digite: fly | speed 90 | emote dance | theme blue",
     PlaceholderColor3 = muted,
     ClearTextOnFocus = false,
     Font = Enum.Font.Code,
@@ -476,8 +462,9 @@ end
 local function relabel()
     local labels = L[config.lang] or L.en
 
-    for i,name in ipairs(sections) do
-        navButtons[name].Text = "   "..labels[i]
+    for _,name in ipairs(navOrder) do
+        local i = table.find(sections,name)
+        navButtons[name].Text = "   "..(labels[i] or name)
     end
 end
 
@@ -880,7 +867,7 @@ local function stopEmote()
         danceStep = nil
     end
 
-    for m in pairs(joints) do
+    for _,m in pairs(joints) do
         if m.Parent then
             m.Transform = CFrame.new()
         end
@@ -1097,7 +1084,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V9_AIM"
+local aimKey = "BRAB0X_V10_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -1643,29 +1630,23 @@ register("modules","SETTINGS","Escolher categorias",function()
     if openModulePicker then openModulePicker() end
 end)
 
-register("allmodules","SETTINGS","Ativar todas as categorias",function()
-    for _,entry in ipairs(selectorOrder) do
-        config.modules[entry[1]] = true
+register("aimmodule","SETTINGS","Exibir a aba AIM de treino",function(a)
+    if a == "on" then
+        config.aimEnabled = true
+    elseif a == "off" then
+        config.aimEnabled = false
+        S.aim = false
+    else
+        config.aimEnabled = not config.aimEnabled
+        if not config.aimEnabled then S.aim = false end
     end
-
-    show("HOME")
-
-    if refreshCommandList then
-        refreshCommandList()
+    if not config.aimEnabled and selected == "AIM" then
+        show("COMMANDS")
+    else
+        show(selected)
     end
-end)
-
-register("listmodules","SETTINGS","Listar categorias ativadas",function()
-    local names = {}
-
-    for _,entry in ipairs(selectorOrder) do
-        if moduleEnabled(entry[1]) then
-            names[#names+1] = entry[1]
-        end
-    end
-
-    notify("Modulos: "..table.concat(names,", "))
-end)
+    if refreshCommandList then refreshCommandList() end
+end,"aimmodule on")
 
 -- EXECUTAR COMANDO
 
@@ -1699,7 +1680,8 @@ exec = function(raw)
         return
     end
 
-    if not stopped and command ~= "coords"
+    if stopped then return end
+    if command ~= "coords"
         and command ~= "status" then
         notify("OK: "..raw)
     end
@@ -1723,22 +1705,51 @@ local search = round(obj("TextBox",cmdPage,{
     TextSize = 13
 }),8)
 
+local filterRow = obj("Frame",cmdPage,{
+    Size = UDim2.new(1,-8,0,36),
+    BackgroundTransparency = 1
+})
+obj("UIListLayout",filterRow,{
+    FillDirection = Enum.FillDirection.Horizontal,
+    Padding = UDim.new(0,5),
+    SortOrder = Enum.SortOrder.LayoutOrder
+})
+local activeFilter = "ALL"
+local filters = {
+    {"ALL","TODOS"},{"FLY","VOO"},{"PLAYER","JOGADOR"},
+    {"CAMERA","CAMERA"},{"WORLD","MUNDO"},{"EMOTES","EMOTES"}
+}
+local filterButtons = {}
+for _,entry in ipairs(filters) do
+    local b = btn(filterRow,entry[2],nil,33)
+    b.Size = UDim2.new(1/6,-5,0,33)
+    filterButtons[entry[1]] = b
+    bind(b.MouseButton1Click,function()
+        activeFilter = entry[1]
+        if refreshCommandList then refreshCommandList() end
+    end)
+end
+
 local commandGrid = obj("Frame",cmdPage,{
     Size = UDim2.new(1,-8,0,0),
     AutomaticSize = Enum.AutomaticSize.Y,
     BackgroundTransparency = 1
 })
-obj("UIGridLayout",commandGrid,{
-    CellSize = UDim2.new(.5,-5,0,42),
+local commandLayout = obj("UIGridLayout",commandGrid,{
+    CellSize = UDim2.new(.5,-5,0,46),
     CellPadding = UDim2.fromOffset(9,8),
     SortOrder = Enum.SortOrder.LayoutOrder
 })
+local function sizeCommands()
+    commandGrid.Size = UDim2.new(1,-8,0,commandLayout.AbsoluteContentSize.Y+12)
+end
+bind(commandLayout:GetPropertyChangedSignal("AbsoluteContentSize"),sizeCommands)
 local commandRows = {}
 
 for _,entry in ipairs(registered) do
     local b = btn(
         commandGrid,
-        entry.example.."   •   "..entry.description,
+        "["..entry.category.."]  "..entry.example.."  •  "..entry.description,
         function()
             exec(entry.example)
         end,
@@ -1759,15 +1770,17 @@ end
 
 refreshCommandList = function()
     local textQuery = search.Text:lower()
-
     for _,v in ipairs(commandRows) do
-        v.b.Visible =
-            moduleEnabled(v.category)
-            and (
-                textQuery == ""
-                or v.lookup:find(textQuery,1,true) ~= nil
-            )
+        v.b.Visible = moduleEnabled(v.category)
+            and (activeFilter == "ALL" or v.category == activeFilter)
+            and (textQuery == "" or v.lookup:find(textQuery,1,true) ~= nil)
     end
+    for name,b in pairs(filterButtons) do
+        local active = name == activeFilter
+        b.BackgroundColor3 = active and accent or control
+        b.TextColor3 = active and ink or white
+    end
+    sizeCommands()
 end
 
 bind(
@@ -1778,36 +1791,52 @@ bind(
 -- HOME
 
 local hero = round(obj("Frame",pages.HOME,{
-    Size = UDim2.new(1,-9,0,96),
-    BackgroundColor3 = control
-}),12)
-
+    Size = UDim2.new(1,-9,0,174),
+    BackgroundColor3 = Color3.fromRGB(8,36,58),
+    BorderSizePixel = 0
+}),14)
 obj("UIGradient",hero,{
-    Color = ColorSequence.new(
-        Color3.fromRGB(37,18,73),
-        Color3.fromRGB(10,42,61)
-    )
+    Rotation = 12,
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(5,34,57)),
+        ColorSequenceKeypoint.new(.55,Color3.fromRGB(11,74,101)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(2,16,34))
+    })
 })
-
-local heroEdge = obj("Frame",hero,{
-    Size = UDim2.new(0,4,1,0),
+obj("UIStroke",hero,{Color=accent,Transparency=.35,Thickness=1.3})
+round(obj("Frame",hero,{
+    Position = UDim2.fromOffset(18,20),
+    Size = UDim2.fromOffset(5,112),
     BackgroundColor3 = accent,
     BorderSizePixel = 0
-})
-
-local heroName = txt(
-    hero,"BRAB0X PRIME / CONTROL CENTER",36,19,true
-)
-heroName.Position = UDim2.fromOffset(16,10)
-heroName.Size = UDim2.new(1,-25,0,35)
-
-local heroText = txt(
-    hero,
-    "Escolha uma categoria na lateral • Atalhos e modulos configuraveis",
-    25,12
-)
-heroText.TextColor3 = muted
-heroText.Position = UDim2.fromOffset(16,48)
+}),3)
+local code = txt(hero,"B",156,160,true)
+code.Position = UDim2.new(1,-180,0,-13)
+code.Size = UDim2.fromOffset(160,162)
+code.TextColor3 = accent
+code.TextTransparency = .84
+code.TextXAlignment = Enum.TextXAlignment.Center
+local bannerBrand = txt(hero,"BRAB0X PRIME",51,32,true)
+bannerBrand.Position = UDim2.fromOffset(38,18)
+bannerBrand.Size = UDim2.new(1,-75,0,52)
+local bannerSub = txt(hero,"CONTROL CENTER  /  BLUE EDITION",26,13,true)
+bannerSub.Position = UDim2.fromOffset(41,70)
+bannerSub.Size = UDim2.new(1,-70,0,24)
+bannerSub.TextColor3 = accent
+local bannerDesc = txt(hero,"VOO  •  AVATAR  •  CAMERA  •  EMOTES  •  AIM OPCIONAL",42,12)
+bannerDesc.Position = UDim2.fromOffset(41,102)
+bannerDesc.Size = UDim2.new(1,-75,0,38)
+bannerDesc.TextColor3 = white
+local bannerTag = round(obj("TextLabel",hero,{
+    Position = UDim2.new(1,-110,0,13),
+    Size = UDim2.fromOffset(87,26),
+    BackgroundColor3 = Color3.fromRGB(4,22,36),
+    Text = "V10  /  ON",
+    TextColor3 = accent,
+    TextSize = 12,
+    Font = Enum.Font.GothamBold,
+    BorderSizePixel = 0
+}),9)
 
 local live = titleRow(
     pages.HOME,
@@ -1816,14 +1845,12 @@ local live = titleRow(
 
 titleRow(
     pages.HOME,
-    "ATALHOS: F voo | RightShift menu | Ctrl+K comandos"
+    "ATALHOS  •  F = VOAR  |  RightShift = MENU  |  Ctrl+K = BUSCAR"
 )
 
-item(
-    pages.HOME,
-    "ESCOLHER TIPO DE COMANDOS",
-    "modules"
-)
+item(pages.HOME,"ABRIR COMANDOS","help")
+item(pages.HOME,"ABRIR EMOTES","emotes")
+item(pages.HOME,"CONFIGURAR ABA AIM","modules")
 
 -- ABA FLY
 
@@ -2185,7 +2212,7 @@ line(
 )
 
 for _,theme in ipairs({
-    "violet","ice","rose","mint"
+    "blue","cyan","teal","whiteblue"
 }) do
     item(
         pages.SETTINGS,
@@ -2212,15 +2239,12 @@ end
 
 item(
     pages.SETTINGS,
-    "ESCOLHER MODULOS",
+    "CONFIGURAR ABA AIM",
     "modules"
 )
 
-item(
-    pages.SETTINGS,
-    "ATIVAR TODAS AS CATEGORIAS",
-    "allmodules"
-)
+item(pages.SETTINGS,"MOSTRAR ABA AIM","aimmodule on")
+item(pages.SETTINGS,"OCULTAR ABA AIM","aimmodule off")
 
 item(pages.SETTINGS,"FPS ON","fps on")
 item(pages.SETTINGS,"FPS OFF","fps off")
@@ -2259,7 +2283,7 @@ refresh = function()
         S.aimRadius*2
     )
 
-    aimCircle.Visible = S.aim and S.aimCircle
+    aimCircle.Visible = config.aimEnabled and S.aim and S.aimCircle
 end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
@@ -2306,8 +2330,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V9_STOP == closeHub then
-        _G.BRAB0X_V9_STOP = nil
+    if _G.BRAB0X_V10_STOP == closeHub then
+        _G.BRAB0X_V10_STOP = nil
     end
 end
 
@@ -2389,7 +2413,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V9_STOP = closeHub
+_G.BRAB0X_V10_STOP = closeHub
 
 -- ABERTURA ANIMADA
 
@@ -2429,7 +2453,7 @@ logo.ZIndex = 52
 logo.TextXAlignment = Enum.TextXAlignment.Center
 
 local splashSubtitle = txt(
-    splash,"PERSONALIZE SEU HUB",25,13
+    splash,"BLUE EDITION  •  CARREGANDO PAINEL",25,13
 )
 
 splashSubtitle.Position = UDim2.fromOffset(40,83)
@@ -2453,199 +2477,107 @@ local progress = round(obj("Frame",progressBG,{
     ZIndex = 53
 }),6)
 
--- SELETOR DE MODULOS
-
+-- ESCOLHA DO AIM (OS DEMAIS COMANDOS ESTAO SEMPRE DISPONIVEIS)
 local picker = round(obj("Frame",gate,{
     AnchorPoint = Vector2.new(.5,.5),
     Position = UDim2.fromScale(.5,.5),
-    Size = UDim2.fromOffset(658,444),
+    Size = UDim2.fromOffset(565,360),
     BackgroundColor3 = card,
     BorderSizePixel = 0,
     Visible = false,
     ZIndex = 55
 }),16)
-
-obj("UIStroke",picker,{
-    Color = accent,
-    Thickness = 1.8,
-    Transparency = .15
-})
-
-local topStrip = obj("Frame",picker,{
+obj("UIStroke",picker,{Color=accent,Thickness=1.7,Transparency=.12})
+obj("Frame",picker,{
     Size = UDim2.new(1,0,0,4),
     BackgroundColor3 = accent,
     BorderSizePixel = 0,
     ZIndex = 56
 })
-
-local pickerTitle = txt(
-    picker,"MONTE SEU BRAB0X PRIME",36,24,true
-)
-
-pickerTitle.Position = UDim2.fromOffset(25,16)
-pickerTitle.Size = UDim2.fromOffset(610,36)
-pickerTitle.ZIndex = 56
-
-local pickerSubtitle = txt(
-    picker,
-    "ATIVE SO O QUE VOCE PRECISA  /  ALTERE DEPOIS EM AJUSTES",
-    24,12
-)
-
-pickerSubtitle.Position = UDim2.fromOffset(26,57)
-pickerSubtitle.Size = UDim2.fromOffset(600,23)
+local pickerTitle = txt(picker,"BRAB0X PRIME  /  MODO DE INICIO",36,22,true)
+pickerTitle.Position = UDim2.fromOffset(24,18)
+pickerTitle.Size = UDim2.fromOffset(510,34)
+pickerTitle.ZIndex = 57
+local pickerSubtitle = txt(picker,
+    "Todos os comandos ficam juntos. Escolha apenas se quer AIM de treino.",
+    38,12)
+pickerSubtitle.Position = UDim2.fromOffset(24,61)
+pickerSubtitle.Size = UDim2.fromOffset(520,36)
 pickerSubtitle.TextColor3 = muted
-pickerSubtitle.ZIndex = 56
+pickerSubtitle.ZIndex = 57
 
-local selectionScroll = obj("ScrollingFrame",picker,{
-    Position = UDim2.fromOffset(24,93),
-    Size = UDim2.fromOffset(611,279),
-    BackgroundTransparency = 1,
-    BorderSizePixel = 0,
-    ScrollBarThickness = 4,
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
-    CanvasSize = UDim2.new(),
-    ScrollBarImageColor3 = accent,
-    ZIndex = 56
-})
-
-obj("UIGridLayout",selectionScroll,{
-    CellSize = UDim2.fromOffset(294,82),
-    CellPadding = UDim2.fromOffset(11,12),
-    SortOrder = Enum.SortOrder.LayoutOrder
-})
-
-local selectedModules = {}
-local choices = {}
-
-for _,entry in ipairs(selectorOrder) do
-    local key = entry[1]
-    local title = entry[2]
-    local desc = entry[3]
-
-    local b = btn(selectionScroll,"",nil,82)
-    b.BackgroundColor3 = control
+local selectedAim = false
+local function choiceCard(x,title,description)
+    local b = btn(picker,"",nil,132)
+    b.Position = UDim2.fromOffset(x,119)
+    b.Size = UDim2.fromOffset(247,132)
     b.ZIndex = 57
-
-    local label = txt(b,title,24,14,true)
-    label.Position = UDim2.fromOffset(16,14)
-    label.Size = UDim2.fromOffset(264,24)
-    label.ZIndex = 58
-
-    local details = txt(b,desc,31,11)
-    details.Position = UDim2.fromOffset(16,39)
-    details.Size = UDim2.fromOffset(262,31)
-    details.TextColor3 = muted
-    details.ZIndex = 58
-
-    choices[key] = {
-        button = b,
-        label = label,
-        detail = details
-    }
-
-    bind(b.MouseButton1Click,function()
-        selectedModules[key] =
-            not selectedModules[key]
-
-        b.BackgroundColor3 =
-            selectedModules[key] and accent or control
-
-        label.TextColor3 =
-            selectedModules[key] and ink or white
-
-        details.TextColor3 =
-            selectedModules[key] and ink or muted
-    end)
+    local head = txt(b,title,29,16,true)
+    head.Position = UDim2.fromOffset(16,20)
+    head.Size = UDim2.fromOffset(216,29)
+    head.ZIndex = 58
+    local sub = txt(b,description,61,12)
+    sub.Position = UDim2.fromOffset(16,58)
+    sub.Size = UDim2.fromOffset(214,62)
+    sub.ZIndex = 58
+    return b,head,sub
 end
-
-local allBtn = btn(
-    picker,"SELECIONAR TUDO",nil,37
-)
-allBtn.Position = UDim2.fromOffset(24,386)
-allBtn.Size = UDim2.fromOffset(286,39)
-allBtn.ZIndex = 56
-
-local launch = btn(
-    picker,"ABRIR BRAB0X PRIME",nil,37
-)
-launch.Position = UDim2.fromOffset(323,386)
-launch.Size = UDim2.fromOffset(312,39)
-launch.ZIndex = 56
-launch.BackgroundColor3 = accent
-launch.TextColor3 = ink
+local commonCard,commonTitle,commonDesc = choiceCard(24,
+    "MODO CLASSICO", "Voo, jogador, camera, mundo e emotes. Sem a aba AIM.")
+local aimCard,aimTitleCard,aimDescCard = choiceCard(294,
+    "AIM DE TREINO", "Os mesmos comandos, com uma aba AIM exclusiva para NPCs de treino.")
 
 local function updateChoices()
-    for _,entry in ipairs(selectorOrder) do
-        local key = entry[1]
-        local b = choices[key]
-        local enabled = selectedModules[key]
-
-        b.button.BackgroundColor3 =
-            enabled and accent or control
-
-        b.label.TextColor3 =
-            enabled and ink or white
-
-        b.detail.TextColor3 =
-            enabled and ink or muted
+    for _,it in ipairs({
+        {commonCard,commonTitle,commonDesc,not selectedAim},
+        {aimCard,aimTitleCard,aimDescCard,selectedAim}
+    }) do
+        it[1].BackgroundColor3 = it[4] and accent or control
+        it[2].TextColor3 = it[4] and ink or white
+        it[3].TextColor3 = it[4] and ink or muted
     end
 end
+bind(commonCard.MouseButton1Click,function()
+    selectedAim = false
+    updateChoices()
+end)
+bind(aimCard.MouseButton1Click,function()
+    selectedAim = true
+    updateChoices()
+end)
+local launch = btn(picker,"ENTRAR NO BRAB0X PRIME",nil,45)
+launch.Position = UDim2.fromOffset(24,270)
+launch.Size = UDim2.fromOffset(517,45)
+launch.BackgroundColor3 = accent
+launch.TextColor3 = ink
+launch.ZIndex = 58
+local note = txt(picker,"Voce pode mudar essa escolha em Ajustes > Configurar AIM.",24,11)
+note.Position = UDim2.fromOffset(25,324)
+note.Size = UDim2.fromOffset(515,24)
+note.TextColor3 = muted
+note.ZIndex = 57
 
 openModulePicker = function()
     if stopped then return end
-
-    for _,entry in ipairs(selectorOrder) do
-        selectedModules[entry[1]] =
-            config.modules[entry[1]] ~= false
-    end
-
+    selectedAim = config.aimEnabled == true
     updateChoices()
-
     gate.Visible = true
     picker.Visible = true
     splash.Visible = false
-
     main.Visible = false
     reopen.Visible = false
 end
 
-bind(allBtn.MouseButton1Click,function()
-    local allSelected = true
-
-    for _,entry in ipairs(selectorOrder) do
-        if not selectedModules[entry[1]] then
-            allSelected = false
-        end
-    end
-
-    for _,entry in ipairs(selectorOrder) do
-        selectedModules[entry[1]] = not allSelected
-    end
-
-    updateChoices()
-end)
-
 bind(launch.MouseButton1Click,function()
-    for _,entry in ipairs(selectorOrder) do
-        config.modules[entry[1]] =
-            selectedModules[entry[1]] == true
-    end
-
+    config.aimEnabled = selectedAim
+    if not selectedAim then S.aim = false end
     gate.Visible = false
     main.Visible = true
     reopen.Visible = false
-
     show("HOME")
-
-    if refreshCommandList then
-        refreshCommandList()
-    end
-
-    notify(
-        "Categorias escolhidas! "
-        .."Ajustes > Escolher modulos para alterar."
-    )
+    if refreshCommandList then refreshCommandList() end
+    if refresh then refresh() end
+    notify("BRAB0X V10 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -2692,6 +2624,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V9 | "
+    "BRAB0X PRIME V10 | "
     ..#registered.." comandos"
 )
