@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V11 | RED NEON PREMIUM + AIM OPCIONAL
+-- BRAB0X PRIME V12 | IY-STYLE UTILITIES + ACCORDION
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -21,6 +21,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V12_STOP",
     "BRAB0X_V11_STOP",
     "BRAB0X_V10_STOP",
     "BRAB0X_V9_STOP",
@@ -34,7 +35,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V11")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V12")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -70,7 +71,13 @@ local S = {
     glow = false,
     trail = false,
     frozen = false,
-    emote = nil
+    emote = nil,
+    invisible = false,
+    infJump = false,
+    spinning = false,
+    spinSpeed = 5,
+    noRotate = false,
+    fullbright = false
 }
 
 local palette = {
@@ -244,7 +251,7 @@ local refreshCommandList
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V11",
+    Name = "BRAB0X_PRIME_V12",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -289,7 +296,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V11  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
+    "V12  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
     16,10
 )
 sub.TextColor3 = muted
@@ -850,6 +857,7 @@ local function transparency(value)
 end
 
 local function resetTransparency()
+    S.invisible = false
     for p,v in pairs(transparent) do
         if p.Parent then
             p.LocalTransparencyModifier = v
@@ -1123,7 +1131,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V11_AIM"
+local aimKey = "BRAB0X_V12_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -1212,7 +1220,9 @@ Run:BindToRenderStep(
 
 -- RESET GERAL
 
+local resetExtras = function() end
 local function resetAll()
+    resetExtras()
     stopFly()
     setNoclip(false)
     stopEmote()
@@ -1564,7 +1574,7 @@ register("theme","SETTINGS","Cor neon",function(a)
 
         show(selected)
     end
-end,"theme ice")
+end,"theme red")
 
 register("scale","SETTINGS","Tamanho do painel",function(a)
     config.scale = num(a,1,.6,1.25)
@@ -1687,6 +1697,539 @@ register("aimmodule","SETTINGS","Exibir a aba AIM de treino",function(a)
     if refreshCommandList then refreshCommandList() end
 end,"aimmodule on")
 
+-- UTILITARIOS INSPIRADOS NOS COMANDOS PUBLICOS DO INFINITE YIELD
+-- Implementacao propria; comandos com efeitos locais nao sao replicados no servidor.
+
+local extraState = {
+    originalHip = nil, originalSlope = nil,
+    originalAmbient = Lighting.Ambient,
+    originalOutdoorAmbient = Lighting.OutdoorAmbient,
+    originalShadows = Lighting.GlobalShadows,
+    originalExposure = Lighting.ExposureCompensation,
+    originalFogStart = Lighting.FogStart,
+    savedWaypoints = {},
+    watched = {},
+    spinConnection = nil,
+    lastSpectated = nil,
+    savedMouseIcon = UIS.MouseIconEnabled,
+    colorFX = nil,
+    originalSaturation = nil,
+    originalContrast = nil,
+    originalBlur = nil,
+    fullbrightBefore = nil,
+}
+local function findPlayer(token)
+    token = tostring(token or ""):gsub("^%s+",""):gsub("%s+$","")
+    if token == "" then return nil end
+    local q = token:lower()
+    if q == "me" then return player end
+    if q == "nearest" then
+        local _,_,root = chars()
+        if not root then return nil end
+        local best,dist
+        for _,p in ipairs(Players:GetPlayers()) do
+            local part = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if p ~= player and part then
+                local d = (part.Position-root.Position).Magnitude
+                if not dist or d < dist then best,dist=p,d end
+            end
+        end
+        return best
+    end
+    if q == "random" then
+        local candidates = Players:GetPlayers()
+        if #candidates==0 then return nil end
+        return candidates[math.random(1,#candidates)]
+    end
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower()==q or p.DisplayName:lower()==q then return p end
+    end
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1,#q)==q then return p end
+    end
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p.DisplayName:lower():sub(1,#q)==q then return p end
+    end
+    return nil
+end
+local function findRoot(target)
+    local c=target and target.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+local function parseVector(raw)
+    local parts={}
+    for v in tostring(raw or ""):gmatch("[^,%s]+") do
+        local numv=tonumber(v)
+        if not numv then return nil end
+        parts[#parts+1]=numv
+    end
+    if #parts~=3 then return nil end
+    return Vector3.new(parts[1],parts[2],parts[3])
+end
+local function selfTeleport(cf)
+    local _,_,r=chars()
+    if not r then notify("Seu personagem nao esta pronto"); return false end
+    freeze(false)
+    stopFly()
+    r.CFrame=cf
+    r.AssemblyLinearVelocity=Vector3.zero
+    return true
+end
+local function gotoPlayer(a)
+    local target=findPlayer(a)
+    if not target then notify("Jogador nao encontrado: "..tostring(a)); return false end
+    local root=findRoot(target)
+    if not root then notify("Alvo sem personagem ativo"); return false end
+    return selfTeleport(root.CFrame*CFrame.new(3,0,3))
+end
+local function setAvatarInvisible(enabled)
+    if enabled then
+        transparency(1)
+        S.invisible = true
+        notify("Invisibilidade LOCAL: somente na sua tela; nao garante invisibilidade para outros.")
+    else
+        resetTransparency()
+    end
+end
+local function alias(name,category,description,target,example)
+    register(name,category,description,function(a)
+        local entry=byName[target]
+        if not entry then notify("Comando principal nao encontrado"); return false end
+        return entry.run(a)
+    end,example or name)
+end
+local function updateSpin()
+    if extraState.spinConnection then
+        extraState.spinConnection:Disconnect()
+        extraState.spinConnection=nil
+    end
+    if not S.spinning then
+        local _,_,root=chars()
+        if root then root.AssemblyAngularVelocity=Vector3.zero end
+        return
+    end
+    extraState.spinConnection=Run.Heartbeat:Connect(function()
+        local _,h,r=chars()
+        if not r or not h or h.Health<=0 then return end
+        if not r.Anchored then
+            r.AssemblyAngularVelocity=Vector3.new(0,S.spinSpeed,0)
+        end
+    end)
+end
+bind(UIS.JumpRequest,function()
+    if S.infJump then
+        local _,h=chars()
+        if h and h.Health>0 then
+            h:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+local function colorEffect()
+    if extraState.colorFX and extraState.colorFX.Parent then
+        return extraState.colorFX
+    end
+    extraState.colorFX = obj("ColorCorrectionEffect",Lighting,{
+        Name="BRAB0X_PRIME_LOCAL_COLOR",
+        Saturation=0,
+        Contrast=0
+    })
+    return extraState.colorFX
+end
+resetExtras=function()
+    S.infJump=false
+    S.spinning=false
+    updateSpin()
+    S.noRotate=false
+    S.invisible=false
+    if extraState.lastSpectated then cameraReset() end
+    extraState.lastSpectated=nil
+    if extraState.colorFX then
+        extraState.colorFX:Destroy()
+        extraState.colorFX=nil
+    end
+    extraState.watched={}
+    Lighting.Ambient=extraState.originalAmbient
+    Lighting.OutdoorAmbient=extraState.originalOutdoorAmbient
+    Lighting.GlobalShadows=extraState.originalShadows
+    Lighting.ExposureCompensation=extraState.originalExposure
+    Lighting.FogStart=extraState.originalFogStart
+    S.fullbright=false
+    local _,h=chars()
+    if h then
+        if extraState.originalHip then h.HipHeight=extraState.originalHip end
+        if extraState.originalSlope then h.MaxSlopeAngle=extraState.originalSlope end
+        h.AutoRotate=true
+    end
+    UIS.MouseIconEnabled=extraState.savedMouseIcon
+end
+
+-- TELEPORTES E POSICOES
+register("goto","PLAYER","Ir ate outro jogador (local)",gotoPlayer,"goto nearest")
+alias("to","PLAYER","Alias para goto","goto","to nearest")
+alias("tp","PLAYER","Alias para goto","goto","tp nearest")
+register("tppos","PLAYER","Ir para coordenadas X Y Z",function(a)
+    local pos=parseVector(a)
+    if not pos then notify("Use: tppos X Y Z"); return false end
+    return selfTeleport(CFrame.new(pos))
+end,"tppos 0 10 0")
+alias("tpposition","PLAYER","Alias para tppos","tppos","tppos 0 10 0")
+register("offset","PLAYER","Mover X Y Z relativo",function(a)
+    local delta=parseVector(a)
+    local _,_,r=chars()
+    if not delta or not r then notify("Use: offset X Y Z"); return false end
+    return selfTeleport(r.CFrame+delta)
+end,"offset 0 5 0")
+register("thru","PLAYER","Mover alguns studs a frente",function(a)
+    local _,_,r=chars()
+    if not r then return false end
+    local amount=num(a,5,-100,100)
+    return selfTeleport(r.CFrame+r.CFrame.LookVector*amount)
+end,"thru 5")
+register("gotocam","PLAYER","Ir para posicao da camera",function()
+    local c=workspace.CurrentCamera
+    return c and selfTeleport(CFrame.new(c.CFrame.Position)) or false
+end)
+alias("gotocamera","PLAYER","Alias de gotocam","gotocam")
+register("wp","PLAYER","Guardar waypoint por nome",function(a)
+    local name=tostring(a or ""):gsub("%s+$",""):lower()
+    local _,_,r=chars()
+    if name=="" or not r then notify("Use: wp casa"); return false end
+    extraState.savedWaypoints[name]=r.CFrame
+    notify("Waypoint registrado: "..name)
+end,"wp casa")
+alias("waypoint","PLAYER","Alias para wp","wp","wp casa")
+register("gowp","PLAYER","Ir para waypoint",function(a)
+    local name=tostring(a or ""):lower():gsub("%s+$","")
+    local cf=extraState.savedWaypoints[name]
+    if not cf then notify("Waypoint nao encontrado: "..name); return false end
+    return selfTeleport(cf)
+end,"gowp casa")
+alias("walktowaypoint","PLAYER","Alias de gowp","gowp","gowp casa")
+register("delwp","PLAYER","Apagar waypoint",function(a)
+    extraState.savedWaypoints[tostring(a or ""):lower()]=nil
+end,"delwp casa")
+register("clearwps","PLAYER","Apagar todos os waypoints",function()
+    extraState.savedWaypoints={}
+end)
+register("listwps","PLAYER","Listar waypoints",function()
+    local names={}
+    for name in pairs(extraState.savedWaypoints) do names[#names+1]=name end
+    table.sort(names)
+    notify(#names>0 and ("Waypoints: "..table.concat(names,", ")) or "Nenhum waypoint salvo")
+end)
+
+-- AVATAR E MOVIMENTO
+register("invisible","PLAYER","Invisibilidade local do avatar",function()
+    setAvatarInvisible(true)
+end)
+alias("invis","PLAYER","Alias para invisible","invisible")
+alias("vis","PLAYER","Alias para visible","visible")
+alias("uninvis","PLAYER","Restaurar visibilidade","visible")
+register("halfinvis","PLAYER","Avatar 50% transparente local",function()
+    S.invisible=false
+    transparency(.5)
+end)
+register("ghost","PLAYER","Avatar transparente e sem colisao local",function()
+    setAvatarInvisible(true)
+    setNoclip(true)
+end)
+register("unghost","PLAYER","Restaurar avatar e colisao",function()
+    setAvatarInvisible(false)
+    setNoclip(false)
+end)
+alias("walkspeed","PLAYER","Alias para walk","walk","walkspeed 24")
+alias("ws","PLAYER","Alias para walk","walk","ws 24")
+alias("jumppower","PLAYER","Alias para jump","jump","jumppower 75")
+alias("jp","PLAYER","Alias para jump","jump","jp 75")
+register("jumpnow","PLAYER","Pular agora",function()
+    local _,h=chars()
+    if not h then return false end
+    h:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+register("infjump","PLAYER","Pulo extra enquanto ativado",function()
+    S.infJump=true
+end)
+alias("infinitejump","PLAYER","Alias de infjump","infjump")
+register("uninfjump","PLAYER","Desativar pulo extra",function()
+    S.infJump=false
+end)
+alias("uninfinitejump","PLAYER","Alias de uninfjump","uninfjump")
+register("spin","PLAYER","Girar seu avatar localmente",function(a)
+    S.spinSpeed=num(a,5,1,25)
+    S.spinning=true
+    updateSpin()
+end,"spin 5")
+register("unspin","PLAYER","Parar de girar",function()
+    S.spinning=false
+    updateSpin()
+end)
+register("hipheight","PLAYER","Altura do quadril",function(a)
+    local _,h=chars()
+    if not h then return false end
+    extraState.originalHip=extraState.originalHip or h.HipHeight
+    h.HipHeight=num(a,h.HipHeight,0,15)
+end,"hipheight 3")
+register("resethip","PLAYER","Restaurar altura do quadril",function()
+    local _,h=chars()
+    if h and extraState.originalHip then h.HipHeight=extraState.originalHip end
+end)
+register("slope","PLAYER","Inclinacao maxima",function(a)
+    local _,h=chars()
+    if not h then return false end
+    extraState.originalSlope=extraState.originalSlope or h.MaxSlopeAngle
+    h.MaxSlopeAngle=num(a,45,0,89)
+end,"slope 70")
+register("resetslope","PLAYER","Restaurar inclinacao",function()
+    local _,h=chars()
+    if h and extraState.originalSlope then h.MaxSlopeAngle=extraState.originalSlope end
+end)
+register("autorotate","PLAYER","Rotacao automatica",function()
+    S.noRotate=false
+    local _,h=chars()
+    if h then h.AutoRotate=true end
+end)
+register("norotate","PLAYER","Desativar rotacao automatica",function()
+    S.noRotate=true
+    local _,h=chars()
+    if h then h.AutoRotate=false end
+end)
+alias("anchor","PLAYER","Congelar seu personagem","freeze")
+alias("unanchor","PLAYER","Descongelar personagem","unfreeze")
+register("platformstand","PLAYER","Modo platformstand",function()
+    stopFly()
+    local _,h=chars()
+    if h then h.PlatformStand=true end
+end)
+register("unplatformstand","PLAYER","Sair de platformstand",function()
+    local _,h=chars()
+    if h then h.PlatformStand=false end
+end)
+register("unsitnow","PLAYER","Levantar do assento",function()
+    local _,h=chars()
+    if h then h.Sit=false end
+end)
+register("resetchars","PLAYER","Restaurar status do avatar local",function()
+    resetExtras()
+    resetTransparency()
+    setNoclip(false)
+end)
+
+-- CAMERA E JOGADORES
+register("lookat","CAMERA","Olhar na direcao de um jogador",function(a)
+    local p=findPlayer(a)
+    local r=findRoot(p)
+    local c=workspace.CurrentCamera
+    if not r or not c then notify("Jogador indisponivel"); return false end
+    c.CFrame=CFrame.lookAt(c.CFrame.Position,r.Position)
+end,"lookat nearest")
+register("spectate","CAMERA","Assistir jogador pela camera",function(a)
+    local p=findPlayer(a)
+    local c=workspace.CurrentCamera
+    local h=p and p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+    if not h or not c then notify("Jogador indisponivel"); return false end
+    stopFly()
+    c.CameraType=Enum.CameraType.Custom
+    c.CameraSubject=h
+    extraState.lastSpectated=p
+end,"spectate nearest")
+alias("view","CAMERA","Alias para spectate","spectate","view nearest")
+register("unspectate","CAMERA","Voltar camera ao seu avatar",function()
+    extraState.lastSpectated=nil
+    cameraReset()
+end)
+alias("unview","CAMERA","Alias para unspectate","unspectate")
+register("maxzoom","CAMERA","Ajustar zoom maximo",function(a)
+    local n=num(a,35,1,100)
+    player.CameraMode=Enum.CameraMode.Classic
+    player.CameraMinZoomDistance=math.min(player.CameraMinZoomDistance,n)
+    player.CameraMaxZoomDistance=n
+end,"maxzoom 40")
+register("minzoom","CAMERA","Ajustar zoom minimo",function(a)
+    local n=num(a,1,0.5,100)
+    player.CameraMode=Enum.CameraMode.Classic
+    player.CameraMaxZoomDistance=math.max(player.CameraMaxZoomDistance,n)
+    player.CameraMinZoomDistance=n
+end,"minzoom 4")
+register("zoomout","CAMERA","Aumentar distancia maxima",function()
+    local n=math.min(100,player.CameraMaxZoomDistance+5)
+    player.CameraMaxZoomDistance=n
+end)
+register("zoomin","CAMERA","Diminuir distancia maxima",function()
+    player.CameraMaxZoomDistance=math.max(player.CameraMinZoomDistance,player.CameraMaxZoomDistance-5)
+end)
+register("fovplus","CAMERA","Aumentar campo de visao",function()
+    local c=workspace.CurrentCamera
+    if c then c.FieldOfView=math.min(120,c.FieldOfView+5) end
+end)
+register("fovminus","CAMERA","Diminuir campo de visao",function()
+    local c=workspace.CurrentCamera
+    if c then c.FieldOfView=math.max(40,c.FieldOfView-5) end
+end)
+register("firstp","CAMERA","Alias primeira pessoa",function()
+    byName.first.run()
+end)
+register("thirdp","CAMERA","Alias terceira pessoa",function()
+    byName.third.run()
+end)
+register("fixcam","CAMERA","Restaurar a camera",cameraReset)
+alias("restorecam","CAMERA","Alias fixcam","fixcam")
+register("campos","CAMERA","Coordenadas da camera",function()
+    local c=workspace.CurrentCamera
+    if c then notify(tostring(c.CFrame.Position)) end
+end)
+register("crosshairsize","CAMERA","Tamanho da mira visual",function(a)
+    local n=num(a,28,14,70)
+    crosshair.TextSize=n
+    crosshair.Size=UDim2.fromOffset(n+8,n+8)
+end,"crosshairsize 32")
+register("mouseicon","CAMERA","Mostrar cursor",function()
+    UIS.MouseIconEnabled=true
+end)
+register("hidemouseicon","CAMERA","Ocultar cursor",function()
+    UIS.MouseIconEnabled=false
+end)
+
+-- MUNDO / GRAFICOS LOCAIS
+register("fullbright","WORLD","Iluminacao clara local",function()
+    Lighting.ClockTime=12
+    Lighting.Brightness=4
+    Lighting.Ambient=Color3.fromRGB(170,170,170)
+    Lighting.OutdoorAmbient=Color3.fromRGB(170,170,170)
+    Lighting.GlobalShadows=false
+    Lighting.FogEnd=100000
+    S.fullbright=true
+end)
+register("unfullbright","WORLD","Restaurar iluminacao",function()
+    Lighting.Ambient=extraState.originalAmbient
+    Lighting.OutdoorAmbient=extraState.originalOutdoorAmbient
+    Lighting.GlobalShadows=extraState.originalShadows
+    Lighting.Brightness=old.brightness
+    Lighting.ClockTime=old.clock
+    Lighting.FogEnd=old.fog
+    S.fullbright=false
+end)
+register("ambient","WORLD","Luz ambiente RGB",function(a)
+    local v=parseVector(a)
+    if not v then notify("Use: ambient 100 0 0"); return false end
+    Lighting.Ambient=Color3.fromRGB(math.clamp(v.X,0,255),math.clamp(v.Y,0,255),math.clamp(v.Z,0,255))
+end,"ambient 100 20 20")
+register("resetambient","WORLD","Restaurar luz ambiente",function()
+    Lighting.Ambient=extraState.originalAmbient
+    Lighting.OutdoorAmbient=extraState.originalOutdoorAmbient
+end)
+register("shadows","WORLD","Habilitar sombras",function()
+    Lighting.GlobalShadows=true
+end)
+register("noshadows","WORLD","Desabilitar sombras local",function()
+    Lighting.GlobalShadows=false
+end)
+register("fogstart","WORLD","Inicio da neblina",function(a)
+    Lighting.FogStart=num(a,0,0,100000)
+end,"fogstart 100")
+register("resetfogstart","WORLD","Restaurar inicio da neblina",function()
+    Lighting.FogStart=extraState.originalFogStart
+end)
+register("exposure","WORLD","Compensacao de exposicao",function(a)
+    Lighting.ExposureCompensation=num(a,0,-5,5)
+end,"exposure 1")
+register("resetexposure","WORLD","Restaurar exposicao",function()
+    Lighting.ExposureCompensation=extraState.originalExposure
+end)
+register("saturation","WORLD","Saturacao visual",function(a)
+    colorEffect().Saturation=num(a,0,-1,1)
+end,"saturation 0.5")
+register("contrast","WORLD","Contraste visual",function(a)
+    colorEffect().Contrast=num(a,0,-1,1)
+end,"contrast 0.2")
+register("resetcolors","WORLD","Limpar ajustes de cor",function()
+    if extraState.colorFX then extraState.colorFX:Destroy() extraState.colorFX=nil end
+end)
+register("worldreset","WORLD","Restaurar ambiente local",function()
+    Lighting.ClockTime=old.clock
+    Lighting.Brightness=old.brightness
+    Lighting.FogEnd=old.fog
+    Lighting.FogStart=extraState.originalFogStart
+    Lighting.Ambient=extraState.originalAmbient
+    Lighting.OutdoorAmbient=extraState.originalOutdoorAmbient
+    Lighting.GlobalShadows=extraState.originalShadows
+    Lighting.ExposureCompensation=extraState.originalExposure
+    if extraState.colorFX then extraState.colorFX:Destroy() extraState.colorFX=nil end
+end)
+
+-- UTILIDADES E INFORMACOES
+register("players","SETTINGS","Listar jogadores presentes",function()
+    local list={}
+    for _,p in ipairs(Players:GetPlayers()) do list[#list+1]=p.Name end
+    table.sort(list)
+    print("[BRAB0X] JOGADORES: "..table.concat(list,", "))
+    notify("Jogadores: "..#list.." - veja os nomes no console (F9)")
+end)
+register("serverinfo","SETTINGS","Dados do servidor",function()
+    notify("PlaceId "..game.PlaceId.." | JobId "..tostring(game.JobId):sub(1,12).." | Jogadores "..#Players:GetPlayers())
+end)
+register("placeid","SETTINGS","ID da experiencia",function()
+    notify("PlaceId: "..tostring(game.PlaceId))
+end)
+register("jobid","SETTINGS","ID do servidor atual",function()
+    notify("JobId: "..tostring(game.JobId))
+end)
+register("userid","SETTINGS","Seu ID Roblox",function()
+    notify("UserId: "..tostring(player.UserId))
+end)
+register("username","SETTINGS","Seu usuario",function()
+    notify("Usuario: "..player.Name.." | Nome visivel: "..player.DisplayName)
+end)
+register("playerinfo","SETTINGS","Dados de jogador",function(a)
+    local p=findPlayer(a)
+    if not p then notify("Jogador nao encontrado"); return false end
+    notify(p.Name.." | ID "..p.UserId.." | Presente")
+end,"playerinfo nearest")
+register("posplayer","SETTINGS","Posicao de um jogador",function(a)
+    local p=findPlayer(a)
+    local r=findRoot(p)
+    if not r then notify("Personagem nao encontrado"); return false end
+    notify((p and p.Name or "Jogador")..": "..tostring(r.Position))
+end,"posplayer nearest")
+register("distance","SETTINGS","Distancia ate jogador",function(a)
+    local p=findPlayer(a)
+    local target=findRoot(p)
+    local _,_,mine=chars()
+    if not target or not mine then notify("Jogador indisponivel"); return false end
+    notify(p.Name.." esta a "..math.floor((target.Position-mine.Position).Magnitude).." studs")
+end,"distance nearest")
+register("notify","SETTINGS","Mensagem local de status",function(a)
+    notify(tostring(a or ""))
+end,"notify Ola")
+register("version","SETTINGS","Versao do BRAB0X PRIME",function()
+    notify("BRAB0X PRIME V12 | utilitarios inspirados no Infinite Yield")
+end)
+register("cmdcount","SETTINGS","Quantidade de comandos",function()
+    notify("Comandos registrados: "..#registered)
+end)
+register("commands","SETTINGS","Abrir lista de comandos",function()
+    show("COMMANDS")
+end)
+register("ping","SETTINGS","Informacoes de rede",function()
+    local success,value=pcall(function()
+        return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
+    end)
+    notify(success and ("Ping: "..tostring(value)) or "Ping nao disponivel neste servidor")
+end)
+register("gameid","SETTINGS","ID do universo",function()
+    notify("GameId: "..tostring(game.GameId))
+end)
+register("coordsme","SETTINGS","Suas coordenadas",function()
+    byName.coords.run()
+end)
+register("listcmd","SETTINGS","Listar comandos no console",function()
+    local list={}
+    for _,entry in ipairs(registered) do list[#list+1]=entry.name end
+    table.sort(list)
+    print("[BRAB0X] COMANDOS: "..table.concat(list,", "))
+    notify(#list.." comandos - lista enviada ao console (F9)")
+end)
+-- FIM DOS UTILITARIOS
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
@@ -1712,12 +2255,14 @@ exec = function(raw)
         return
     end
 
-    local ok,err = pcall(entry.run,arg)
+    local ok,result = pcall(entry.run,arg)
 
     if not ok then
+        local err = result
         notify("Erro em "..command..": "..tostring(err))
         return
     end
+    if result == false then return end
 
     if stopped then return end
     if command ~= "coords"
@@ -1983,7 +2528,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V11",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V12",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -2504,8 +3049,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V11_STOP == closeHub then
-        _G.BRAB0X_V11_STOP = nil
+    if _G.BRAB0X_V12_STOP == closeHub then
+        _G.BRAB0X_V12_STOP = nil
     end
 end
 
@@ -2587,7 +3132,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V11_STOP = closeHub
+_G.BRAB0X_V12_STOP = closeHub
 
 -- ABERTURA ANIMADA
 
@@ -2751,7 +3296,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V11 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V12 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -2798,6 +3343,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V11 | "
+    "BRAB0X PRIME V12 | "
     ..#registered.." comandos"
 )
