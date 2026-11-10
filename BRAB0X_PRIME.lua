@@ -3099,6 +3099,183 @@ homeFilter=function(filter)
 end
 
 end -- fim do escopo COMANDOS
+-- CENTRAL DE AJUDA V13.2 / DETALHES E BUSCA PARA TODO O CATALOGO
+do
+    local helpPage=pages.HELP
+    local heroHelp=round(obj("Frame",helpPage,{
+        Size=UDim2.new(1,-8,0,74),
+        BackgroundColor3=Color3.fromRGB(39,10,21),
+        BorderSizePixel=0
+    }),11)
+    obj("UIStroke",heroHelp,{Color=accent,Transparency=.24,Thickness=1.2})
+    local helpName=txt(heroHelp,"?  CENTRAL DE AJUDA",30,20,true)
+    helpName.Position=UDim2.fromOffset(18,8)
+    helpName.Size=UDim2.new(1,-34,0,30)
+    local helpSub=txt(heroHelp,"Como usar os comandos e quais recursos sao locais",25,11)
+    helpSub.Position=UDim2.fromOffset(19,43)
+    helpSub.Size=UDim2.new(1,-36,0,24)
+    helpSub.TextColor3=muted
+
+    local query=round(obj("TextBox",helpPage,{
+        Size=UDim2.new(1,-8,0,41),
+        BackgroundColor3=control,
+        BorderSizePixel=0,
+        Text="",ClearTextOnFocus=false,
+        PlaceholderText="Pesquisar: goto, invisible, emote, zoom...",
+        PlaceholderColor3=muted,
+        TextColor3=white,
+        Font=Enum.Font.Gotham,
+        TextSize=13
+    }),8)
+    obj("UIStroke",query,{Color=accent,Transparency=.6,Thickness=1})
+
+    local details=round(obj("Frame",helpPage,{
+        Size=UDim2.new(1,-8,0,202),
+        BackgroundColor3=Color3.fromRGB(25,21,30),
+        BorderSizePixel=0
+    }),11)
+    obj("UIStroke",details,{Color=accent,Thickness=1,Transparency=.5})
+    local detailTitle=txt(details,"COMO USAR",30,18,true)
+    detailTitle.Position=UDim2.fromOffset(16,11)
+    detailTitle.Size=UDim2.new(1,-28,0,30)
+    detailTitle.TextColor3=accent
+    local detailDescription=txt(details,"Selecione um comando abaixo para ver a explicacao.",36,12)
+    detailDescription.Position=UDim2.fromOffset(17,45)
+    detailDescription.Size=UDim2.new(1,-33,0,36)
+    local detailExample=txt(details,"Exemplo:",29,12,true)
+    detailExample.Position=UDim2.fromOffset(17,83)
+    detailExample.Size=UDim2.new(1,-34,0,29)
+    local detailNote=txt(details,"As funcoes dependem das permissoes do jogo.",39,11)
+    detailNote.Position=UDim2.fromOffset(17,114)
+    detailNote.Size=UDim2.new(1,-33,0,40)
+    detailNote.TextColor3=muted
+    local prepareButton=btn(details,"USAR EXEMPLO",nil,32)
+    prepareButton.Position=UDim2.new(0,16,1,-42)
+    prepareButton.Size=UDim2.new(.5,-23,0,32)
+    local favoriteButton=btn(details,"☆  FAVORITAR",nil,32)
+    favoriteButton.Position=UDim2.new(.5,5,1,-42)
+    favoriteButton.Size=UDim2.new(.5,-23,0,32)
+
+    local resultLabel=txt(helpPage,"COMANDOS DISPONIVEIS",27,13,true)
+    resultLabel.TextColor3=accent
+    local results=obj("Frame",helpPage,{
+        Size=UDim2.new(1,-8,0,0),
+        AutomaticSize=Enum.AutomaticSize.Y,
+        BackgroundTransparency=1
+    })
+    stack(results,5)
+
+    local customText={
+        goto="Move seu personagem para perto do jogador informado, se houver permissao.",
+        invisible="Deixa seu avatar invisivel SOMENTE na sua tela. Nao esconde voce dos outros.",
+        invis="Alias do invisible; invisibilidade SOMENTE local.",
+        visible="Restaura a aparencia local do avatar.",
+        ghost="Aplica transparência local e desativa colisoes locais.",
+        fly="Ativa o voo local com movimento pelas teclas WASD.",
+        unfly="Desliga o voo e restaura os controles do personagem.",
+        noclip="Desativa colisoes no seu cliente; o servidor pode reverter.",
+        clip="Restaura as colisoes originais do personagem.",
+        aim="Assistencia visual de camera somente para NPCs de treino com PracticeTarget=true.",
+        aimfov="Ajusta o raio, em pixels, de NPCs detectados no treino.",
+        smooth="Ajusta a suavidade do movimento visual da camera no treino.",
+        spectate="Muda a camera para acompanhar o jogador informado.",
+        goto="Tenta levar seu personagem perto do alvo informado; o jogo pode restringir teleporte.",
+        wp="Salva a posicao atual com um nome para voltar depois.",
+        gowp="Retorna ate o waypoint informado, se estiver salvo.",
+        emote="Tenta tocar emote equipado e autorizado no avatar.",
+        dance="Executa uma animacao local quando o rig suporta a tecnica.",
+        saveprofile="Salva ajustes de voo, camera, tema e visual em um perfil.",
+        loadprofile="Aplica as configuracoes de um perfil salvo.",
+        bindkey="Muda o atalho para uma das acoes aceitas: FLY, MENU, NOCLIP, BOOST ou INVIS.",
+        manual="Abre a central de ajuda e seus exemplos.",
+        notifications="Liga ou desliga as mensagens animadas na tela.",
+        notifytest="Mostra uma notificacao de teste, se estiverem ligadas."
+    }
+    local notes={
+        FLY="Movimento local: a experiencia ou o servidor pode limitar o efeito.",
+        PLAYER="Aparencia, posicao ou movimento podem ser locais ou limitados pelo jogo.",
+        CAMERA="Ajustes de camera sao visuais e feitos no seu cliente.",
+        WORLD="Mudancas visuais locais, sem controlar o mundo dos outros jogadores.",
+        EMOTES="Emotes de catalogo precisam de permissao e compatibilidade do avatar.",
+        AIM="Somente NPCs de treino marcados; nao mira em jogadores nem dispara.",
+        SETTINGS="Opcao do painel. Salvamento entre sessoes depende do ambiente."
+    }
+    local current=byName["fly"] or registered[1]
+    local function detailFor(entry)
+        if not entry then return end
+        current=entry
+        detailTitle.Text=entry.name:upper().."  /  "..entry.category
+        detailDescription.Text=customText[entry.name] or entry.description
+        detailExample.Text="EXEMPLO:  "..entry.example
+        detailNote.Text=notes[entry.category] or "Consulte os limites e permissoes do jogo."
+        favoriteButton.Text=v13Data.favorites[entry.name] and "★  REMOVER FAVORITO" or "☆  FAVORITAR"
+    end
+    bind(prepareButton.MouseButton1Click,function()
+        if not current then return end
+        cmdInput.Text=current.example
+        show("COMMANDS")
+        cmdInput:CaptureFocus()
+        notify("Exemplo pronto para editar ou executar: "..current.example,"info")
+    end)
+    bind(favoriteButton.MouseButton1Click,function()
+        if not current then return end
+        local name=current.name
+        if v13Data.favorites[name] then v13Data.favorites[name]=nil
+        else v13Data.favorites[name]=true end
+        favoritesChanged()
+        detailFor(current)
+        notify("Favorito atualizado: "..name,"success")
+    end)
+
+    refreshHelpPage=function()
+        if stopped or not helpPage.Parent then return end
+        if not helpPage.Visible then return end
+        clear(results)
+        local term=query.Text:lower():gsub("^%s+",""):gsub("%s+$","")
+        local matches={}
+        for _,entry in ipairs(registered) do
+            if moduleEnabled(entry.category) and (
+                term=="" or entry.name:lower():find(term,1,true)
+                or entry.description:lower():find(term,1,true)
+                or entry.category:lower():find(term,1,true)
+            ) then matches[#matches+1]=entry end
+        end
+        table.sort(matches,function(a,b) return a.name<b.name end)
+        local count=#matches
+        resultLabel.Text="COMANDOS ENCONTRADOS: "..count.."  /  "..#registered
+        for i=1,math.min(count,32) do
+            local entry=matches[i]
+            local b=btn(results,"?  "..entry.name.."    •    "..entry.description,function()
+                detailFor(entry)
+            end,35)
+            b.TextXAlignment=Enum.TextXAlignment.Left
+            b.TextSize=11
+            b.TextWrapped=true
+            b.BackgroundColor3=entry==current and Color3.fromRGB(85,19,35) or control
+        end
+        if count==0 then
+            local empty=txt(results,"Nenhum resultado. Tente outro nome de comando.",42,12)
+            empty.TextColor3=muted
+        elseif count>32 then
+            local remaining=txt(results,"Mostrando 32 de "..count..". Digite para filtrar.",33,11)
+            remaining.TextColor3=muted
+        end
+        detailFor(current)
+    end
+    bind(query:GetPropertyChangedSignal("Text"),refreshHelpPage)
+    openCommandHelp=function(name)
+        local entry=byName[tostring(name or ""):lower()]
+        if not entry then
+            notify("Comando nao encontrado na ajuda: "..tostring(name),"error")
+            return
+        end
+        current=entry
+        query.Text=entry.name
+        show("HELP")
+        detailFor(entry)
+    end
+end
+
 -- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
 do
 local hero = round(obj("Frame",pages.HOME,{
