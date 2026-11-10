@@ -3951,6 +3951,7 @@ local categories={
     {"CAMERA","CAMERA / VISUAL"},
     {"WORLD","MUNDO / GRAFICOS"},
     {"EMOTES","EMOTES / ANIMACOES"},
+    {"SOCCER","FIFA / TREINO LOCAL"},
     {"SETTINGS","SISTEMA / UTILIDADES"}
 }
 local accordion={}
@@ -4408,6 +4409,9 @@ quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
+if v15PlaceId=="12177325772" then
+    item(pages.HOME,"⚽  FIFA SUPER SOCCER / TREINO","fifa")
+end
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
