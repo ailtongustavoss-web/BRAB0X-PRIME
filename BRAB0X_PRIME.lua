@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17 | ULTIMATE TOOLKIT ORGANIZADO
+-- BRAB0X PRIME V17.1 | INTERFACE CORRIGIDA + MENU FUNCIONAL
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_1_STOP",
     "BRAB0X_V17_STOP",
     "BRAB0X_V16_STOP",
     "BRAB0X_V15_STOP",
@@ -55,7 +56,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_1")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -397,7 +398,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17",
+    Name = "BRAB0X_PRIME_V17_1",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -435,14 +436,14 @@ obj("UIGradient",header,{
 })
 
 local brand = txt(
-    header,"♛  BRAB0X  PRIME",38,25,true
+    header,"B  BRAB0X  PRIME",38,25,true
 )
 brand.Position = UDim2.fromOffset(19,4)
 brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17  •  ULTIMATE TOOLKIT   /   BY @wendezao05153nh",
+    "V17.1  |  ULTIMATE TOOLKIT   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -563,7 +564,7 @@ do
         Size=UDim2.new(1,-16,0,33),
         BackgroundColor3=Color3.fromRGB(37,16,26),
         BorderSizePixel=0,
-        Text="",PlaceholderText="⌕  Buscar aba...",
+        Text="",PlaceholderText="Buscar aba...",
         TextColor3=white,PlaceholderColor3=muted,
         TextSize=11,Font=Enum.Font.Gotham,
         ClearTextOnFocus=false
@@ -584,7 +585,7 @@ do
     }
     for index,definition in ipairs(navGroupData) do
         local shell=obj("Frame",nav,{
-            Size=UDim2.new(1,-6,0,0),AutomaticSize=Enum.AutomaticSize.Y,
+            Size=UDim2.new(1,-6,0,32),
             BackgroundTransparency=1,
             LayoutOrder=index
         })
@@ -597,7 +598,6 @@ do
         head.TextSize=11
         local list=obj("Frame",shell,{
             Size=UDim2.new(1,0,0,0),
-            AutomaticSize=Enum.AutomaticSize.Y,
             BackgroundTransparency=1,
             LayoutOrder=2
         })
@@ -644,10 +644,15 @@ do
             group.frame.Visible=matching>0
             local open=(query~="" or group.expanded) and matching>0
             group.content.Visible=open
+            -- Alturas explicitas: AutomaticSize nao expandia em alguns clientes.
+            local contentHeight=open and
+                (matching*35+math.max(0,matching-1)*3) or 0
+            group.content.Size=UDim2.new(1,0,0,contentHeight)
+            group.frame.Size=UDim2.new(1,-6,0,32+(open and 4+contentHeight or 0))
             local def=group.definition
             local language=config.lang
             local name=def[language] or def.en
-            group.button.Text=(open and "▾  " or "▸  ")..name..
+            group.button.Text=(open and "[-]  " or "[+]  ")..name..
                 "  ("..matching..")"
         end
     end
@@ -665,7 +670,7 @@ local sidePanel = round(obj("Frame",sidebar,{
     BorderSizePixel = 0
 }),10)
 obj("UIStroke",sidePanel,{Color=accent,Transparency=.4,Thickness=1})
-local sideLogo = txt(sidePanel,"♛  BRAB0X",29,18,true)
+local sideLogo = txt(sidePanel,"B  BRAB0X",29,18,true)
 sideLogo.Position = UDim2.fromOffset(12,12)
 sideLogo.Size = UDim2.new(1,-24,0,29)
 sideLogo.TextColor3 = accent
@@ -1527,7 +1532,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_AIM"
+local aimKey = "BRAB0X_V17_1_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2636,7 +2641,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.1 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4568,13 +4573,20 @@ for i=1,7 do
         BorderSizePixel = 0
     })
 end
-local crown = txt(hero,"♛",132,116,true)
-crown.Position = UDim2.new(1,-190,0,-10)
-crown.Size = UDim2.fromOffset(180,156)
-crown.TextXAlignment = Enum.TextXAlignment.Center
-crown.TextColor3 = accent
-crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V17 / ULTIMATE",22,12,true)
+-- Emblema feito com componentes Roblox: nao depende de glifo Unicode.
+local emblem=round(obj("Frame",hero,{
+    Position=UDim2.new(1,-154,0,22),
+    Size=UDim2.fromOffset(92,106),
+    BackgroundColor3=Color3.fromRGB(37,7,20),
+    BackgroundTransparency=.15,BorderSizePixel=0
+}),17)
+obj("UIStroke",emblem,{Color=accent,Thickness=3,Transparency=.05})
+local emblemLetter=txt(emblem,"B",91,70,true)
+emblemLetter.Position=UDim2.fromOffset(3,4)
+emblemLetter.Size=UDim2.new(1,-6,1,-8)
+emblemLetter.TextColor3=accent
+emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.1 / ULTIMATE",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -4624,12 +4636,12 @@ local function makeHomeTile(icon,title,desc,filter)
     sb.Size = UDim2.new(1,-82,0,22)
     sb.TextColor3 = muted
 end
-makeHomeTile("↗","MOVIMENTO","Fly, velocidade e noclip","FLY")
-makeHomeTile("♙","JOGADOR","Pulo, visual e posicoes","PLAYER")
-makeHomeTile("◉","CAMERA","FOV, zoom e mira","CAMERA")
-makeHomeTile("◈","MUNDO","Tempo e iluminacao","WORLD")
-makeHomeTile("♫","EMOTES","Animacoes autorizadas","EMOTES")
-makeHomeTile("⚙","AJUSTES","Configuracoes do hub","SETTINGS")
+makeHomeTile("F","MOVIMENTO","Fly, velocidade e noclip","FLY")
+makeHomeTile("P","JOGADOR","Pulo, visual e posicoes","PLAYER")
+makeHomeTile("C","CAMERA","FOV, zoom e mira","CAMERA")
+makeHomeTile("M","MUNDO","Tempo e iluminacao","WORLD")
+makeHomeTile("E","EMOTES","Animacoes autorizadas","EMOTES")
+makeHomeTile("S","AJUSTES","Configuracoes do hub","SETTINGS")
 
 local quickRow = obj("Frame",pages.HOME,{
     Size = UDim2.new(1,-9,0,43),
@@ -5550,7 +5562,7 @@ do
             BorderSizePixel=0,ZIndex=71
         }),75)
         obj("UIStroke",center,{Color=accent,Thickness=2,Transparency=.08})
-        local logo=txt(center,"♛\nBRAB0X\nWHEEL",100,17,true)
+        local logo=txt(center,"B\nBRAB0X\nWHEEL",100,17,true)
         logo.TextXAlignment=Enum.TextXAlignment.Center
         logo.Position=UDim2.fromOffset(9,24)
         logo.Size=UDim2.new(1,-18,0,109)
@@ -5901,7 +5913,7 @@ do
         v14.panelRefresh.DASHBOARD=function()
             if not pages.DASHBOARD.Visible then return end
             clear(dashHolder)
-            dashboardStats.Text="V17  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
+            dashboardStats.Text="V17.1  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
             for i=1,4 do
                 local command=saved[i]
                 ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
@@ -5942,7 +5954,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.1] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6496,7 +6508,7 @@ do
             end
 
             -- Guia e presets pre-definidos, sem execucao de codigo externo.
-            ui.title(pages.GUIDE,"♛  GUIA COMPLETO DO BRAB0X",
+            ui.title(pages.GUIDE,"GUIA COMPLETO DO BRAB0X",
                 "Recursos essenciais, atalhos e exemplos para a versao V17")
             local tips={
                 {"BUSCA RAPIDA","Ctrl+Shift+P abre a paleta. Escreva nome ou descricao, e escolha um resultado."},
@@ -6805,7 +6817,7 @@ applyV13Appearance=function()
 end
 
 end -- fim do escopo visual / teclas
-titleRow(pages.SETTINGS,"♛  CREDITOS DO PROJETO")
+titleRow(pages.SETTINGS,"CREDITOS DO PROJETO")
 btn(pages.SETTINGS,"✦  CRIADO POR @wendezao05153nh",function()
     exec("creator")
 end,43)
@@ -6944,8 +6956,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_STOP == closeHub then
-        _G.BRAB0X_V17_STOP = nil
+    if _G.BRAB0X_V17_1_STOP == closeHub then
+        _G.BRAB0X_V17_1_STOP = nil
     end
 end
 
@@ -7034,7 +7046,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_STOP = closeHub
+_G.BRAB0X_V17_1_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -7200,7 +7212,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.1 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -7250,6 +7262,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17 | "
+    "BRAB0X PRIME V17.1 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
