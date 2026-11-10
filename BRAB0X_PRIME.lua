@@ -293,6 +293,8 @@ local openModulePicker
 local refreshCommandList
 local keyCaptureHandler
 local refreshV13Page
+local actionRow
+local live
 local v13Log
 local addHistory
 local updatePlayerManager
@@ -2921,6 +2923,7 @@ homeFilter=function(filter)
 end
 
 -- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
+do
 local hero = round(obj("Frame",pages.HOME,{
     Size = UDim2.new(1,-9,0,202),
     BackgroundColor3 = Color3.fromRGB(29,6,15),
@@ -2969,7 +2972,7 @@ bannerDesc.Position = UDim2.fromOffset(29,157)
 bannerDesc.Size = UDim2.new(1,-58,0,24)
 bannerDesc.TextColor3 = white
 
-local live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
+live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
 titleRow(pages.HOME,"PAINEL DE ACOES RAPIDAS  /  ESCOLHA SUA FUNCAO")
 
 local homeTiles = obj("Frame",pages.HOME,{
@@ -3029,6 +3032,7 @@ quick("⌖  AIM OPCIONAL","modules")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
+end -- fim do escopo HOME
 -- ABA FLY
 
 titleRow(pages.FLY,"CONTROLE DE VOO")
@@ -3340,6 +3344,7 @@ local aimExplain=txt(pages.AIM,
 aimExplain.TextColor3=muted
 
 -- V13 / PAINEIS INTERATIVOS
+do
 local function heading(page,title,subtitle)
     local h=round(obj("Frame",page,{
         Size=UDim2.new(1,-9,0,69),
@@ -3367,7 +3372,7 @@ local function editBox(parent,placeholder,height)
     obj("UIStroke",b,{Color=accent,Transparency=.72,Thickness=1})
     return b
 end
-local function actionRow(page,items)
+actionRow=function(page,items)
     local row=obj("Frame",page,{Size=UDim2.new(1,-10,0,40),BackgroundTransparency=1})
     for i,item in ipairs(items) do
         local b=btn(row,item[1],item[2],39)
@@ -3728,8 +3733,10 @@ refreshV13Page=function(page)
     end
 end
 
+end -- fim do escopo V13
 -- ABA CONFIGURACOES
 
+do
 -- Personalizacao premium, teclas e atalhos.
 local advancedTitle=titleRow(pages.SETTINGS,"✦  PERSONALIZACAO PREMIUM")
 toggleControl(pages.SETTINGS,"ANIMACOES DA INTERFACE","Transicoes suaves entre paginas",
@@ -3834,6 +3841,7 @@ applyV13Appearance=function()
     responsive()
 end
 
+end -- fim do escopo visual / teclas
 local settingLabel = titleRow(
     pages.SETTINGS,
     "TAMANHO: 100%"
@@ -4056,6 +4064,7 @@ end)
 _G.BRAB0X_V13_STOP = closeHub
 
 -- ABERTURA ANIMADA
+do
 
 local gate = obj("Frame",gui,{
     Size = UDim2.fromScale(1,1),
@@ -4253,6 +4262,7 @@ task.spawn(function()
     end
 end)
 
+end -- fim do escopo abertura
 -- INICIALIZAR
 
 rebuildEmotes()
