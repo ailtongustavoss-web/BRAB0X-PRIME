@@ -565,7 +565,7 @@ sideTip.TextColor3 = muted
 
 local status = txt(
     main,
-    "PRONTO  •  F1 = AJUDA  •  RSHIFT = MENU  •  CTRL+K = COMANDOS",
+    "PRONTO  •  MESMO LOADER EM TODOS OS JOGOS  •  F1 AJUDA  •  CTRL+K COMANDOS",
     17,11
 )
 
@@ -4019,7 +4019,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V15",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V15 / MULTIJOGOS",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -4097,6 +4097,7 @@ quick("■  FLY OFF","unfly")
 quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
+item(pages.HOME,"▣  JOGOS COMPATIVEIS E PERFIS","games")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
@@ -5368,6 +5369,7 @@ do
     v14.install=function()
         if v14.buildCore then v14.buildCore() end
         if v14.buildExtras then v14.buildExtras() end
+        if v14.buildGameRouter then v14.buildGameRouter() end
         v14.refresh=function(page)
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
@@ -5376,6 +5378,9 @@ do
             end
         end
         if v14.translate then v14.translate() end
+        if v14.router and v14.router.initialize then
+            v14.router.initialize()
+        end
         task.spawn(function()
             while not stopped and gui.Parent do
                 task.wait(3)
@@ -6181,5 +6186,5 @@ end
 
 notify(
     "BRAB0X PRIME V15 | "
-    ..#registered.." comandos"
+    ..#registered.." comandos | PlaceId "..v15PlaceId
 )
