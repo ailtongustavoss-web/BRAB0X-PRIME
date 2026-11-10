@@ -3943,6 +3943,7 @@ exec = function(raw)
         return
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
+    if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
     if result == false then return end
     if type(result)=="string" then
         notify(result)
@@ -4628,6 +4629,10 @@ quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
+item(pages.HOME,"⌕  BUSCA RAPIDA DE COMANDOS","palette")
+item(pages.HOME,"★  FAVORITOS DESTE JOGO","gamefavs")
+item(pages.HOME,"⌖  BUSSOLA DE WAYPOINTS","tab compass")
+item(pages.HOME,"▣  BACKUP E RESTAURACAO","backup")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
@@ -5927,6 +5932,7 @@ do
         local key=input.KeyCode
         if v14.v17 and v14.v17.onInput and v14.v17.onInput(input,used) then return true end
         if UIS:GetFocusedTextBox() and key~=Enum.KeyCode.ButtonStart then return false end
+        if v14.v17 and v14.v17.onInput and v14.v17.onInput(input,used) then return true end
         if key==Enum.KeyCode.F6 and not used then
             if v14.cinematic then v14.stopCinema() else v14.startCinema() end
             return true
