@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17.1 | INTERFACE CORRIGIDA + MENU FUNCIONAL
+-- BRAB0X PRIME V17.2 | JANELA RESPONSIVA + ARRASTE SEGURO
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_2_STOP",
     "BRAB0X_V17_1_STOP",
     "BRAB0X_V17_STOP",
     "BRAB0X_V16_STOP",
@@ -56,7 +57,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_1")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_2")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -398,14 +399,15 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_1",
+    Name = "BRAB0X_PRIME_V17_2",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
 
 local main = round(obj("Frame",gui,{
     Size = UDim2.fromOffset(960,625),
-    Position = UDim2.new(.5,-480,.5,-312),
+    AnchorPoint = Vector2.new(.5,.5),
+    Position = UDim2.fromScale(.5,.5),
     BackgroundColor3 = ink,
     BorderSizePixel = 0,
     Active = true,
@@ -443,7 +445,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.1  |  ULTIMATE TOOLKIT   /   BY @wendezao05153nh",
+    "V17.2  |  RESPONSIVE UI   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -914,18 +916,54 @@ local function relabel()
     end
 end
 
-local function responsive()
-    local camera = workspace.CurrentCamera
-    local view = camera and camera.ViewportSize
+-- V17.2: janela ancorada ao centro (nao deslocar 480px sem considerar escala).
+-- A escala nunca ultrapassa o espaco disponivel, inclusive ao usar tema compacto.
+local function clampHubPosition(view)
+    view=view or (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
         or Vector2.new(1280,720)
+    local margin=8
+    local halfX=960*uiScale.Scale*.5
+    local halfY=625*uiScale.Scale*.5
+    local centerX=main.Position.X.Scale*view.X+main.Position.X.Offset
+    local centerY=main.Position.Y.Scale*view.Y+main.Position.Y.Offset
+    local minX,maxX=halfX+margin,view.X-halfX-margin
+    local minY,maxY=halfY+margin,view.Y-halfY-margin
+    if maxX<minX then minX,maxX=view.X*.5,view.X*.5 end
+    if maxY<minY then minY,maxY=view.Y*.5,view.Y*.5 end
+    centerX=math.clamp(centerX,minX,maxX)
+    centerY=math.clamp(centerY,minY,maxY)
+    main.Position=UDim2.new(.5,centerX-view.X*.5,.5,centerY-view.Y*.5)
+end
 
-    uiScale.Scale = math.clamp(
-        math.min(view.X/983,view.Y/662),
-        .5,1
-    )*config.scale*(config.compact and .88 or 1)
+local function responsive()
+    local camera=workspace.CurrentCamera
+    local view=camera and camera.ViewportSize or Vector2.new(1280,720)
+    local fit=math.min(
+        math.max(.15,(view.X-24)/960),
+        math.max(.15,(view.Y-32)/625),
+        1
+    )
+    local preferred=config.scale*(config.compact and .88 or 1)
+    uiScale.Scale=math.max(.15,math.min(preferred,fit))
+    clampHubPosition(view)
 end
 
 responsive()
+do
+    local watched=nil
+    local function watchViewport()
+        local camera=workspace.CurrentCamera
+        if camera~=watched then
+            watched=camera
+            if camera then
+                bind(camera:GetPropertyChangedSignal("ViewportSize"),responsive)
+            end
+        end
+        responsive()
+    end
+    bind(workspace:GetPropertyChangedSignal("CurrentCamera"),watchViewport)
+    watchViewport()
+end
 
 local function titleRow(p,message)
     local l = txt(p,message,25,13,true)
@@ -1532,7 +1570,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_1_AIM"
+local aimKey = "BRAB0X_V17_2_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2641,7 +2679,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.1 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.2 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3672,7 +3710,8 @@ do
             v14.navigation.searchBox.Text=""
             v14.navigation.update("HOME")
         end
-        main.Position=UDim2.new(.5,-480,.5,-312)
+        main.Position=UDim2.fromScale(.5,.5)
+        responsive()
         show("HOME")
         saveV13()
         notify("Menu e grupos restaurados ao layout padrao.","success")
@@ -4586,7 +4625,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.1 / ULTIMATE",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.2 / RESPONSIVE",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5913,7 +5952,7 @@ do
         v14.panelRefresh.DASHBOARD=function()
             if not pages.DASHBOARD.Visible then return end
             clear(dashHolder)
-            dashboardStats.Text="V17.1  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
+            dashboardStats.Text="V17.2  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
             for i=1,4 do
                 local command=saved[i]
                 ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
@@ -5954,7 +5993,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.1] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.2] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6956,8 +6995,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_1_STOP == closeHub then
-        _G.BRAB0X_V17_1_STOP = nil
+    if _G.BRAB0X_V17_2_STOP == closeHub then
+        _G.BRAB0X_V17_2_STOP = nil
     end
 end
 
@@ -6995,42 +7034,42 @@ bind(UIS.InputBegan,function(key,used)
     end
 end)
 
--- ARRASTAR MENU
+-- ARRASTAR MENU: mouse e toque, com limites para nao sair da tela.
+local dragging=false
+local dragInput=nil
+local dragStart=nil
+local dragPosition=nil
 
-local dragging = false
-local startAt
-local was
-
-bind(header.InputBegan,function(k)
-    if k.UserInputType ==
-        Enum.UserInputType.MouseButton1 then
-
-        dragging = true
-        startAt = k.Position
-        was = main.Position
-    end
+bind(header.InputBegan,function(input)
+    local kind=input.UserInputType
+    if kind~=Enum.UserInputType.MouseButton1
+        and kind~=Enum.UserInputType.Touch then return end
+    -- Botoes de minimizar/fechar continuam independentes.
+    if not main.Visible then return end
+    dragging=true
+    dragInput=input
+    dragStart=input.Position
+    dragPosition=main.Position
 end)
-
-bind(UIS.InputChanged,function(k)
-    if dragging and k.UserInputType ==
-        Enum.UserInputType.MouseMovement then
-
-        local d = k.Position-startAt
-
-        main.Position = UDim2.new(
-            was.X.Scale,
-            was.X.Offset+d.X,
-            was.Y.Scale,
-            was.Y.Offset+d.Y
-        )
-    end
+bind(UIS.InputChanged,function(input)
+    if not dragging or not dragStart or not dragPosition then return end
+    local mouse=input.UserInputType==Enum.UserInputType.MouseMovement
+    local touch=input.UserInputType==Enum.UserInputType.Touch
+        and (dragInput==input)
+    if not mouse and not touch then return end
+    local d=input.Position-dragStart
+    main.Position=UDim2.new(
+        dragPosition.X.Scale,dragPosition.X.Offset+d.X,
+        dragPosition.Y.Scale,dragPosition.Y.Offset+d.Y
+    )
+    clampHubPosition()
 end)
-
-bind(UIS.InputEnded,function(k)
-    if k.UserInputType ==
-        Enum.UserInputType.MouseButton1 then
-
-        dragging = false
+bind(UIS.InputEnded,function(input)
+    if input.UserInputType==Enum.UserInputType.MouseButton1
+        or (input.UserInputType==Enum.UserInputType.Touch and input==dragInput) then
+        dragging=false
+        dragInput=nil
+        clampHubPosition()
     end
 end)
 
@@ -7046,7 +7085,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_1_STOP = closeHub
+_G.BRAB0X_V17_2_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -7212,7 +7251,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.1 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.2 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -7262,6 +7301,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.1 | "
+    "BRAB0X PRIME V17.2 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
