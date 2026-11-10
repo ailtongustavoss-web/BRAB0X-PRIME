@@ -741,6 +741,7 @@ local function relabel()
     local more={
         pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard"},
         en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard"},
+        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -2869,6 +2870,7 @@ do
         return true
     end
     v14.cinemaSpeed=18
+    v14.cinemaLook=nil
     v14.startCinema=function()
         if v14.cinematic then return true end
         local cam=workspace.CurrentCamera
@@ -2876,6 +2878,18 @@ do
         v14.cinemaSaved={type=cam.CameraType,cf=cam.CFrame,subject=cam.CameraSubject,fov=cam.FieldOfView}
         v14.cinematic=true
         cam.CameraType=Enum.CameraType.Scriptable
+        -- Segurar botao direito do mouse gira a camera, sem mover o avatar.
+        v14.cinemaLook=bind(UIS.InputChanged,function(input)
+            if not v14.cinematic or not workspace.CurrentCamera then return end
+            if input.UserInputType==Enum.UserInputType.MouseMovement
+                and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+                local delta=input.Delta
+                local current=workspace.CurrentCamera
+                local rotation=CFrame.Angles(0,-delta.X*.003,0)
+                local tilt=CFrame.Angles(-delta.Y*.003,0,0)
+                current.CFrame=current.CFrame*rotation*tilt
+            end
+        end)
         v14.cinemaConnection=Run.RenderStepped:Connect(function(dt)
             if stopped or not v14.cinematic then return end
             local current=workspace.CurrentCamera
@@ -2901,6 +2915,7 @@ do
         if not v14.cinematic then return end
         v14.cinematic=false
         if v14.cinemaConnection then v14.cinemaConnection:Disconnect() v14.cinemaConnection=nil end
+        if v14.cinemaLook then v14.cinemaLook:Disconnect() v14.cinemaLook=nil end
         local cam=workspace.CurrentCamera
         if cam then
             cam.CameraType=Enum.CameraType.Custom
@@ -4495,7 +4510,7 @@ do
         ["Exemplo: speed 60; fov 80; crosshair on"]={en="Example: speed 60; fov 80; crosshair on",es="Ejemplo: speed 60; fov 80; crosshair on"},
         ["SALVAR MACRO"]={en="SAVE MACRO",es="GUARDAR MACRO"},
         ["Nenhuma macro salva."]={en="No saved macros.",es="No hay macros guardadas."},
-        ["RODAS DE EXPLORACAO"]={en="EXPLORATION ROUTES",es="RUTAS DE EXPLORACION"},
+        ["ROTAS DE EXPLORACAO"]={en="EXPLORATION ROUTES",es="RUTAS DE EXPLORACION"},
         ["Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte"]={en="Build routes from saved waypoints in the Teleport Manager",es="Crea rutas con puntos guardados en Teletransporte"},
         ["Nome da rota"]={en="Route name",es="Nombre de la ruta"},
         ["Waypoints separados por espaco: casa spawn loja"]={en="Waypoints separated by spaces: home spawn shop",es="Puntos separados por espacios: casa spawn tienda"},
@@ -4743,7 +4758,7 @@ do
         end
 
         -- Rotas: waypoint existentes; o usuario avanca manualmente.
-        title(pages.ROUTES,"RODAS DE EXPLORACAO",
+        title(pages.ROUTES,"ROTAS DE EXPLORACAO",
             "Crie rotas utilizando waypoints salvos no Gerenciador de Teleporte")
         local routeName=box(pages.ROUTES,"Nome da rota",36)
         local routeBody=box(pages.ROUTES,"Waypoints separados por espaco: casa spawn loja",36)
@@ -4807,7 +4822,7 @@ do
             ["INICIAR CINEMA"]={en="START CINEMA",es="INICIAR CINE"},
             ["PARAR CINEMA"]={en="STOP CINEMA",es="DETENER CINE"},
             ["VELOCIDADE DA CAMERA"]={en="CAMERA SPEED",es="VELOCIDAD DE CAMARA"},
-            ["MOVIMENTOS: WASD / E / Q  •  SHIFT ACELERA"]={en="CONTROLS: WASD / E / Q • SHIFT BOOST",es="CONTROLES: WASD / E / Q • SHIFT ACELERA"},
+            ["MOVIMENTOS: WASD / E / Q  •  SHIFT ACELERA"]={en="WASD / E / Q • SHIFT BOOST • RMB LOOK",es="WASD / E / Q • SHIFT ACELERA • BOTON DERECHO MIRA"},
             ["EDITOR DE AVATAR LOCAL"]={en="LOCAL AVATAR EDITOR",es="EDITOR DE AVATAR LOCAL"},
             ["Mudancas de cor visiveis apenas na sua tela, com restauracao"]={en="Color changes visible only to you, with restore",es="Cambios de color solo visibles para ti, con restauracion"},
             ["RESTAURAR AVATAR"]={en="RESTORE AVATAR",es="RESTAURAR AVATAR"},
@@ -4878,6 +4893,7 @@ do
             "Ajuste de 2 a 70 studs por segundo",2,70,2,
             function()return v14.cinemaSpeed end,"cinemaspeed","%.0f")
         note(pages.CINEMA,"MOVIMENTOS: WASD / E / Q  •  SHIFT ACELERA",50)
+        note(pages.CINEMA,"Segure o botao direito do mouse para girar a camera.",38)
         local camState=ui.section(pages.CINEMA,"MODO CINEMATOGRAFICO")
         v14.panelRefresh.CINEMA=function()
             camState.Text="CAMERA LIVRE: "..(v14.cinematic and "ON" or "OFF")
@@ -5044,6 +5060,14 @@ do
             end
         end
         if v14.translate then v14.translate() end
+        task.spawn(function()
+            while not stopped and gui.Parent do
+                task.wait(3)
+                if (selected=="STATS" or selected=="DASHBOARD") and v14.refresh then
+                    v14.refresh(selected)
+                end
+            end
+        end)
     end
 
     -- F2 Wheel, F6 Cinema, gamepad Start/R1/B, botoes nativos do Roblox.
