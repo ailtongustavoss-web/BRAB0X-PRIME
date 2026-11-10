@@ -3319,6 +3319,395 @@ local aimExplain=txt(pages.AIM,
     45,12)
 aimExplain.TextColor3=muted
 
+-- V13 / PAINEIS INTERATIVOS
+local function heading(page,title,subtitle)
+    local h=round(obj("Frame",page,{
+        Size=UDim2.new(1,-9,0,69),
+        BackgroundColor3=Color3.fromRGB(33,11,19),
+        BorderSizePixel=0
+    }),11)
+    obj("UIStroke",h,{Color=accent,Transparency=.4,Thickness=1})
+    local a=txt(h,title,32,19,true)
+    a.Position=UDim2.fromOffset(17,8)
+    a.Size=UDim2.new(1,-32,0,30)
+    local b=txt(h,subtitle,22,11)
+    b.Position=UDim2.fromOffset(17,39)
+    b.Size=UDim2.new(1,-32,0,22)
+    b.TextColor3=muted
+    return h
+end
+local function editBox(parent,placeholder,height)
+    local b=round(obj("TextBox",parent,{
+        Size=UDim2.new(1,-10,0,height or 37),
+        BackgroundColor3=control,BorderSizePixel=0,
+        Text="",PlaceholderText=placeholder,
+        PlaceholderColor3=muted,TextColor3=white,
+        Font=Enum.Font.Gotham,TextSize=13,ClearTextOnFocus=false
+    }),9)
+    obj("UIStroke",b,{Color=accent,Transparency=.72,Thickness=1})
+    return b
+end
+local function actionRow(page,items)
+    local row=obj("Frame",page,{Size=UDim2.new(1,-10,0,40),BackgroundTransparency=1})
+    for i,item in ipairs(items) do
+        local b=btn(row,item[1],item[2],39)
+        b.Size=UDim2.new(1/#items,-7,0,39)
+        b.Position=UDim2.new((i-1)/#items,3,0,0)
+    end
+    return row
+end
+local function dynamicHolder(page)
+    local holder=obj("Frame",page,{
+        Size=UDim2.new(1,-10,0,0),
+        AutomaticSize=Enum.AutomaticSize.Y,
+        BackgroundTransparency=1
+    })
+    stack(holder,7)
+    return holder
+end
+local function emptyMessage(holder,message)
+    local t=txt(holder,message,42,12)
+    t.TextColor3=muted
+    return t
+end
+
+-- PLAYER MANAGER: imagens de avatar e botoes por jogador.
+heading(pages.PLAYERS,"♙  PLAYER MANAGER","Goto, espectar, distancia e copia de usuario")
+local playerSearch=editBox(pages.PLAYERS,"Buscar jogador pelo nome ou apelido...")
+local playersActions=actionRow(pages.PLAYERS,{
+    {"ATUALIZAR",function() if updatePlayerManager then updatePlayerManager() end end},
+    {"IR AO MAIS PROXIMO",function() exec("goto nearest") end}
+})
+local playersHolder=dynamicHolder(pages.PLAYERS)
+updatePlayerManager=function()
+    if stopped or not playersHolder.Parent then return end
+    clear(playersHolder)
+    local query=playerSearch.Text:lower()
+    local users=Players:GetPlayers()
+    table.sort(users,function(a,b)return a.Name:lower()<b.Name:lower() end)
+    local total=0
+    for _,user in ipairs(users) do
+        if query=="" or user.Name:lower():find(query,1,true)
+            or user.DisplayName:lower():find(query,1,true) then
+            total=total+1
+            local row=round(obj("Frame",playersHolder,{
+                Size=UDim2.new(1,-8,0,105),
+                BackgroundColor3=Color3.fromRGB(27,22,30),
+                BorderSizePixel=0
+            }),11)
+            obj("UIStroke",row,{Color=accent,Thickness=1,Transparency=.7})
+            local portrait=round(obj("ImageLabel",row,{
+                Position=UDim2.fromOffset(12,12),
+                Size=UDim2.fromOffset(80,80),
+                BackgroundColor3=control,BorderSizePixel=0,
+                Image=""
+            }),9)
+            task.spawn(function()
+                local ok,url=pcall(function()
+                    return Players:GetUserThumbnailAsync(
+                        user.UserId,Enum.ThumbnailType.HeadShot,
+                        Enum.ThumbnailSize.Size150x150)
+                end)
+                if ok and portrait.Parent then portrait.Image=url end
+            end)
+            local name=txt(row,user.DisplayName.."  (@"..user.Name..")",28,15,true)
+            name.Position=UDim2.fromOffset(106,9)
+            name.Size=UDim2.new(1,-122,0,27)
+            local subtitle=txt(row,"UserId: "..user.UserId,23,11)
+            subtitle.Position=UDim2.fromOffset(108,38)
+            subtitle.Size=UDim2.new(1,-124,0,23)
+            subtitle.TextColor3=muted
+            local labels={
+                {"GOTO",function()exec("goto "..user.Name)end},
+                {"ESPECTAR",function()exec("spectate "..user.Name)end},
+                {"DISTANCIA",function()exec("distance "..user.Name)end},
+                {"COPIAR NOME",function()
+                    if type(setclipboard)=="function" then
+                        local ok=pcall(setclipboard,user.Name)
+                        if ok then notify("Copiado: "..user.Name);return end
+                    end
+                    cmdInput.Text=user.Name
+                    cmdInput:CaptureFocus()
+                    notify("Nome no campo inferior: Ctrl+A / Ctrl+C")
+                end}
+            }
+            for i,entry in ipairs(labels) do
+                local b=btn(row,entry[1],entry[2],30)
+                b.Position=UDim2.new(0,106,0,66)+UDim2.fromOffset((i-1)*145,0)
+                b.Size=UDim2.fromOffset(137,29)
+                b.TextSize=10
+            end
+        end
+    end
+    if total==0 then emptyMessage(playersHolder,"Nenhum jogador corresponde a busca.") end
+end
+bind(playerSearch:GetPropertyChangedSignal("Text"),function()
+    if pages.PLAYERS.Visible then updatePlayerManager() end
+end)
+bind(Players.PlayerAdded,function() if pages.PLAYERS.Visible then updatePlayerManager() end end)
+bind(Players.PlayerRemoving,function() if pages.PLAYERS.Visible then task.defer(updatePlayerManager) end end)
+
+-- FAVORITOS: comandos com execucao imediata e remocao.
+heading(pages.FAVORITES,"★  MEUS FAVORITOS","Marque a estrela dos comandos e acesse aqui")
+actionRow(pages.FAVORITES,{
+    {"VER TODOS OS COMANDOS",function()show("COMMANDS")end},
+    {"LIMPAR FAVORITOS",function()
+        v13Data.favorites={}
+        favoritesChanged()
+    end}
+})
+local favoriteHolder=dynamicHolder(pages.FAVORITES)
+updateFavoritePanel=function()
+    if stopped or not favoriteHolder.Parent then return end
+    if not pages.FAVORITES.Visible then return end
+    clear(favoriteHolder)
+    local names={}
+    for name,value in pairs(v13Data.favorites) do
+        if value==true and byName[name] then names[#names+1]=name end
+    end
+    table.sort(names)
+    if #names==0 then
+        emptyMessage(favoriteHolder,"Nenhum favorito. Abra Comandos e clique em ★.")
+        return
+    end
+    for _,name in ipairs(names) do
+        local entry=byName[name]
+        local row=round(obj("Frame",favoriteHolder,{
+            Size=UDim2.new(1,-8,0,52),
+            BackgroundColor3=control,BorderSizePixel=0
+        }),8)
+        local desc=txt(row,"★  "..name.."  |  "..entry.description,30,12,true)
+        desc.Position=UDim2.fromOffset(12,10)
+        desc.Size=UDim2.new(1,-218,0,31)
+        local run=btn(row,"EXECUTAR",function()exec(entry.example)end,32)
+        run.Position=UDim2.new(1,-199,0,10)
+        run.Size=UDim2.fromOffset(105,32)
+        local remove=btn(row,"REMOVER",function()
+            v13Data.favorites[name]=nil
+            favoritesChanged()
+        end,32)
+        remove.Position=UDim2.new(1,-89,0,10)
+        remove.Size=UDim2.fromOffset(79,32)
+    end
+end
+
+-- TELEPORTE: nomes para waypoints, ultima posicao e retorno.
+heading(pages.TELEPORT,"⌾  GERENCIADOR DE TELEPORTE","Posicoes salvas, retorno e atalhos")
+local wpName=editBox(pages.TELEPORT,"Nome do ponto: casa, escola, spawn...")
+actionRow(pages.TELEPORT,{
+    {"SALVAR POSICAO",function()exec("wp "..wpName.Text)end},
+    {"VOLTAR",function()exec("back")end},
+    {"CAMERA",function()exec("gotocam")end}
+})
+local wpSearch=editBox(pages.TELEPORT,"Pesquisar waypoint...")
+local waypointHolder=dynamicHolder(pages.TELEPORT)
+updateTeleportPanel=function()
+    if stopped or not waypointHolder.Parent then return end
+    if not pages.TELEPORT.Visible then return end
+    clear(waypointHolder)
+    local names={}
+    for name in pairs(extraState.savedWaypoints) do names[#names+1]=name end
+    table.sort(names)
+    local shown=0
+    for _,name in ipairs(names) do
+        if wpSearch.Text=="" or name:lower():find(wpSearch.Text:lower(),1,true) then
+            shown=shown+1
+            local pos=extraState.savedWaypoints[name].Position
+            local row=round(obj("Frame",waypointHolder,{
+                Size=UDim2.new(1,-8,0,61),
+                BackgroundColor3=control,BorderSizePixel=0
+            }),9)
+            local label=txt(row,"⌾  "..name,26,13,true)
+            label.Position=UDim2.fromOffset(13,6)
+            label.Size=UDim2.new(1,-244,0,26)
+            local coords=txt(row,string.format("X %.0f  |  Y %.0f  |  Z %.0f",pos.X,pos.Y,pos.Z),22,11)
+            coords.Position=UDim2.fromOffset(14,33)
+            coords.Size=UDim2.new(1,-244,0,22)
+            coords.TextColor3=muted
+            local go=btn(row,"IR",function()exec("gowp "..name)end,36)
+            go.Position=UDim2.new(1,-218,0,12)
+            go.Size=UDim2.fromOffset(99,36)
+            local del=btn(row,"EXCLUIR",function()exec("delwp "..name)end,36)
+            del.Position=UDim2.new(1,-109,0,12)
+            del.Size=UDim2.fromOffset(97,36)
+        end
+    end
+    if shown==0 then emptyMessage(waypointHolder,"Nenhuma posicao salva.") end
+end
+bind(wpSearch:GetPropertyChangedSignal("Text"),function()
+    if pages.TELEPORT.Visible then updateTeleportPanel() end
+end)
+
+-- PERFIS: colecao de configuracoes sem alterar a conta Roblox.
+heading(pages.PROFILES,"▣  PERFIS PERSONALIZADOS","Salve velocidade, camera, tema, tamanho e preferencia AIM")
+local profileName=editBox(pages.PROFILES,"Nome curto do perfil, ex.: explorar")
+actionRow(pages.PROFILES,{
+    {"SALVAR PERFIL",function()exec("saveprofile "..profileName.Text)end},
+    {"CARREGAR PERFIL",function()exec("loadprofile "..profileName.Text)end}
+})
+local profileNote=txt(pages.PROFILES,
+    type(writefile)=="function"
+        and "Salvamento em arquivo local disponivel neste ambiente."
+        or "Perfis em memoria: podem desaparecer ao fechar o jogo.",
+    36,11)
+profileNote.TextColor3=muted
+local profilesHolder=dynamicHolder(pages.PROFILES)
+updateProfilePanel=function()
+    if stopped or not profilesHolder.Parent then return end
+    if not pages.PROFILES.Visible then return end
+    clear(profilesHolder)
+    local names={}
+    for name in pairs(v13Data.profiles) do names[#names+1]=name end
+    table.sort(names)
+    if #names==0 then emptyMessage(profilesHolder,"Nenhum perfil salvo.") end
+    for _,name in ipairs(names) do
+        local row=round(obj("Frame",profilesHolder,{
+            Size=UDim2.new(1,-8,0,54),
+            BackgroundColor3=control,BorderSizePixel=0
+        }),9)
+        local label=txt(row,"▣  "..name,31,14,true)
+        label.Position=UDim2.fromOffset(13,10)
+        label.Size=UDim2.new(1,-237,0,31)
+        local use=btn(row,"APLICAR",function()exec("loadprofile "..name)end,34)
+        use.Position=UDim2.new(1,-216,0,10)
+        use.Size=UDim2.fromOffset(100,34)
+        local remove=btn(row,"EXCLUIR",function()exec("deleteprofile "..name)end,34)
+        remove.Position=UDim2.new(1,-107,0,10)
+        remove.Size=UDim2.fromOffset(95,34)
+    end
+end
+
+-- CONSOLE: sugestoes, pesquisa e historico de comandos.
+heading(pages.CONSOLE,"⌘  CONSOLE INTELIGENTE","Busca, autocomplete, historico e retorno de comandos")
+local consoleInput=editBox(pages.CONSOLE,"Escreva um comando: goto nearest, fly, speed 75...")
+actionRow(pages.CONSOLE,{
+    {"EXECUTAR",function()if consoleInput.Text~="" then exec(consoleInput.Text) end end},
+    {"ANTERIOR",function()
+        if #v13History>0 then
+            v13HistoryIndex=math.min(#v13History,v13HistoryIndex+1)
+            consoleInput.Text=v13History[v13HistoryIndex] or ""
+        end
+    end},
+    {"LIMPAR",function()v13Logs={} if updateConsolePanel then updateConsolePanel()end end}
+})
+local suggestionTitle=titleRow(pages.CONSOLE,"SUGESTOES")
+local suggestionHolder=dynamicHolder(pages.CONSOLE)
+local consoleLogsTitle=titleRow(pages.CONSOLE,"HISTORICO DE EXECUCAO")
+local consoleLogsHolder=dynamicHolder(pages.CONSOLE)
+local v13History={}
+local v13HistoryIndex=0
+local v13Logs={}
+addHistory=function(raw)
+    if raw=="" then return end
+    table.insert(v13History,1,raw)
+    if #v13History>65 then table.remove(v13History) end
+    v13HistoryIndex=0
+    if pages.CONSOLE.Visible then updateConsolePanel() end
+end
+v13Log=function(message)
+    table.insert(v13Logs,1,os.date("%H:%M:%S").."  "..message)
+    if #v13Logs>36 then table.remove(v13Logs) end
+    if pages.CONSOLE.Visible then updateConsolePanel() end
+end
+local function suggestions()
+    clear(suggestionHolder)
+    local q=consoleInput.Text:lower()
+    local prefix=q:match("^%s*(%S*)") or ""
+    if prefix=="" then
+        emptyMessage(suggestionHolder,"Digite o inicio de um comando para ver sugestoes.")
+        return
+    end
+    local found=0
+    for _,entry in ipairs(registered) do
+        if entry.name:sub(1,#prefix)==prefix then
+            found=found+1
+            local b=btn(suggestionHolder,entry.example.."  •  "..entry.description,function()
+                consoleInput.Text=entry.example
+                consoleInput:CaptureFocus()
+            end,32)
+            b.TextSize=11
+            if found>=5 then break end
+        end
+    end
+    if found==0 then emptyMessage(suggestionHolder,"Nenhum comando com esse nome.") end
+end
+updateConsolePanel=function()
+    if stopped or not pages.CONSOLE.Visible then return end
+    clear(consoleLogsHolder)
+    for i=1,math.min(#v13Logs,17) do
+        local line=txt(consoleLogsHolder,v13Logs[i],26,11)
+        line.TextColor3=i==1 and accent or muted
+    end
+    if #v13Logs==0 then emptyMessage(consoleLogsHolder,"Os comandos executados aparecerao aqui.") end
+    suggestions()
+end
+bind(consoleInput:GetPropertyChangedSignal("Text"),function()
+    if pages.CONSOLE.Visible then suggestions() end
+end)
+bind(consoleInput.FocusLost,function(enter)
+    if enter and consoleInput.Text~="" then exec(consoleInput.Text) end
+end)
+
+-- DESEMPENHO: informacoes de sessao e grafico amostrado.
+heading(pages.PERFORMANCE,"▥  PERFORMANCE","FPS, ping, memoria e ajustes visuais locais")
+local performanceDetails=txt(pages.PERFORMANCE,"FPS: --    PING: --    MEMORIA: --",50,17,true)
+performanceDetails.TextColor3=accent
+actionRow(pages.PERFORMANCE,{
+    {"FPS NA TELA",function()exec(fpsLabel.Visible and "fps off" or "fps on")end},
+    {"MODO LEVE",function()exec("lowgfx")end},
+    {"RESTAURAR GRAFICOS",function()exec("resetgfx")end}
+})
+titleRow(pages.PERFORMANCE,"FPS DOS ULTIMOS SEGUNDOS")
+local graph=round(obj("Frame",pages.PERFORMANCE,{
+    Size=UDim2.new(1,-10,0,167),
+    BackgroundColor3=Color3.fromRGB(26,20,28),
+    BorderSizePixel=0
+}),10)
+local graphBars={}
+for i=1,24 do
+    graphBars[i]=round(obj("Frame",graph,{
+        AnchorPoint=Vector2.new(0,1),
+        Position=UDim2.new((i-1)/24,4,1,-8),
+        Size=UDim2.new(1/24,-7,0,12),
+        BackgroundColor3=accent,
+        BorderSizePixel=0
+    }),4)
+end
+local performanceFrames,performanceElapsed=0,0
+bind(Run.RenderStepped,function(dt)
+    if stopped then return end
+    performanceFrames=performanceFrames+1
+    performanceElapsed=performanceElapsed+dt
+    if performanceElapsed<.8 then return end
+    local fps=math.floor(performanceFrames/math.max(performanceElapsed,.001)+.5)
+    performanceFrames,performanceElapsed=0,0
+    if not pages.PERFORMANCE.Visible then return end
+    local ping="--"
+    local ok,value=pcall(function()
+        return Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+    end)
+    if ok then ping=tostring(value) end
+    local memory="--"
+    local okMemory,used=pcall(function() return Stats:GetTotalMemoryUsageMb() end)
+    if okMemory then memory=string.format("%.0f MB",used) end
+    performanceDetails.Text="FPS: "..fps.."    PING: "..ping.."    MEMORIA: "..memory..
+        "    JOGADORES: "..#Players:GetPlayers()
+    for i=1,#graphBars-1 do
+        graphBars[i].Size=graphBars[i+1].Size
+    end
+    graphBars[#graphBars].Size=UDim2.new(1/24,-7,0,math.clamp(math.floor(fps*1.25),7,145))
+end)
+
+-- Atualizacao somente da pagina aberta, evitando trabalho desnecessario.
+refreshV13Page=function(page)
+    if page=="PLAYERS" and updatePlayerManager then updatePlayerManager()
+    elseif page=="FAVORITES" and updateFavoritePanel then updateFavoritePanel()
+    elseif page=="TELEPORT" and updateTeleportPanel then updateTeleportPanel()
+    elseif page=="PROFILES" and updateProfilePanel then updateProfilePanel()
+    elseif page=="CONSOLE" and updateConsolePanel then updateConsolePanel()
+    end
+end
+
 -- ABA CONFIGURACOES
 
 local settingLabel = titleRow(
