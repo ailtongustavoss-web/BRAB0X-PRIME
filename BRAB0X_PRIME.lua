@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V13.1 | CREDITOS DO CRIADOR + 8 MODULOS
+-- BRAB0X PRIME V13.2 | AJUDA INTERATIVA + NOTIFICACOES PREMIUM
 -- Criado por @wendezao05153nh
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
@@ -73,7 +73,7 @@ for _,field in ipairs({"favorites","keybinds","profiles","waypoints"}) do
     if type(v13Data[field])~="table" then v13Data[field]={} end
 end
 if type(v13Data.preferences)=="table" then
-    for _,key in ipairs({"theme","lang","scale","aimEnabled","compact","animations","opacity","neon"}) do
+    for _,key in ipairs({"theme","lang","scale","aimEnabled","compact","animations","opacity","neon","notifications"}) do
         if v13Data.preferences[key]~=nil then config[key]=v13Data.preferences[key] end
     end
 end
@@ -81,6 +81,7 @@ config.theme=type(config.theme)=="string" and config.theme or "red"
 config.scale=math.clamp(tonumber(config.scale) or 1,.6,1.25)
 config.compact=config.compact==true
 config.animations=config.animations~=false
+config.notifications=config.notifications~=false
 config.opacity=math.clamp(tonumber(config.opacity) or 0,0,.45)
 config.neon=math.clamp(tonumber(config.neon) or 1,.25,2)
 local defaultKeys={FLY="F",MENU="RightShift",NOCLIP="N",BOOST="B",INVIS="I"}
@@ -92,7 +93,8 @@ local function saveV13()
     v13Data.preferences={
         theme=config.theme,scale=config.scale,lang=config.lang,
         aimEnabled=config.aimEnabled,compact=config.compact,
-        animations=config.animations,opacity=config.opacity,neon=config.neon
+        animations=config.animations,opacity=config.opacity,neon=config.neon,
+        notifications=config.notifications
     }
     if type(writefile)=="function" then
         pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
@@ -280,11 +282,11 @@ local L = {
 local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
-    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE"
+    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
-local navOrder = {"HOME","COMMANDS","PLAYERS","FAVORITES","TELEPORT","CONSOLE","PROFILES","PERFORMANCE","SETTINGS","AIM"}
+local navOrder = {"HOME","COMMANDS","HELP","PLAYERS","FAVORITES","TELEPORT","CONSOLE","PROFILES","PERFORMANCE","SETTINGS","AIM"}
 local function moduleEnabled(name)
     return name ~= "AIM" or config.aimEnabled == true
 end
@@ -307,6 +309,10 @@ local updateFavoritePanel
 local updateTeleportPanel
 local updateProfilePanel
 local updateConsolePanel
+local premiumNotify
+local openCommandHelp
+local refreshHelpPage
+local noticeCounter=0
 
 -- JANELA PRINCIPAL
 
@@ -356,7 +362,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V13.1  •  RED NEON EDITION   /   BY @wendezao05153nh",
+    "V13.2  •  RED NEON EDITION   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -523,10 +529,13 @@ execute.Size = UDim2.fromOffset(130,29)
 
 local selected = "HOME"
 
-local function notify(message)
+local function notify(message,kind)
     if not stopped and status.Parent then
-        status.Text=tostring(message)
-        if v13Log then v13Log(tostring(message)) end
+        local text=tostring(message)
+        status.Text=text
+        noticeCounter=noticeCounter+1
+        if v13Log then v13Log(text) end
+        if premiumNotify then premiumNotify(text,kind) end
     end
 end
 
@@ -561,6 +570,7 @@ local function show(page)
         end
     end
     if refreshV13Page then refreshV13Page(page) end
+    if page=="HELP" and refreshHelpPage then refreshHelpPage() end
 end
 
 for name,b in pairs(navButtons) do
@@ -573,8 +583,8 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance"}
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help"}
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -2309,7 +2319,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V13.1 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V13.2 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -2511,6 +2521,30 @@ register("creator","SETTINGS","Mostrar criador do BRAB0X PRIME",function()
     return false
 end)
 alias("author","SETTINGS","Alias de creator","creator")
+register("manual","SETTINGS","Abrir central de ajuda",function()
+    show("HELP")
+end)
+register("helpcommand","SETTINGS","Ver explicacao de um comando",function(a)
+    local name=tostring(a or ""):lower():match("^%s*(%S+)")
+    if name and byName[name] and openCommandHelp then
+        openCommandHelp(name)
+    else
+        notify("Use: helpcommand fly ou pesquise na aba Ajuda","info")
+    end
+    return false
+end,"helpcommand goto")
+register("notifications","SETTINGS","Ligar ou desligar notificacoes premium",function(a)
+    if a=="on" then config.notifications=true
+    elseif a=="off" then config.notifications=false
+    else config.notifications=not config.notifications end
+    saveV13()
+    notify("Notificacoes premium: "..(config.notifications and "ON" or "OFF"),"info")
+    return false
+end,"notifications on")
+register("notifytest","SETTINGS","Testar uma notificacao",function()
+    notify("BRAB0X PRIME • Notificacoes funcionando!","success")
+    return false
+end)
 
 -- EXECUTAR COMANDO
 
@@ -2526,7 +2560,7 @@ exec = function(raw)
     if addHistory then addHistory(tostring(raw)) end
 
     if not entry then
-        notify("Comando desconhecido: "..command)
+        notify("Comando desconhecido: "..command,"error")
         return
     end
 
@@ -2538,11 +2572,12 @@ exec = function(raw)
         return
     end
 
+    local noticesBefore=noticeCounter
     local ok,result = pcall(entry.run,arg)
 
     if not ok then
         local err = result
-        notify("Erro em "..command..": "..tostring(err))
+        notify("Erro em "..command..": "..tostring(err),"error")
         return
     end
     if result == false then return end
@@ -2553,8 +2588,8 @@ exec = function(raw)
 
     if stopped then return end
     if command ~= "coords"
-        and command ~= "status" then
-        notify("OK: "..raw)
+        and command ~= "status" and noticeCounter==noticesBefore then
+        notify("OK: "..raw,"success")
     end
 
     refresh()
@@ -4297,6 +4332,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V13 | "
+    "BRAB0X PRIME V13.2 | "
     ..#registered.." comandos"
 )
