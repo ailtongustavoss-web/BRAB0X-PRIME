@@ -5495,7 +5495,7 @@ do
         v14.panelRefresh.DASHBOARD=function()
             if not pages.DASHBOARD.Visible then return end
             clear(dashHolder)
-            dashboardStats.Text="V14  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
+            dashboardStats.Text="V16  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
             for i=1,4 do
                 local command=saved[i]
                 ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
@@ -5535,7 +5535,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V14] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V16] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
