@@ -4797,6 +4797,299 @@ do
     end
 end
 
+-- V14 / CINEMA, AVATAR, AUDIO, DASHBOARD, ESTATISTICAS E GAMEPAD
+do
+    local function addTranslations()
+        local words={
+            ["MODO CINEMATOGRAFICO"]={en="CINEMATIC MODE",es="MODO CINEMATOGRAFICO"},
+            ["Camera livre local para gravacoes no seu proprio mapa"]={en="Local free camera for recordings in your own map",es="Camara libre local para grabar tu mapa"},
+            ["ATIVE O CINEMA PARA VOAR COM A CAMERA. F6 PARA SAIR."]={en="ENABLE CINEMA FOR FREE CAMERA. PRESS F6 TO EXIT.",es="ACTIVA EL CINE PARA CAMARA LIBRE. F6 PARA SALIR."},
+            ["INICIAR CINEMA"]={en="START CINEMA",es="INICIAR CINE"},
+            ["PARAR CINEMA"]={en="STOP CINEMA",es="DETENER CINE"},
+            ["VELOCIDADE DA CAMERA"]={en="CAMERA SPEED",es="VELOCIDAD DE CAMARA"},
+            ["MOVIMENTOS: WASD / E / Q  •  SHIFT ACELERA"]={en="CONTROLS: WASD / E / Q • SHIFT BOOST",es="CONTROLES: WASD / E / Q • SHIFT ACELERA"},
+            ["EDITOR DE AVATAR LOCAL"]={en="LOCAL AVATAR EDITOR",es="EDITOR DE AVATAR LOCAL"},
+            ["Mudancas de cor visiveis apenas na sua tela, com restauracao"]={en="Color changes visible only to you, with restore",es="Cambios de color solo visibles para ti, con restauracion"},
+            ["RESTAURAR AVATAR"]={en="RESTORE AVATAR",es="RESTAURAR AVATAR"},
+            ["BRILHO"]={en="GLOW",es="BRILLO"},
+            ["RASTRO"]={en="TRAIL",es="RASTRO"},
+            ["VERMELHO"]={en="RED",es="ROJO"},
+            ["PRETO"]={en="BLACK",es="NEGRO"},
+            ["BRANCO"]={en="WHITE",es="BLANCO"},
+            ["AZUL"]={en="BLUE",es="AZUL"},
+            ["DOURADO"]={en="GOLD",es="DORADO"},
+            ["AUDIO E MUSICA"]={en="AUDIO & MUSIC",es="AUDIO Y MUSICA"},
+            ["Use IDs de sons autorizados para esta experiencia"]={en="Use sound IDs authorized for this experience",es="Usa IDs de sonidos autorizados en este juego"},
+            ["ID do som Roblox autorizado"]={en="Authorized Roblox sound ID",es="ID de sonido Roblox autorizado"},
+            ["REPRODUZIR"]={en="PLAY",es="REPRODUCIR"},
+            ["PAUSAR/CONTINUAR"]={en="PAUSE/RESUME",es="PAUSAR/REANUDAR"},
+            ["PARAR AUDIO"]={en="STOP AUDIO",es="DETENER AUDIO"},
+            ["EFEITO UNICO"]={en="ONE-SHOT SOUND",es="EFECTO UNICO"},
+            ["VOLUME"]={en="VOLUME",es="VOLUMEN"},
+            ["O audio pode falhar por privacidade ou permissao do asset."]={en="Audio may fail due to asset privacy or permissions.",es="El sonido puede fallar por privacidad o permisos."},
+            ["ESTATISTICAS DO HUB"]={en="HUB STATISTICS",es="ESTADISTICAS DEL HUB"},
+            ["Uso nesta sessao, totais locais e comandos frequentes"]={en="Session usage, local totals and most-used commands",es="Uso de esta sesion, totales y comandos frecuentes"},
+            ["DASHBOARD PERSONALIZAVEL"]={en="CUSTOM DASHBOARD",es="PANEL PERSONALIZABLE"},
+            ["Quatro atalhos editaveis com acesso direto"]={en="Four editable shortcuts with direct access",es="Cuatro accesos directos editables"},
+            ["ALTERAR"]={en="CHANGE",es="CAMBIAR"},
+            ["ULTIMOS"]={en="RECENT",es="RECIENTES"},
+            ["ABRIR WHEEL"]={en="OPEN WHEEL",es="ABRIR RUEDA"},
+            ["MODO SEGURO"]={en="SAFE MODE",es="MODO SEGURO"},
+            ["Confirme duas vezes comandos que apagam ou restauram configuracoes"]={en="Confirm destructive commands twice",es="Confirma dos veces los comandos de borrado"},
+            ["ATIVADO"]={en="ENABLED",es="ACTIVADO"},
+            ["DESATIVADO"]={en="DISABLED",es="DESACTIVADO"},
+            ["CONTROLE / GAMEPAD"]={en="CONTROLLER / GAMEPAD",es="MANDO / GAMEPAD"},
+            ["START menu, R1 wheel, B voltar, Y recentes, X favoritos"]={en="START menu, R1 wheel, B back, Y recent, X favorites",es="START menu, R1 rueda, B volver, Y recientes, X favoritos"}
+        }
+        for key,value in pairs(words) do v14.addTranslation(key,value) end
+    end
+    v14.buildExtras=function()
+        addTranslations()
+        local ui=v14.ui
+        local function note(parent,description,height)
+            local t=txt(parent,v14.t(description),height or 35,12)
+            t.TextColor3=muted
+            v14.tr(t,description)
+            return t
+        end
+        local function controls(parent,options)
+            local bar=obj("Frame",parent,{
+                Size=UDim2.new(1,-8,0,44),BackgroundTransparency=1
+            })
+            for i,entry in ipairs(options) do
+                local b=btn(bar,v14.t(entry[1]),entry[2],42)
+                b.Position=UDim2.new((i-1)/#options,3,0,0)
+                b.Size=UDim2.new(1/#options,-7,0,42)
+                b.TextSize=10
+                v14.tr(b,entry[1])
+            end
+            return bar
+        end
+
+        -- Cinema: camera Scriptable, sem mover o personagem.
+        ui.title(pages.CINEMA,"MODO CINEMATOGRAFICO",
+            "Camera livre local para gravacoes no seu proprio mapa")
+        note(pages.CINEMA,"ATIVE O CINEMA PARA VOAR COM A CAMERA. F6 PARA SAIR.",38)
+        controls(pages.CINEMA,{
+            {"INICIAR CINEMA",function()exec("cinema")end},
+            {"PARAR CINEMA",function()exec("uncinema")end}
+        })
+        sliderControl(pages.CINEMA,"VELOCIDADE DA CAMERA",
+            "Ajuste de 2 a 70 studs por segundo",2,70,2,
+            function()return v14.cinemaSpeed end,"cinemaspeed","%.0f")
+        note(pages.CINEMA,"MOVIMENTOS: WASD / E / Q  •  SHIFT ACELERA",50)
+        local camState=ui.section(pages.CINEMA,"MODO CINEMATOGRAFICO")
+        v14.panelRefresh.CINEMA=function()
+            camState.Text="CAMERA LIVRE: "..(v14.cinematic and "ON" or "OFF")
+        end
+
+        -- Editor local: cores e efeitos; restaura estado original.
+        ui.title(pages.AVATAR,"EDITOR DE AVATAR LOCAL",
+            "Mudancas de cor visiveis apenas na sua tela, com restauracao")
+        local colors={
+            {"VERMELHO","red"},{"PRETO","black"},{"BRANCO","white"},
+            {"AZUL","blue"},{"DOURADO","gold"}
+        }
+        local grid=obj("Frame",pages.AVATAR,{
+            Size=UDim2.new(1,-8,0,132),BackgroundTransparency=1
+        })
+        for i,entry in ipairs(colors) do
+            local b=btn(grid,v14.t(entry[1]),function()
+                v14.avatarApply(entry[2])
+            end,52)
+            local col=(i-1)%3
+            local row=math.floor((i-1)/3)
+            b.Position=UDim2.new(col/3,3,row/2,3)
+            b.Size=UDim2.new(1/3,-8,.5,-7)
+            v14.tr(b,entry[1])
+        end
+        controls(pages.AVATAR,{
+            {"RESTAURAR AVATAR",function()
+                v14.avatarRestore()
+                notify("Visual local restaurado.","success")
+            end},
+            {"BRILHO",function()exec(S.glow and "unglow" or "glow")end},
+            {"RASTRO",function()exec(S.trail and "untrail" or "trail")end}
+        })
+        note(pages.AVATAR,"Efeitos sao locais e podem nao aparecer para outros jogadores.",39)
+
+        -- Audio: ID fornecido pelo usuario, sem buscar musica protegida.
+        ui.title(pages.AUDIO,"AUDIO E MUSICA",
+            "Use IDs de sons autorizados para esta experiencia")
+        local audioId=ui.box(pages.AUDIO,"ID do som Roblox autorizado",40)
+        controls(pages.AUDIO,{
+            {"REPRODUZIR",function()exec("music "..audioId.Text)end},
+            {"PAUSAR/CONTINUAR",function()
+                if not v14.music then return end
+                if v14.music.IsPlaying then v14.music:Pause()
+                else v14.music:Resume() end
+            end},
+            {"PARAR AUDIO",function()exec("stopmusic")end}
+        })
+        controls(pages.AUDIO,{
+            {"EFEITO UNICO",function()
+                if v14.musicPlay(audioId.Text) and v14.music then
+                    v14.music.Looped=false
+                end
+            end}
+        })
+        sliderControl(pages.AUDIO,"VOLUME","Volume do som local (0 a 1)",0,1,.05,
+            function()return v14.musicVolume end,"musicvolume","%.2f")
+        note(pages.AUDIO,"O audio pode falhar por privacidade ou permissao do asset.",40)
+        local songStatus=ui.section(pages.AUDIO,"AUDIO E MUSICA")
+        v14.panelRefresh.AUDIO=function()
+            songStatus.Text=v14.music and
+                ("ID "..v14.musicId.." • "..(v14.music.IsPlaying and "TOCANDO" or "PAUSADO"))
+                or "SEM AUDIO ATIVO"
+        end
+
+        -- Estatisticas persistentes, se o ambiente permite gravar JSON.
+        ui.title(pages.STATS,"ESTATISTICAS DO HUB",
+            "Uso nesta sessao, totais locais e comandos frequentes")
+        local statsHeader=ui.section(pages.STATS,"ESTATISTICAS DO HUB")
+        local statsHolder=ui.holder(pages.STATS)
+        v14.panelRefresh.STATS=function()
+            if not pages.STATS.Visible then return end
+            clear(statsHolder)
+            local seconds=math.max(0,math.floor(os.clock()-v14.sessionStarted))
+            local seen=v14.commandsInSession
+            statsHeader.Text=string.format(
+                "SESSAO: %dm %ds  |  COMANDOS: %d  |  TOTAL: %d",
+                math.floor(seconds/60),seconds%60,seen,v14.stats.commandCount or 0)
+            local favCount=0
+            for _,active in pairs(v13Data.favorites) do if active then favCount=favCount+1 end end
+            ui.row(statsHolder,
+                "SESSOES: "..tostring(v14.stats.totalSessions).."  |  FAVORITOS: "..favCount,{})
+            local order={}
+            for name,count in pairs(v14.stats.frequency) do
+                if byName[name] and type(count)=="number" then
+                    order[#order+1]={name=name,count=count}
+                end
+            end
+            table.sort(order,function(a,b) return a.count>b.count end)
+            for i=1,math.min(10,#order) do
+                local item=order[i]
+                ui.row(statsHolder,
+                    tostring(i)..". "..item.name.."  •  "..item.count.." vezes",{
+                    {"EXECUTAR",function()exec(byName[item.name].example)end,90}
+                })
+            end
+        end
+
+        -- Dashboard: quatro botoes com atalhos selecionaveis, salvos em JSON.
+        ui.title(pages.DASHBOARD,"DASHBOARD PERSONALIZAVEL",
+            "Quatro atalhos editaveis com acesso direto")
+        local available={
+            "fly","unfly","noclip","clip","boost","unboost",
+            "invisible","visible","goto nearest","manual","wheel",
+            "favorites","recent","cinema","uncinema","fullbright","unfullbright"
+        }
+        local defaults={"fly","noclip","wheel","favorites"}
+        local saved=v14.dashboard.slots
+        if type(saved)~="table" then saved={} v14.dashboard.slots=saved end
+        for i=1,4 do if type(saved[i])~="string" then saved[i]=defaults[i] end end
+        local dashboardStats=ui.section(pages.DASHBOARD,"DASHBOARD PERSONALIZAVEL")
+        local dashHolder=ui.holder(pages.DASHBOARD)
+        controls(pages.DASHBOARD,{
+            {"ABRIR WHEEL",function()v14.toggleWheel()end},
+            {"ULTIMOS",function()show("RECENT")end},
+            {"MODO SEGURO",function()
+                v14.safe=not v14.safe
+                notify("Modo seguro "..(v14.safe and "ON" or "OFF"))
+            end}
+        })
+        v14.panelRefresh.DASHBOARD=function()
+            if not pages.DASHBOARD.Visible then return end
+            clear(dashHolder)
+            dashboardStats.Text="V14  •  "..v14.commandsInSession.." comandos nesta sessao  •  @wendezao05153nh"
+            for i=1,4 do
+                local command=saved[i]
+                ui.row(dashHolder,"ATALHO "..i..": "..command:upper(),{
+                    {"EXECUTAR",function()exec(saved[i])end,87},
+                    {"ALTERAR",function()
+                        local at=table.find(available,saved[i]) or 0
+                        saved[i]=available[at%#available+1]
+                        saveV13()
+                        v14.panelRefresh.DASHBOARD()
+                    end,80}
+                })
+            end
+        end
+        -- Indicador do modo seguro e gamepad em Ajustes.
+        ui.section(pages.SETTINGS,"MODO SEGURO")
+        note(pages.SETTINGS,
+            "Confirme duas vezes comandos que apagam ou restauram configuracoes",42)
+        toggleControl(pages.SETTINGS,"MODO SEGURO","Confirmacao para acoes de apagar",
+            function()return v14.safe end,"safemode on","safemode off")
+        ui.section(pages.SETTINGS,"CONTROLE / GAMEPAD")
+        note(pages.SETTINGS,
+            "START menu, R1 wheel, B voltar, Y recentes, X favoritos",40)
+        toggleControl(pages.SETTINGS,"ATIVAR GAMEPAD","Atalho Start, R1, X, Y",
+            function()return v14.controllerMode end,"gamepad on","gamepad off")
+        controls(pages.SETTINGS,{
+            {"ABRIR WHEEL",function()v14.toggleWheel()end},
+            {"MACROS",function()show("MACROS")end},
+            {"DASHBOARD",function()show("DASHBOARD")end}
+        })
+    end
+
+    v14.install=function()
+        if v14.buildCore then v14.buildCore() end
+        if v14.buildExtras then v14.buildExtras() end
+        v14.refresh=function(page)
+            local update=v14.panelRefresh and v14.panelRefresh[page]
+            if update and pages[page] and pages[page].Visible then
+                local ok,err=pcall(update)
+                if not ok then warn("[BRAB0X V14] Falha no painel "..page..": "..tostring(err)) end
+            end
+        end
+        if v14.translate then v14.translate() end
+    end
+
+    -- F2 Wheel, F6 Cinema, gamepad Start/R1/B, botoes nativos do Roblox.
+    v14.onInput=function(input,used)
+        local key=input.KeyCode
+        if key==Enum.KeyCode.F6 and not used then
+            if v14.cinematic then v14.stopCinema() else v14.startCinema() end
+            return true
+        end
+        if key==Enum.KeyCode.F2 and not used then
+            v14.toggleWheel()
+            return true
+        end
+        if key==Enum.KeyCode.ButtonStart or key==Enum.KeyCode.ButtonR1
+            or key==Enum.KeyCode.ButtonB or key==Enum.KeyCode.ButtonX
+            or key==Enum.KeyCode.ButtonY then
+            v14.controllerMode=true
+            if key==Enum.KeyCode.ButtonStart then
+                if v14.cinematic then v14.stopCinema() end
+                main.Visible=not main.Visible
+                reopen.Visible=not main.Visible
+                if main.Visible then
+                    pcall(function() GuiService.SelectedObject=navButtons[selected] or navButtons.HOME end)
+                end
+                return true
+            elseif key==Enum.KeyCode.ButtonR1 then
+                v14.toggleWheel()
+                return true
+            elseif key==Enum.KeyCode.ButtonB then
+                if v14.wheelOpen then v14.toggleWheel()
+                elseif v14.cinematic then v14.stopCinema()
+                elseif selected~="HOME" then show("HOME")
+                else main.Visible=false reopen.Visible=true end
+                return true
+            elseif key==Enum.KeyCode.ButtonY then
+                main.Visible=true reopen.Visible=false show("RECENT")
+                return true
+            elseif key==Enum.KeyCode.ButtonX then
+                main.Visible=true reopen.Visible=false show("FAVORITES")
+                return true
+            end
+        end
+        return false
+    end
+end
+
 -- ABA CONFIGURACOES
 
 do
