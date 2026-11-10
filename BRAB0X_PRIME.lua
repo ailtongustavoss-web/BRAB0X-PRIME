@@ -2856,8 +2856,11 @@ do
         end
         local entry=byName.gowp
         if not entry then return false end
-        local success,msg=pcall(entry.run,wp)
-        if not success then notify("Falha no waypoint: "..tostring(msg),"error");return false end
+        local success,result=pcall(entry.run,wp)
+        if not success or result==false then
+            notify("Falha ao acessar waypoint: "..tostring(result),"error")
+            return false
+        end
         v14.routeIndex=index+1
         notify("Rota: "..wp.." ("..index.."/"..#route..")","success")
         return true
@@ -4659,6 +4662,9 @@ do
         end
         v14.wheelRefresh()
         v14.wheelOpen=true
+        local view=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280,720)
+        local wheelX=math.clamp((view.X-180)/2,114,235)
+        local wheelY=math.clamp((view.Y-130)/2,88,200)
         local overlay=obj("Frame",gui,{
             Size=UDim2.fromScale(1,1),BackgroundColor3=ink,
             BackgroundTransparency=.22,Active=true,ZIndex=70,
@@ -4680,8 +4686,8 @@ do
         logo.ZIndex=72
         for i,cmd in ipairs(v14.wheelCommands) do
             local angle=(i-1)*math.pi/4-math.pi/2
-            local x=math.cos(angle)*235
-            local y=math.sin(angle)*200
+            local x=math.cos(angle)*wheelX
+            local y=math.sin(angle)*wheelY
             local label=cmd:upper()
             local b=btn(overlay,label,function()
                 v14.toggleWheel()
@@ -4689,7 +4695,7 @@ do
             end,44)
             b.AnchorPoint=Vector2.new(.5,.5)
             b.Position=UDim2.new(.5,x,.5,y)
-            b.Size=UDim2.fromOffset(142,44)
+            b.Size=UDim2.fromOffset(view.X<700 and 110 or 142,44)
             b.BackgroundColor3=Color3.fromRGB(50,14,26)
             b.TextSize=11
             b.ZIndex=75
