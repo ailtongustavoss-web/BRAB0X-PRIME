@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V14 | 12 RECURSOS PREMIUM
+-- BRAB0X PRIME V15 | LOADER UNIVERSAL MULTIJOGOS
 -- Criado por @wendezao05153nh
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
@@ -24,6 +24,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V15_STOP",
     "BRAB0X_V14_STOP",
     "BRAB0X_V13_STOP",
     "BRAB0X_V12_STOP",
@@ -40,7 +41,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V14")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V15")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -70,13 +71,40 @@ if type(readfile)=="function" then
         if ok2 and type(parsed)=="table" then v13Data=parsed end
     end
 end
-for _,field in ipairs({"favorites","keybinds","profiles","waypoints","macros","routes","dashboard","stats"}) do
+for _,field in ipairs({"favorites","keybinds","profiles","waypoints","macros","routes","dashboard","stats","gameProfiles"}) do
     if type(v13Data[field])~="table" then v13Data[field]={} end
 end
-if type(v13Data.preferences)=="table" then
-    for _,key in ipairs({"theme","lang","scale","aimEnabled","compact","animations","opacity","neon","notifications"}) do
-        if v13Data.preferences[key]~=nil then config[key]=v13Data.preferences[key] end
-    end
+-- V15: o mesmo script seleciona o perfil pelo game.PlaceId. Sem baixar Lua externo.
+-- Preferencias universais sao separadas dos perfis de cada jogo.
+local v15PrefsKeys={"theme","lang","scale","aimEnabled","compact","animations","opacity","neon","notifications"}
+if type(v13Data.universalPrefs)~="table" then
+    v13Data.universalPrefs=type(v13Data.preferences)=="table" and v13Data.preferences or {}
+end
+local v15PlaceId=tostring(game.PlaceId)
+local v15UniverseId=tostring(game.GameId)
+local v15GameProfile=v13Data.gameProfiles[v15PlaceId]
+if type(v15GameProfile)~="table" then
+    v15GameProfile={
+        label=(tostring(game.Name)~="Game" and tostring(game.Name):sub(1,32))
+            or ("Jogo "..v15PlaceId),
+        universeId=v15UniverseId,
+        mode="universal",
+        quick={"fly","unfly","noclip","manual"},
+        created=os.time()
+    }
+    v13Data.gameProfiles[v15PlaceId]=v15GameProfile
+end
+v15GameProfile.lastVisit=os.time()
+v15GameProfile.universeId=v15UniverseId
+if v15GameProfile.mode~="custom" then v15GameProfile.mode="universal" end
+if type(v15GameProfile.quick)~="table" then
+    v15GameProfile.quick={"fly","unfly","noclip","manual"}
+end
+local startupPrefs=(v15GameProfile.mode=="custom"
+    and type(v15GameProfile.preferences)=="table")
+    and v15GameProfile.preferences or v13Data.universalPrefs
+for _,key in ipairs(v15PrefsKeys) do
+    if startupPrefs[key]~=nil then config[key]=startupPrefs[key] end
 end
 config.theme=type(config.theme)=="string" and config.theme or "red"
 config.scale=math.clamp(tonumber(config.scale) or 1,.6,1.25)
@@ -97,6 +125,11 @@ local function saveV13()
         animations=config.animations,opacity=config.opacity,neon=config.neon,
         notifications=config.notifications
     }
+    if v15GameProfile.mode=="custom" then
+        v15GameProfile.preferences=v13Data.preferences
+    else
+        v13Data.universalPrefs=v13Data.preferences
+    end
     if type(writefile)=="function" then
         pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
     end
@@ -283,13 +316,13 @@ local L = {
 local sections = {
     "HOME","FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "AIM","SETTINGS","COMMANDS","PLAYERS","FAVORITES",
-    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP",
+    "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES",
     "RECENT","MACROS","CINEMA","ROUTES","AVATAR","AUDIO","STATS","DASHBOARD"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
 local navOrder = {
-    "HOME","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
+    "HOME","GAMES","COMMANDS","DASHBOARD","RECENT","MACROS","CINEMA","ROUTES",
     "AVATAR","AUDIO","STATS","PLAYERS","FAVORITES","TELEPORT",
     "CONSOLE","PROFILES","PERFORMANCE","HELP","SETTINGS","AIM"
 }
@@ -320,6 +353,11 @@ local openCommandHelp
 local refreshHelpPage
 -- Estado unico V14: evita excesso de variaveis locais no script extenso.
 local v14={
+    router={
+        placeId=v15PlaceId,universeId=v15UniverseId,
+        profile=v15GameProfile,profiles=v13Data.gameProfiles,
+        modules={},detected="UNIVERSAL"
+    },
     recent={}, commandsInSession=0, sessionStarted=os.clock(),
     safe=true, macroRunning=false, cinematic=false,
     cinemaConnection=nil, cinemaSaved=nil, music=nil, musicId="",
@@ -343,7 +381,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V14",
+    Name = "BRAB0X_PRIME_V15",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -388,7 +426,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V14  •  RED NEON EDITION   /   BY @wendezao05153nh",
+    "V15  •  UNIVERSAL MULTIJOGOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -739,9 +777,9 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard"},
-        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard"},
-        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel"},
+        pt={PLAYERS="Jogadores",FAVORITES="Favoritos",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",ROUTES="Rotas",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",DASHBOARD="Dashboard",GAMES="Jogos"},
+        en={PLAYERS="Players",FAVORITES="Favorites",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",ROUTES="Routes",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",DASHBOARD="Dashboard",GAMES="Games"},
+        es={PLAYERS="Jugadores",FAVORITES="Favoritos",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",ROUTES="Rutas",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",DASHBOARD="Panel",GAMES="Juegos"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -1368,7 +1406,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V14_AIM"
+local aimKey = "BRAB0X_V15_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2477,7 +2515,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V14 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V15 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3715,7 +3753,7 @@ crown.Size = UDim2.fromOffset(180,156)
 crown.TextXAlignment = Enum.TextXAlignment.Center
 crown.TextColor3 = accent
 crown.TextTransparency = .13
-local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V14",22,12,true)
+local bannerSmall = txt(hero,"★  HUB PREMIUM  •  V15",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5384,8 +5422,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V14_STOP == closeHub then
-        _G.BRAB0X_V14_STOP = nil
+    if _G.BRAB0X_V15_STOP == closeHub then
+        _G.BRAB0X_V15_STOP = nil
     end
 end
 
@@ -5474,7 +5512,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V14_STOP = closeHub
+_G.BRAB0X_V15_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -5640,7 +5678,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V14 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V15 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -5690,6 +5728,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V14 | "
+    "BRAB0X PRIME V15 | "
     ..#registered.." comandos"
 )
