@@ -3404,6 +3404,287 @@ do
     end,"gameremove 12345678")
 end
 
+-- V15.1 / FIFA SUPER SOCCER - PLACEID 12177325772
+-- RECURSOS LOCAIS DE TREINO. NAO ALTERA CHUTE/HITBOX/COLISAO DO SERVIDOR.
+do
+    if v15PlaceId=="12177325772" then
+        local old=v15GameProfile.soccer
+        if type(old)~="table" then old={} v15GameProfile.soccer=old end
+        old.range=math.clamp(tonumber(old.range) or 7,2,24)
+        old.meterSensitivity=math.clamp(tonumber(old.meterSensitivity) or 1,0.5,3)
+        old.hud=old.hud~=false
+        old.ballHighlight=old.ballHighlight~=false
+        old.visualRadius=old.visualRadius~=false
+        old.showMeter=old.showMeter~=false
+        if type(old.training)~="table" then old.training={} end
+        local sc={
+            enabled=true,settings=old,stats={shots=0,passes=0,tackles=0,
+                dribbles=0,requests=0,charge=0},
+            ball=nil,highlight=nil,sphere=nil,billboard=nil,
+            shotStarted=nil,visualCharge=0,lastScan=0,
+            lastDistance=nil,visibleHUD=nil,lastRefresh=0
+        }
+        v14.soccer=sc
+        local function saveSoccer()
+            saveV13()
+            if sc.refresh then sc.refresh() end
+        end
+        local function soccerNotice(text)
+            notify("FIFA TREINO | "..text,"info")
+        end
+        local function findBall()
+            local ball=sc.ball
+            if ball and ball.Parent and ball:IsA("BasePart") then return ball end
+            for _,name in ipairs({"Ball","SoccerBall","Football","MatchBall","Soccer Ball","Bola"}) do
+                local node=workspace:FindFirstChild(name,true)
+                if node then
+                    if node:IsA("BasePart") then return node end
+                    if node:IsA("Model") then
+                        local pivot=node.PrimaryPart or node:FindFirstChildWhichIsA("BasePart",true)
+                        if pivot then return pivot end
+                    end
+                end
+            end
+            -- Fallback limitado, executado periodicamente (nao a cada frame).
+            local descendants=workspace:GetDescendants()
+            for index=1,math.min(#descendants,8000) do
+                local node=descendants[index]
+                if node:IsA("BasePart") then
+                    local name=node.Name:lower()
+                    if name=="ball" or name=="bola" or name=="soccerball"
+                        or name=="football" or name=="matchball"
+                        or name=="soccer ball" then
+                        return node
+                    end
+                end
+            end
+            return nil
+        end
+        local function discardVisuals()
+            for _,key in ipairs({"sphere","highlight","billboard"}) do
+                local inst=sc[key]
+                if inst then pcall(function()inst:Destroy()end) sc[key]=nil end
+            end
+        end
+        local function createBallVisual(ball)
+            if not ball or not ball.Parent then return end
+            discardVisuals()
+            local camera=workspace.CurrentCamera
+            if not camera then return end
+            if old.ballHighlight then
+                local ok,hl=pcall(function()
+                    local item=Instance.new("Highlight")
+                    item.Name="BRAB0X_FIFA_LOCAL_BALL"
+                    item.Adornee=ball
+                    item.FillColor=Color3.fromRGB(255,42,79)
+                    item.FillTransparency=.76
+                    item.OutlineColor=Color3.fromRGB(255,225,235)
+                    item.OutlineTransparency=.08
+                    item.DepthMode=Enum.HighlightDepthMode.Occluded
+                    item.Parent=camera
+                    return item
+                end)
+                if ok then sc.highlight=hl end
+            end
+            if old.visualRadius then
+                local ok,ring=pcall(function()
+                    local item=Instance.new("SphereHandleAdornment")
+                    item.Name="BRAB0X_FIFA_ALCANCE_VISUAL"
+                    item.Adornee=ball
+                    item.Radius=old.range
+                    item.Color3=Color3.fromRGB(255,33,67)
+                    item.Transparency=.82
+                    item.AlwaysOnTop=false
+                    item.Parent=camera
+                    return item
+                end)
+                if ok then sc.sphere=ring end
+                local mark=Instance.new("BillboardGui")
+                mark.Name="BRAB0X_FIFA_LABEL"
+                mark.Adornee=ball
+                mark.AlwaysOnTop=false
+                mark.Size=UDim2.fromOffset(180,48)
+                mark.StudsOffsetWorldSpace=Vector3.new(0,3,0)
+                mark.MaxDistance=150
+                mark.Parent=gui
+                local text=txt(mark,"BOLA • RAIO VISUAL "..old.range,34,12,true)
+                text.TextColor3=Color3.fromRGB(255,80,110)
+                text.TextXAlignment=Enum.TextXAlignment.Center
+                sc.billboard=mark
+            end
+        end
+        local function resetVisuals()
+            local ball=findBall()
+            sc.ball=ball
+            if ball then createBallVisual(ball) else discardVisuals() end
+        end
+        local function updateBall()
+            if os.clock()-sc.lastScan<2 then return end
+            sc.lastScan=os.clock()
+            local ball=findBall()
+            if ball~=sc.ball then
+                sc.ball=ball
+                createBallVisual(ball)
+            elseif not ball then discardVisuals()
+            else
+                if sc.sphere then sc.sphere.Radius=old.range end
+            end
+            local _,_,root=chars()
+            if root and ball then
+                sc.lastDistance=math.floor((ball.Position-root.Position).Magnitude+.5)
+            else
+                sc.lastDistance=nil
+            end
+        end
+        sc.toggleHUD=function(value)
+            old.hud=value==true
+            if sc.visibleHUD then sc.visibleHUD.Visible=old.hud end
+            saveSoccer()
+        end
+        sc.toggleBall=function(value)
+            old.ballHighlight=value==true
+            resetVisuals()
+            saveSoccer()
+        end
+        sc.toggleRange=function(value)
+            old.visualRadius=value==true
+            resetVisuals()
+            saveSoccer()
+        end
+        sc.toggleMeter=function(value)
+            old.showMeter=value==true
+            if sc.meterRoot then sc.meterRoot.Visible=old.showMeter end
+            saveSoccer()
+        end
+        sc.resetStats=function()
+            sc.stats={shots=0,passes=0,tackles=0,dribbles=0,requests=0,charge=0}
+            sc.visualCharge=0
+            if sc.refresh then sc.refresh() end
+        end
+        sc.cleanup=function()
+            discardVisuals()
+            if sc.hud and sc.hud.Parent then sc.hud:Destroy() end
+            sc.hud=nil
+            if sc.updateConn then sc.updateConn:Disconnect() sc.updateConn=nil end
+            sc.enabled=false
+        end
+
+        register("fifa","SOCCER","Abrir modulo FIFA Super Soccer",function()
+            show("SOCCER")
+            return false
+        end)
+        register("fifahud","SOCCER","Painel de treino local on/off",function(a)
+            sc.toggleHUD(a~="off")
+            return false
+        end,"fifahud on")
+        register("fifaball","SOCCER","Destacar bola localmente on/off",function(a)
+            sc.toggleBall(a~="off")
+            return false
+        end,"fifaball on")
+        register("fifarange","SOCCER","Mostrar alcance VISUAL (nao hitbox real)",function(a)
+            sc.toggleRange(a~="off")
+            return false
+        end,"fifarange on")
+        register("fifaradius","SOCCER","Raio do indicador VISUAL em studs",function(a)
+            old.range=math.clamp(tonumber(a) or 7,2,24)
+            resetVisuals()
+            saveSoccer()
+            return false
+        end,"fifaradius 9")
+        register("fifameter","SOCCER","Medidor de carga SIMULADA on/off",function(a)
+            sc.toggleMeter(a~="off")
+            return false
+        end,"fifameter on")
+        register("fifametersensitivity","SOCCER","Sensibilidade do medidor simulado",function(a)
+            old.meterSensitivity=math.clamp(tonumber(a) or 1,.5,3)
+            saveSoccer()
+            return false
+        end,"fifametersensitivity 1.5")
+        register("fifastats","SOCCER","Estatisticas locais de entradas de treino",function()
+            local p=sc.stats
+            soccerNotice(("Tentativas: %d chutes, %d passes, %d dribles, %d carrinhos"):format(
+                p.shots,p.passes,p.dribbles,p.tackles))
+            return false
+        end)
+        register("fifaresetstats","SOCCER","Zerar contadores de treino (so esta sessao)",function()
+            sc.resetStats()
+            soccerNotice("Estatisticas de treino zeradas.")
+            return false
+        end)
+        register("fifacamera","SOCCER","Preset FOV visual de camera: 70/85/100",function(a)
+            local val=math.clamp(tonumber(a) or 85,50,110)
+            local camera=workspace.CurrentCamera
+            if camera then camera.FieldOfView=val end
+            soccerNotice("Campo de visao local ajustado para "..val)
+            return false
+        end,"fifacamera 85")
+        register("fifacontrols","SOCCER","Mostrar controles oficiais de futebol",function()
+            soccerNotice("LMB chute/cruzar | RMB passe/baixo | E carrinho | Q drible | C camera | R pedir bola | TAB placar")
+            return false
+        end)
+
+        -- Configuracao de modulo especifico do jogo, acionado no loader existente.
+        v14.router.registerModule("12177325772",{
+            name="FIFA SUPER SOCCER • TREINO",
+            description="Treino visual, acompanhamento de bola e estatisticas locais.",
+            quick={"fifa","fifahud on","fifaball on","fifacamera 85","fifastats","fifacontrols"}
+        })
+
+        -- Entradas sao contadas; nenhum clique ou remote e disparado pelo modulo.
+        bind(UIS.InputBegan,function(input,processed)
+            if stopped or processed or UIS:GetFocusedTextBox() then return end
+            if main.Visible or v14.wheelOpen then return end
+            local kind=input.UserInputType
+            if kind==Enum.UserInputType.MouseButton1 then
+                sc.shotStarted=os.clock()
+            elseif kind==Enum.UserInputType.MouseButton2 then
+                sc.stats.passes=sc.stats.passes+1
+            elseif kind==Enum.UserInputType.Keyboard then
+                local key=input.KeyCode
+                if key==Enum.KeyCode.E then
+                    sc.stats.tackles=sc.stats.tackles+1
+                elseif key==Enum.KeyCode.Q then
+                    sc.stats.dribbles=sc.stats.dribbles+1
+                elseif key==Enum.KeyCode.R then
+                    sc.stats.requests=sc.stats.requests+1
+                end
+            end
+        end)
+        bind(UIS.InputEnded,function(input)
+            if stopped then return end
+            if input.UserInputType==Enum.UserInputType.MouseButton1 and sc.shotStarted then
+                local seconds=math.max(0,os.clock()-sc.shotStarted)
+                sc.stats.shots=sc.stats.shots+1
+                sc.stats.charge=math.clamp(seconds*65*old.meterSensitivity,0,100)
+                sc.visualCharge=sc.stats.charge
+                sc.shotStarted=nil
+            end
+        end)
+        -- Frequencia baixa: ferramentas visuais opcionais, nenhuma alteracao na bola.
+        sc.updateConn=Run.Heartbeat:Connect(function()
+            if stopped or not sc.enabled then return end
+            local now=os.clock()
+            if now-sc.lastRefresh<.16 then return end
+            sc.lastRefresh=now
+            if old.ballHighlight or old.visualRadius or old.hud then
+                updateBall()
+            elseif sc.highlight or sc.sphere or sc.billboard then
+                discardVisuals()
+            end
+            if sc.shotStarted then
+                sc.visualCharge=math.clamp(
+                    (now-sc.shotStarted)*65*old.meterSensitivity,0,100)
+            end
+            if sc.liveUpdate then sc.liveUpdate() end
+        end)
+        local prevCleanup=v14.cleanup
+        v14.cleanup=function()
+            if prevCleanup then prevCleanup() end
+            sc.cleanup()
+        end
+    end
+end
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
