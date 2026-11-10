@@ -539,6 +539,135 @@ local function notify(message,kind)
     end
 end
 
+-- NOTIFICACOES PREMIUM V13.2 / TOASTS SOBREPOSTOS, REMOVIDOS AUTOMATICAMENTE
+do
+    local toastHost=obj("Frame",gui,{
+        AnchorPoint=Vector2.new(1,0),
+        Position=UDim2.new(1,-15,0,85),
+        Size=UDim2.fromOffset(322,330),
+        BackgroundTransparency=1,
+        BorderSizePixel=0,
+        ZIndex=86
+    })
+    obj("UIListLayout",toastHost,{
+        FillDirection=Enum.FillDirection.Vertical,
+        HorizontalAlignment=Enum.HorizontalAlignment.Right,
+        Padding=UDim.new(0,8),
+        SortOrder=Enum.SortOrder.LayoutOrder
+    })
+    local scale=obj("UIScale",toastHost,{Scale=1})
+    local viewport=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+    if viewport then scale.Scale=math.clamp(viewport.X/850,.72,1) end
+    local visible={}
+    local sequence=0
+    local previousText,previousAt=nil,0
+
+    local function removeToast(frame)
+        for i,item in ipairs(visible) do
+            if item==frame then
+                table.remove(visible,i)
+                break
+            end
+        end
+        if not frame.Parent then return end
+        local animation=Tween:Create(frame,TweenInfo.new(.2,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+            Size=UDim2.new(1,0,0,0),
+            BackgroundTransparency=1
+        })
+        animation:Play()
+        task.delay(.22,function()
+            if frame.Parent then frame:Destroy() end
+        end)
+    end
+
+    premiumNotify=function(message,kind)
+        if stopped or config.notifications==false or not gui.Parent then return end
+        local full=tostring(message or "")
+        if full=="" then return end
+        local now=os.clock()
+        if full==previousText and now-previousAt<.75 then return end
+        previousText,previousAt=full,now
+        local low=full:lower()
+        if kind~="success" and kind~="error" and kind~="info" then
+            if low:find("erro",1,true) or low:find("indispon",1,true)
+                or low:find("nao encontrado",1,true) or low:find("desconhecido",1,true) then
+                kind="error"
+            elseif full:sub(1,3)=="OK:" then
+                kind="success"
+            else
+                kind="info"
+            end
+        end
+        local title=kind=="success" and "✓  COMANDO EXECUTADO"
+            or kind=="error" and "!  ATENCAO"
+            or "✦  BRAB0X PRIME"
+        local tone=kind=="error" and Color3.fromRGB(255,75,83)
+            or kind=="success" and Color3.fromRGB(255,48,72)
+            or accent
+
+        if #visible>=3 then
+            local oldest=table.remove(visible,1)
+            if oldest and oldest.Parent then oldest:Destroy() end
+        end
+        sequence=sequence+1
+        local frame=round(obj("Frame",toastHost,{
+            Size=UDim2.new(1,0,0,0),
+            BackgroundColor3=Color3.fromRGB(15,12,19),
+            BackgroundTransparency=.08,
+            BorderSizePixel=0,
+            ClipsDescendants=true,
+            LayoutOrder=sequence,
+            ZIndex=87
+        }),12)
+        obj("UIStroke",frame,{Color=tone,Thickness=1.3,Transparency=.2})
+        local bar=obj("Frame",frame,{
+            Size=UDim2.fromOffset(4,70),
+            Position=UDim2.fromOffset(0,0),
+            BackgroundColor3=tone,BorderSizePixel=0,ZIndex=88
+        })
+        local label=txt(frame,title,23,12,true)
+        label.Position=UDim2.fromOffset(17,8)
+        label.Size=UDim2.new(1,-49,0,23)
+        label.TextColor3=tone
+        label.ZIndex=88
+        local body=txt(frame,full:sub(1,155),34,11)
+        body.Position=UDim2.fromOffset(17,31)
+        body.Size=UDim2.new(1,-31,0,34)
+        body.TextColor3=white
+        body.ZIndex=88
+        local dismiss=obj("TextButton",frame,{
+            Size=UDim2.fromOffset(25,22),
+            Position=UDim2.new(1,-29,0,7),
+            BackgroundTransparency=1,
+            Text="×",
+            Font=Enum.Font.GothamBold,
+            TextSize=17,
+            TextColor3=muted,
+            ZIndex=89
+        })
+        bind(dismiss.MouseButton1Click,function()
+            removeToast(frame)
+        end)
+        local duration=obj("Frame",frame,{
+            Position=UDim2.new(0,4,1,-3),
+            Size=UDim2.new(1,-4,0,3),
+            BackgroundColor3=tone,
+            BorderSizePixel=0,
+            ZIndex=88
+        })
+        visible[#visible+1]=frame
+        Tween:Create(frame,TweenInfo.new(.23,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
+            Size=UDim2.new(1,0,0,72)
+        }):Play()
+        Tween:Create(duration,TweenInfo.new(3.55,Enum.EasingStyle.Linear),{
+            Size=UDim2.new(0,0,0,3)
+        }):Play()
+        task.delay(3.6,function()
+            if not stopped then removeToast(frame) end
+        end)
+    end
+end
+
 local function show(page)
     if not moduleEnabled(page) then
         page = "HOME"
