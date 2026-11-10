@@ -501,7 +501,7 @@ sideTip.TextColor3 = muted
 
 local status = txt(
     main,
-    "PRONTO | F = FLY • RSHIFT = MENU • CTRL+K = COMANDOS",
+    "PRONTO  •  F1 = AJUDA  •  RSHIFT = MENU  •  CTRL+K = COMANDOS",
     17,11
 )
 
@@ -3019,13 +3019,19 @@ for _,entry in ipairs(registered) do
                     exec(entry.example)
                 end
             end,46)
-        b.Size=UDim2.new(1,-43,1,0)
+        b.Size=UDim2.new(1,-81,1,0)
         b.TextWrapped=true
         b.TextSize=10
         local star=btn(cell,"",nil,46)
-        star.Position=UDim2.new(1,-40,0,0)
-        star.Size=UDim2.fromOffset(40,46)
-        star.TextSize=19
+        star.Position=UDim2.new(1,-78,0,0)
+        star.Size=UDim2.fromOffset(37,46)
+        star.TextSize=18
+        local helpButton=btn(cell,"?",function()
+            if openCommandHelp then openCommandHelp(entry.name) end
+        end,46)
+        helpButton.Position=UDim2.new(1,-38,0,0)
+        helpButton.Size=UDim2.fromOffset(37,46)
+        helpButton.TextSize=18
         bind(star.MouseButton1Click,function()
             v13Data.favorites[entry.name]=not (v13Data.favorites[entry.name]==true)
             if v13Data.favorites[entry.name]==false then
@@ -3166,7 +3172,6 @@ do
     stack(results,5)
 
     local customText={
-        goto="Move seu personagem para perto do jogador informado, se houver permissao.",
         invisible="Deixa seu avatar invisivel SOMENTE na sua tela. Nao esconde voce dos outros.",
         invis="Alias do invisible; invisibilidade SOMENTE local.",
         visible="Restaura a aparencia local do avatar.",
@@ -3387,6 +3392,7 @@ quick("↗  FLY ON","fly")
 quick("■  FLY OFF","unfly")
 quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
+item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 
 -- Atalhos da pagina inicial usam o filtro da aba Comandos.
 
@@ -4110,6 +4116,13 @@ actionRow(pages.SETTINGS,{
     {"DESEMPENHO",function()show("PERFORMANCE")end},
     {"FAVORITOS",function()show("FAVORITES")end}
 })
+titleRow(pages.SETTINGS,"✦  NOTIFICACOES")
+toggleControl(pages.SETTINGS,"AVISOS PREMIUM","Mostra mensagens animadas ao usar comandos",
+    function()return config.notifications end,"notifications on","notifications off")
+actionRow(pages.SETTINGS,{
+    {"ABRIR CENTRAL DE AJUDA",function()show("HELP")end},
+    {"TESTAR NOTIFICACAO",function()exec("notifytest")end}
+})
 titleRow(pages.SETTINGS,"⌨  KEYBINDS PERSONALIZADOS")
 local keyButtons={}
 local captureAction=nil
@@ -4351,7 +4364,11 @@ bind(UIS.InputBegan,function(key,used)
     if keyCaptureHandler and keyCaptureHandler(key) then return end
     if UIS:GetFocusedTextBox() then return end
     local name=key.KeyCode.Name
-    if name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
+    if name=="F1" and not used then
+        main.Visible=true
+        reopen.Visible=false
+        show("HELP")
+    elseif name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
         or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
         main.Visible=true
         reopen.Visible=false
