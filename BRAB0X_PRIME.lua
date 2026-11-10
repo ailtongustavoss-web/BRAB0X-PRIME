@@ -1,9 +1,21 @@
 
 -- BRAB0X PRIME V16 | HUB ORGANIZADO + LOADER UNIVERSAL
 -- Criado por @wendezao05153nh
--- LocalScript para o seu proprio jogo.
+--
+-- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
+-- 01. SERVICOS E DADOS      = inicio do arquivo, configuracoes e persistencia
+-- 02. DESIGN E NAVEGACAO    = paleta, janela, menu em 4 categorias, busca
+-- 03. SISTEMAS LOCAIS      = movimento, camera, mundo, visual e emotes
+-- 04. REGISTRO DE COMANDOS  = register/alias, validação e exec
+-- 05. MODULOS PREMIUM      = painel de comandos, favoritos, console e perfis
+-- 06. UNIVERSAL MULTIJOGOS = perfis e reconhecimento via PlaceId
+-- 07. PAGINAS E AJUSTES    = paginas V14/V15, temas, teclas e controles
+-- 08. INICIALIZACAO        = interface pronta para mostrar
+--
+-- Instalar como LocalScript no seu proprio jogo:
 -- StarterPlayer > StarterPlayerScripts
--- F = Fly | RightShift = Menu | Ctrl+K = Buscar
+-- F = Fly | RightShift = Menu | Ctrl+K = Buscar | F1 = Ajuda
+-- F2 = Command Wheel | F6 = Cinema
 -- WASD = mover | Espaco/E = subir | Ctrl/Q = descer
 
 local Players = game:GetService("Players")
@@ -2839,6 +2851,28 @@ register("notifications","SETTINGS","Ligar ou desligar notificacoes premium",fun
 end,"notifications on")
 register("notifytest","SETTINGS","Testar uma notificacao",function()
     notify("BRAB0X PRIME • Notificacoes funcionando!","success")
+    return false
+end)
+-- V16 / LOCALIZACAO RAPIDA DE FERRAMENTAS, SEM MUDAR AS FUNCOES ANTERIORES
+register("tab","SETTINGS","Abrir aba pelo nome",function(arg)
+    local id=tostring(arg or ""):upper():gsub("^%s+",""):gsub("%s+$","")
+    if pages[id] and moduleEnabled(id) then
+        if v14.navigation and v14.navigation.searchBox then
+            v14.navigation.searchBox.Text=""
+        end
+        show(id)
+        notify("Aba aberta: "..id,"success")
+    else
+        notify("Aba nao encontrada. Use: tab games, tab macros, tab help","error")
+    end
+    return false
+end,"tab macros")
+register("findtab","SETTINGS","Pesquisar abas pelo menu lateral",function()
+    main.Visible=true
+    reopen.Visible=false
+    if v14.navigation and v14.navigation.searchBox then
+        v14.navigation.searchBox:CaptureFocus()
+    end
     return false
 end)
 
