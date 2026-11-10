@@ -3136,7 +3136,9 @@ do
     local function validPlace(text)
         local id=cleaned(text,22)
         if #id<1 or #id>19 or id:match("^%d+$")==nil then return nil end
-        return tostring(tonumber(id) or id)
+        -- Evita arredondar PlaceIds grandes convertendo-os para number.
+        id=id:gsub("^0+","")
+        return id~="" and id or "0"
     end
     local function currentSnapshot()
         local camera=workspace.CurrentCamera
@@ -3164,8 +3166,12 @@ do
     end
     router.safeQuick=safeQuick
     router.registerModule=function(placeId,module)
-        local id=validPlace(placeId)
-        if not id or type(module)~="table" or type(module.name)~="string" then
+        local raw=tostring(placeId or "")
+        local universe=raw:match("^universe:(%d+)$")
+        local id=universe and ("universe:"..(validPlace(universe) or ""))
+            or validPlace(raw)
+        if not id or id=="universe:" or type(module)~="table"
+            or type(module.name)~="string" then
             return false
         end
         local desc={
@@ -3251,6 +3257,8 @@ do
                 camera.FieldOfView=math.clamp(tonumber(runtime.fov) or camera.FieldOfView,40,120)
             end
         end
+        relabel()
+        if v14.translate then v14.translate() end
         if applyV13Appearance then applyV13Appearance() end
         if refresh then refresh() end
         notify("Perfil carregado para o jogo "..router.placeId,"info")
@@ -3265,6 +3273,8 @@ do
         end
         router.detect()
         router.save()
+        relabel()
+        if v14.translate then v14.translate() end
         if applyV13Appearance then applyV13Appearance() end
         if refresh then refresh() end
         notify("BRAB0X universal ativado. Comandos antigos preservados.","success")
