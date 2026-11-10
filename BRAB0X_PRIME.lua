@@ -1,5 +1,6 @@
 
--- BRAB0X PRIME V13 | PREMIUM MANAGER + 8 MODULOS
+-- BRAB0X PRIME V13.1 | CREDITOS DO CRIADOR + 8 MODULOS
+-- Criado por @wendezao05153nh
 -- LocalScript para o seu proprio jogo.
 -- StarterPlayer > StarterPlayerScripts
 -- F = Fly | RightShift = Menu | Ctrl+K = Buscar
@@ -355,7 +356,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V13  •  RED NEON EDITION    /    PREMIUM CONTROL CENTER",
+    "V13.1  •  RED NEON EDITION   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -487,7 +488,7 @@ local sideSub = txt(sidePanel,"PRIME  •  RED EDITION",22,10,true)
 sideSub.Position = UDim2.fromOffset(12,47)
 sideSub.Size = UDim2.new(1,-24,0,22)
 sideSub.TextColor3 = white
-local sideTip = txt(sidePanel,"Comandos e ajustes no mesmo hub",29,10)
+local sideTip = txt(sidePanel,"CRIADOR: @wendezao05153nh",29,10)
 sideTip.Position = UDim2.fromOffset(12,77)
 sideTip.Size = UDim2.new(1,-24,0,29)
 sideTip.TextColor3 = muted
@@ -2308,7 +2309,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V13 | Premium Manager")
+    notify("BRAB0X PRIME V13.1 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -2504,6 +2505,12 @@ register("neon","SETTINGS","Intensidade de neon",function(a)
     if applyV13Appearance then applyV13Appearance() end
     saveV13()
 end,"neon 1.5")
+
+register("creator","SETTINGS","Mostrar criador do BRAB0X PRIME",function()
+    notify("BRAB0X PRIME | Criado por @wendezao05153nh")
+    return false
+end)
+alias("author","SETTINGS","Alias de creator","creator")
 
 -- EXECUTAR COMANDO
 
@@ -2977,6 +2984,10 @@ local bannerDesc = txt(hero,"VOO  •  JOGADOR  •  CAMERA  •  MUNDO  •  EM
 bannerDesc.Position = UDim2.fromOffset(29,157)
 bannerDesc.Size = UDim2.new(1,-58,0,24)
 bannerDesc.TextColor3 = white
+local creatorBanner = txt(hero,"✦  CRIADO POR @wendezao05153nh",18,11,true)
+creatorBanner.Position = UDim2.fromOffset(29,180)
+creatorBanner.Size = UDim2.new(1,-56,0,18)
+creatorBanner.TextColor3 = accent
 
 live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
 titleRow(pages.HOME,"PAINEL DE ACOES RAPIDAS  /  ESCOLHA SUA FUNCAO")
@@ -3848,6 +3859,10 @@ applyV13Appearance=function()
 end
 
 end -- fim do escopo visual / teclas
+titleRow(pages.SETTINGS,"♛  CREDITOS DO PROJETO")
+btn(pages.SETTINGS,"✦  CRIADO POR @wendezao05153nh",function()
+    exec("creator")
+end,43)
 local settingLabel = titleRow(
     pages.SETTINGS,
     "TAMANHO: 100%"
@@ -4108,7 +4123,7 @@ logo.ZIndex = 52
 logo.TextXAlignment = Enum.TextXAlignment.Center
 
 local splashSubtitle = txt(
-    splash,"RED NEON EDITION  •  CARREGANDO",25,13
+    splash,"CRIADO POR @wendezao05153nh",25,12
 )
 
 splashSubtitle.Position = UDim2.fromOffset(40,83)
