@@ -288,6 +288,7 @@ local function moduleEnabled(name)
     return name ~= "AIM" or config.aimEnabled == true
 end
 
+local applyV13Appearance
 local openModulePicker
 local refreshCommandList
 local refreshV13Page
@@ -1634,18 +1635,22 @@ register("theme","SETTINGS","Cor neon",function(a)
         end
 
         show(selected)
+        if applyV13Appearance then applyV13Appearance() end
+        saveV13()
     end
 end,"theme red")
 
 register("scale","SETTINGS","Tamanho do painel",function(a)
     config.scale = num(a,1,.6,1.25)
     responsive()
+    saveV13()
 end,"scale 0.8")
 
 register("lang","SETTINGS","Idioma do menu",function(a)
     if L[a] then
         config.lang = a
         relabel()
+        saveV13()
     end
 end,"lang en")
 
@@ -1756,6 +1761,7 @@ register("aimmodule","SETTINGS","Exibir a aba AIM de treino",function(a)
         show(selected)
     end
     if refreshCommandList then refreshCommandList() end
+    saveV13()
 end,"aimmodule on")
 
 -- UTILITARIOS INSPIRADOS NOS COMANDOS PUBLICOS DO INFINITE YIELD
@@ -1769,6 +1775,7 @@ local extraState = {
     originalExposure = Lighting.ExposureCompensation,
     originalFogStart = Lighting.FogStart,
     savedWaypoints = {},
+    lastPosition=nil,
     watched = {},
     spinConnection = nil,
     lastSpectated = nil,
@@ -1779,6 +1786,33 @@ local extraState = {
     originalBlur = nil,
     fullbrightBefore = nil,
 }
+-- Waypoints persistentes armazenados como coordenadas locais.
+for name,coords in pairs(v13Data.waypoints) do
+    if type(name)=="string" and type(coords)=="table" and
+        tonumber(coords[1]) and tonumber(coords[2]) and tonumber(coords[3]) then
+        extraState.savedWaypoints[name]=CFrame.new(coords[1],coords[2],coords[3])
+    end
+end
+local function syncWaypoints()
+    local saved={}
+    for name,cf in pairs(extraState.savedWaypoints) do
+        local pos=cf.Position
+        saved[name]={pos.X,pos.Y,pos.Z}
+    end
+    v13Data.waypoints=saved
+    saveV13()
+    if updateTeleportPanel then updateTeleportPanel() end
+end
+local lowFXState={}
+local lowFXActive=false
+local function restoreLowFX()
+    if not lowFXActive then return end
+    for effect,enabled in pairs(lowFXState) do
+        if effect.Parent then pcall(function() effect.Enabled=enabled end) end
+    end
+    lowFXState={}
+    lowFXActive=false
+end
 local function findPlayer(token)
     token = tostring(token or ""):gsub("^%s+",""):gsub("%s+$","")
     if token == "" then return nil end
@@ -1832,6 +1866,7 @@ local function selfTeleport(cf)
     if not r then notify("Seu personagem nao esta pronto"); return false end
     freeze(false)
     stopFly()
+    extraState.lastPosition=r.CFrame
     r.CFrame=cf
     r.AssemblyLinearVelocity=Vector3.zero
     return true
@@ -1897,6 +1932,7 @@ local function colorEffect()
     return extraState.colorFX
 end
 resetExtras=function()
+    restoreLowFX()
     S.infJump=false
     S.spinning=false
     updateSpin()
@@ -1956,6 +1992,7 @@ register("wp","PLAYER","Guardar waypoint por nome",function(a)
     local _,_,r=chars()
     if name=="" or not r then notify("Use: wp casa"); return false end
     extraState.savedWaypoints[name]=r.CFrame
+    syncWaypoints()
     notify("Waypoint registrado: "..name)
 end,"wp casa")
 alias("waypoint","PLAYER","Alias para wp","wp","wp casa")
@@ -1968,9 +2005,11 @@ end,"gowp casa")
 alias("walktowaypoint","PLAYER","Alias de gowp","gowp","gowp casa")
 register("delwp","PLAYER","Apagar waypoint",function(a)
     extraState.savedWaypoints[tostring(a or ""):lower()]=nil
+    syncWaypoints()
 end,"delwp casa")
 register("clearwps","PLAYER","Apagar todos os waypoints",function()
     extraState.savedWaypoints={}
+    syncWaypoints()
 end)
 register("listwps","PLAYER","Listar waypoints",function()
     local names={}
@@ -2290,6 +2329,174 @@ register("listcmd","SETTINGS","Listar comandos no console",function()
     notify(#list.." comandos - lista enviada ao console (F9)")
 end)
 -- FIM DOS UTILITARIOS
+
+-- V13: comandos para favoritos, perfis, teclas e desempenho.
+local function favoritesChanged()
+    saveV13()
+    if updateFavoritePanel then updateFavoritePanel() end
+    if refreshCommandList then refreshCommandList() end
+end
+local function profileSnapshot()
+    local _,hum=chars()
+    local camera=workspace.CurrentCamera
+    return {
+        speed=S.speed,boost=S.boost,boostX=S.boostX,
+        fov=camera and camera.FieldOfView or 70,
+        walk=hum and hum.WalkSpeed or 16,
+        jump=hum and hum.JumpPower or 50,
+        theme=config.theme,scale=config.scale,
+        compact=config.compact,opacity=config.opacity,
+        neon=config.neon,animations=config.animations,
+        aimEnabled=config.aimEnabled
+    }
+end
+local function profileName(a)
+    local name=tostring(a or ""):gsub("^%s+",""):gsub("%s+$","")
+    if #name<1 or #name>24 or not name:match("^[%w_%-]+$") then
+        notify("Nome do perfil: 1 a 24 caracteres (letras, numeros, _ ou -)")
+        return nil
+    end
+    return name:lower()
+end
+local function saveProfile(a)
+    local name=profileName(a)
+    if not name then return false end
+    v13Data.profiles[name]=profileSnapshot()
+    saveV13()
+    if updateProfilePanel then updateProfilePanel() end
+    notify("Perfil salvo: "..name)
+    return false
+end
+local function loadProfile(a)
+    local name=profileName(a)
+    if not name then return false end
+    local p=v13Data.profiles[name]
+    if type(p)~="table" then notify("Perfil nao encontrado: "..name); return false end
+    config.theme=palette[p.theme] and p.theme or "red"
+    config.scale=math.clamp(tonumber(p.scale) or 1,.6,1.25)
+    config.compact=p.compact==true
+    config.opacity=math.clamp(tonumber(p.opacity) or 0,0,.45)
+    config.neon=math.clamp(tonumber(p.neon) or 1,.25,2)
+    config.animations=p.animations~=false
+    config.aimEnabled=p.aimEnabled==true
+    S.speed=math.clamp(tonumber(p.speed) or S.speed,10,300)
+    S.boost=p.boost==true
+    S.boostX=math.clamp(tonumber(p.boostX) or S.boostX,1,5)
+    local camera=workspace.CurrentCamera
+    if camera then camera.FieldOfView=math.clamp(tonumber(p.fov) or 70,40,120) end
+    local _,hum=chars()
+    if hum then
+        remember(hum)
+        hum.WalkSpeed=math.clamp(tonumber(p.walk) or 16,0,100)
+        hum.UseJumpPower=true
+        hum.JumpPower=math.clamp(tonumber(p.jump) or 50,0,200)
+    end
+    if applyV13Appearance then applyV13Appearance() end
+    responsive()
+    show("HOME")
+    saveV13()
+    notify("Perfil aplicado: "..name)
+    return false
+end
+register("favorite","SETTINGS","Adicionar comando aos favoritos",function(a)
+    local name=tostring(a or ""):lower():match("^%s*(%S+)")
+    if not name or not byName[name] then notify("Use: favorite fly"); return false end
+    v13Data.favorites[name]=true
+    favoritesChanged()
+    notify("Favorito: "..name)
+    return false
+end,"favorite fly")
+alias("fav","SETTINGS","Alias favorito","favorite","fav fly")
+register("unfavorite","SETTINGS","Remover favorito",function(a)
+    local name=tostring(a or ""):lower():match("^%s*(%S+)")
+    if not name then return false end
+    v13Data.favorites[name]=nil
+    favoritesChanged()
+    notify("Favorito removido: "..name)
+    return false
+end,"unfavorite fly")
+register("favorites","SETTINGS","Abrir favoritos",function()show("FAVORITES")end)
+register("openplayers","SETTINGS","Abrir lista de jogadores",function()show("PLAYERS")end)
+register("openteleport","SETTINGS","Abrir waypoints",function()show("TELEPORT")end)
+register("openconsole","SETTINGS","Abrir console",function()show("CONSOLE")end)
+register("openprofiles","SETTINGS","Abrir perfis",function()show("PROFILES")end)
+register("openperformance","SETTINGS","Abrir painel de FPS e ping",function()show("PERFORMANCE")end)
+register("saveprofile","SETTINGS","Salvar perfil",saveProfile,"saveprofile explorer")
+register("loadprofile","SETTINGS","Carregar perfil",loadProfile,"loadprofile explorer")
+register("deleteprofile","SETTINGS","Apagar perfil",function(a)
+    local name=profileName(a)
+    if not name then return false end
+    v13Data.profiles[name]=nil
+    saveV13()
+    if updateProfilePanel then updateProfilePanel() end
+    notify("Perfil excluido: "..name)
+    return false
+end,"deleteprofile explorer")
+register("bindkey","SETTINGS","Associar tecla a funcao",function(a)
+    local action,key=tostring(a or ""):match("^(%S+)%s+(%S+)$")
+    action=action and action:upper()
+    if not action or not defaultKeys[action] or not key or not Enum.KeyCode[key] then
+        notify("Use: bindkey FLY G (FLY, MENU, NOCLIP, BOOST, INVIS)")
+        return false
+    end
+    for other,bound in pairs(v13Data.keybinds) do
+        if other~=action and bound==key then
+            notify("Tecla em uso por "..other)
+            return false
+        end
+    end
+    v13Data.keybinds[action]=key
+    saveV13()
+    notify("Tecla "..key.." atribuida a "..action)
+    return false
+end,"bindkey FLY G")
+register("resetkeys","SETTINGS","Restaurar atalhos padrao",function()
+    for name,key in pairs(defaultKeys) do v13Data.keybinds[name]=key end
+    saveV13()
+    notify("Atalhos restaurados")
+    return false
+end)
+register("back","PLAYER","Voltar a posicao antes do ultimo teleporte",function()
+    if not extraState.lastPosition then notify("Nenhum teleporte anterior"); return false end
+    return selfTeleport(extraState.lastPosition)
+end)
+register("lowgfx","WORLD","Reduzir efeitos visuais locais",function()
+    if not lowFXActive then
+        lowFXActive=true
+        lowFXState={}
+        for _,effect in ipairs(Lighting:GetChildren()) do
+            if effect:IsA("BloomEffect") or effect:IsA("DepthOfFieldEffect")
+                or effect:IsA("SunRaysEffect") then
+                lowFXState[effect]=effect.Enabled
+                effect.Enabled=false
+            end
+        end
+    end
+    Lighting.GlobalShadows=false
+end)
+register("resetgfx","WORLD","Restaurar efeitos visuais",function()
+    restoreLowFX()
+    Lighting.GlobalShadows=extraState.originalShadows
+end)
+register("compact","SETTINGS","Alternar modo compacto",function()
+    config.compact=not config.compact
+    responsive()
+    saveV13()
+end)
+register("animations","SETTINGS","Animacoes do menu on/off",function(a)
+    config.animations=a~="off"
+    saveV13()
+end,"animations off")
+register("opacity","SETTINGS","Transparencia da interface",function(a)
+    config.opacity=math.clamp(tonumber(a) or 0,0,.45)
+    if applyV13Appearance then applyV13Appearance() end
+    saveV13()
+end,"opacity 0.2")
+register("neon","SETTINGS","Intensidade de neon",function(a)
+    config.neon=math.clamp(tonumber(a) or 1,.25,2)
+    if applyV13Appearance then applyV13Appearance() end
+    saveV13()
+end,"neon 1.5")
 
 -- EXECUTAR COMANDO
 
@@ -3488,6 +3695,7 @@ end
 bind(launch.MouseButton1Click,function()
     config.aimEnabled = selectedAim
     if not selectedAim then S.aim = false end
+    saveV13()
     gate.Visible = false
     main.Visible = true
     reopen.Visible = false
