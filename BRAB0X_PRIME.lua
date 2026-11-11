@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.3 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.4 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_4_STOP",
     "BRAB0X_V19_3_STOP",
     "BRAB0X_V19_2_STOP",
     "BRAB0X_V19_1_STOP",
@@ -68,7 +69,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_3")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_4")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -407,7 +408,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_3",
+    Name = "BRAB0X_PRIME_V19_4",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -453,7 +454,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.3  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.4  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -474,12 +475,11 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V19.3 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- V19.4 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
-local MINI_WIDTH,MINI_HEIGHT=282,66
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V19_3",
-    Size=UDim2.fromOffset(MINI_WIDTH,MINI_HEIGHT),
+    Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
     BackgroundColor3=Color3.fromRGB(19,15,21),
@@ -1122,7 +1122,6 @@ end
 
 local exec
 local closeHub
-local introCleanup
 local refresh
 local homeFilter
 
@@ -1722,7 +1721,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_3_AIM"
+local aimKey = "BRAB0X_V19_4_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2966,7 +2965,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.3 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.4 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4174,7 +4173,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.3: "..#registered.." comandos."
+        return "BRAB0X V19.4: "..#registered.." comandos."
     end)
 end
 
@@ -4223,7 +4222,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.3: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.4: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4252,7 +4251,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.3",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.4",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -4813,7 +4812,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.3 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.4 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -6016,7 +6015,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.3] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.4] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6700,7 +6699,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.3 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.4 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6838,10 +6837,10 @@ local function clampMiniPosition()
     end
     -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/MINI_WIDTH,(view.Y-20)/MINI_HEIGHT
+        1,(view.X-20)/282,(view.Y-20)/66
     ),.35,1)
-    local w=MINI_WIDTH*miniUIScale.Scale
-    local h=MINI_HEIGHT*miniUIScale.Scale
+    local w=282*miniUIScale.Scale
+    local h=66*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
@@ -6925,7 +6924,7 @@ closeHub = function()
     if stopped then return end
 
     if v14.cleanup then pcall(v14.cleanup) end
-    if introCleanup then pcall(introCleanup) end
+    if v14.introCleanup then pcall(v14.introCleanup) end
     saveV13()
     resetAll()
     stopped = true
@@ -6938,8 +6937,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_3_STOP == closeHub then
-        _G.BRAB0X_V19_3_STOP = nil
+    if _G.BRAB0X_V19_4_STOP == closeHub then
+        _G.BRAB0X_V19_4_STOP = nil
     end
 end
 
@@ -7046,12 +7045,12 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_3_STOP = closeHub
+_G.BRAB0X_V19_4_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
--- Inspirada no conceito visual aprovado: coroa, emblema, aura rubra e logo metalico.
--- Sem modo classico/AIM, numero de comandos, versao ou icones do Roblox.
+-- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
 do
+v14.introOk,v14.introError=pcall(function()
 local red=Color3.fromRGB(245,29,62)
 local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
@@ -7356,7 +7355,7 @@ skip.TextSize=10
 skip.ZIndex=90
 
 local introFinished=false
-introCleanup=function()
+v14.introCleanup=function()
     introFinished=true
     if introGui and introGui.Parent then introGui:Destroy() end
 end
@@ -7424,6 +7423,23 @@ task.spawn(function()
     task.wait(.64)
     revealHub()
 end)
+-- Watchdog: garante entrada no hub mesmo se alguma animacao falhar.
+task.delay(4.8,function()
+    if not stopped and not introFinished then
+        warn("[BRAB0X PRIME] Recuperacao da intro: abrindo o menu principal.")
+        revealHub()
+    end
+end)
+end) -- fim da construcao protegida da abertura
+if not v14.introOk then
+    warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_4")
+    if failedGui then failedGui:Destroy() end
+    main.Visible=true
+    reopen.Visible=false
+    show("HOME")
+    if refreshCommandList then refreshCommandList(true) end
+end
 end -- fim do escopo abertura
 -- INICIALIZAR
 
@@ -7439,6 +7455,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V19.3 | "
+    "BRAB0X PRIME V19.4 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
