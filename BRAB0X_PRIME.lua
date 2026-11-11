@@ -7346,8 +7346,9 @@ end
 
 -- Pular e uma alternativa de acessibilidade; a intro abre sozinha.
 local skip=btn(gate,"PULAR INTRO",nil,28)
-skip.AnchorPoint=Vector2.new(1,0)
-skip.Position=UDim2.new(1,-14,0,12)
+-- O botao de pular fica longe da barra superior nativa do Roblox.
+skip.AnchorPoint=Vector2.new(1,1)
+skip.Position=UDim2.new(1,-24,1,-42)
 skip.Size=UDim2.fromOffset(112,28)
 skip.BackgroundColor3=Color3.fromRGB(32,12,21)
 skip.TextColor3=Color3.fromRGB(211,182,191)
