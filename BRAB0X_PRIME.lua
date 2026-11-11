@@ -69,8 +69,16 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_4")
-if previous then previous:Destroy() end
+-- Remove restos de introducoes antigas que tenham parado durante o carregamento.
+for _,oldName in ipairs({
+    "BRAB0X_INTRO_FULLSCREEN_V19_3",
+    "BRAB0X_INTRO_FULLSCREEN_V19_4",
+    "BRAB0X_PRIME_V19_3",
+    "BRAB0X_PRIME_V19_4"
+}) do
+    local leftover=pg:FindFirstChild(oldName)
+    if leftover then leftover:Destroy() end
+end
 
 -- CONFIGURACOES
 
