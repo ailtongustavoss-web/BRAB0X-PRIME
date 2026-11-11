@@ -73,6 +73,7 @@ end
 -- Remove restos de introducoes antigas que tenham parado durante o carregamento.
 for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_3",
+    "BRAB0X_INTRO_FULLSCREEN_V19_4",
     "BRAB0X_INTRO_FULLSCREEN_V19_5",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
@@ -796,7 +797,7 @@ do
     }
     v14.navigation={
         groups={},byPage={},labels={},icons={},markers={},
-        searchBox=navSearch
+        searchBox=navSearch,activePage="HOME"
     }
 
     local order=0
@@ -888,7 +889,8 @@ do
         end
         -- Botao de ajustes fica sempre acessivel.
         navButtons.SETTINGS.Visible=true
-        local active=currentPage or selected or "HOME"
+        if currentPage then v14.navigation.activePage=currentPage end
+        local active=v14.navigation.activePage or "HOME"
         for id,b in pairs(navButtons) do
             local isActive=(id==active)
             b.BackgroundColor3=isActive and Color3.fromRGB(82,16,34)
@@ -911,7 +913,7 @@ do
     end
     bind(navSearch:GetPropertyChangedSignal("Text"),function()
         nav.CanvasPosition=Vector2.zero
-        v14.navigation.update(selected)
+        v14.navigation.update()
     end)
     v14.navigation.update("HOME")
 end
