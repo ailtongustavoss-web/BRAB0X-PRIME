@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.4 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.5 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_5_STOP",
     "BRAB0X_V19_4_STOP",
     "BRAB0X_V19_3_STOP",
     "BRAB0X_V19_2_STOP",
@@ -72,9 +73,10 @@ end
 -- Remove restos de introducoes antigas que tenham parado durante o carregamento.
 for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_3",
-    "BRAB0X_INTRO_FULLSCREEN_V19_4",
+    "BRAB0X_INTRO_FULLSCREEN_V19_5",
     "BRAB0X_PRIME_V19_3",
-    "BRAB0X_PRIME_V19_4"
+    "BRAB0X_PRIME_V19_4",
+    "BRAB0X_PRIME_V19_5"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -416,7 +418,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_4",
+    Name = "BRAB0X_PRIME_V19_5",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -462,7 +464,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.4  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.5  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -483,10 +485,10 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V19.4 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- V19.5 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_4",
+    Name="BRAB0X_MINI_PREMIUM_V19_5",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -714,133 +716,205 @@ for _,id in ipairs(sections) do
     stack(pages[id],6)
 end
 
--- V16 / NAVEGACAO ORGANIZADA: GRUPOS RECOLHIVEIS + BUSCA POR PAGINA
+-- V19.5 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
+-- Todas as paginas antigas continuam disponiveis, sem menus duplicados.
 do
-    nav.Position=UDim2.fromOffset(8,48)
-    nav.Size=UDim2.new(1,-16,1,-176)
+    sidebar.BackgroundColor3=Color3.fromRGB(14,14,20)
+    nav.Position=UDim2.fromOffset(10,117)
+    nav.Size=UDim2.new(1,-20,0,271)
+    nav.ScrollBarThickness=2
+    nav.ScrollBarImageColor3=Color3.fromRGB(74,59,68)
+    nav.ScrollBarImageTransparency=.35
+    nav.ScrollingDirection=Enum.ScrollingDirection.Y
+    nav.CanvasPosition=Vector2.zero
+    nav.ClipsDescendants=true
+
+    -- Emblema proprio do BRAB0X PRIME; nenhum logo ou avatar do Roblox.
+    local miniMark=round(obj("Frame",sidebar,{
+        Position=UDim2.fromOffset(12,12),
+        Size=UDim2.fromOffset(41,41),
+        BackgroundColor3=Color3.fromRGB(69,18,36),
+        BorderSizePixel=0
+    }),11)
+    obj("UIStroke",miniMark,{
+        Color=Color3.fromRGB(232,44,77),Thickness=1.1,Transparency=.19
+    })
+    local monogram=txt(miniMark,"B",36,26,true)
+    monogram.Position=UDim2.fromOffset(0,1)
+    monogram.Size=UDim2.fromScale(1,1)
+    monogram.TextXAlignment=Enum.TextXAlignment.Center
+    monogram.Font=Enum.Font.GothamBlack
+    monogram.TextColor3=Color3.fromRGB(255,246,250)
+
+    local logoTitle=txt(sidebar,"BRAB0X",24,19,true)
+    logoTitle.Position=UDim2.fromOffset(61,10)
+    logoTitle.Size=UDim2.fromOffset(117,24)
+    logoTitle.TextWrapped=false
+    logoTitle.Font=Enum.Font.GothamBlack
+    logoTitle.TextColor3=Color3.fromRGB(245,243,249)
+    local logoPrime=txt(sidebar,"P R I M E",15,10,true)
+    logoPrime.Position=UDim2.fromOffset(62,33)
+    logoPrime.Size=UDim2.fromOffset(115,16)
+    logoPrime.TextWrapped=false
+    logoPrime.TextColor3=Color3.fromRGB(255,68,101)
+
+    local separation=obj("Frame",sidebar,{
+        Position=UDim2.fromOffset(12,61),
+        Size=UDim2.new(1,-24,0,1),
+        BackgroundColor3=Color3.fromRGB(64,40,50),
+        BackgroundTransparency=.35,BorderSizePixel=0
+    })
+
     local navSearch=round(obj("TextBox",sidebar,{
-        Position=UDim2.fromOffset(8,8),
-        Size=UDim2.new(1,-16,0,33),
-        BackgroundColor3=Color3.fromRGB(37,16,26),
+        Position=UDim2.fromOffset(10,70),
+        Size=UDim2.new(1,-20,0,33),
+        BackgroundColor3=Color3.fromRGB(29,28,35),
         BorderSizePixel=0,
-        Text="",PlaceholderText="Buscar aba...",
-        TextColor3=white,PlaceholderColor3=muted,
-        TextSize=11,Font=Enum.Font.Gotham,
+        Text="",
+        PlaceholderText="  Buscar pagina...",
+        TextColor3=Color3.fromRGB(244,240,248),
+        PlaceholderColor3=Color3.fromRGB(138,137,150),
+        Font=Enum.Font.Gotham,
+        TextSize=11,
         ClearTextOnFocus=false
-    }),8)
-    obj("UIStroke",navSearch,{Color=accent,Transparency=.6,Thickness=1})
-    v14.navigation={groups={},byPage={},searchBox=navSearch}
-    if type(v13Data.layout)~="table" then v13Data.layout={} end
-    if type(v13Data.layout.groups)~="table" then v13Data.layout.groups={} end
-    local navGroupData={
-        {key="MAIN",pt="PRINCIPAL",en="MAIN",es="PRINCIPAL",
-            pages={"HOME","COMMANDS","GAMES"}},
-        {key="PLAYER",pt="JOGADOR",en="PLAYER",es="JUGADOR",
-            pages={"PLAYERS","TELEPORT","RECENT"}},
-        {key="TOOLS",pt="FERRAMENTAS",en="TOOLS",es="HERRAMIENTAS",
-            pages={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
-        {key="SYSTEM",pt="SISTEMA",en="SYSTEM",es="SISTEMA",
-            pages={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","SETTINGS","AIM"}}
+    }),9)
+    obj("UIStroke",navSearch,{
+        Color=Color3.fromRGB(75,64,76),Transparency=.58,Thickness=1
+    })
+
+    local iconMap={
+        HOME="⌂",COMMANDS="<>",GAMES="▦",PLAYERS="♙",TELEPORT="➤",
+        RECENT="◷",MACROS="⌘",CINEMA="◈",AVATAR="◇",AUDIO="♫",
+        PERFORMANCE="▥",NOTES="≡",CONSOLE=">_",PROFILES="◎",
+        STATS="▤",BACKUP="⇧",DIAGNOSTICS="✧",GUIDE="?",HELP="i",
+        SETTINGS="⚙",AIM="⊕"
     }
-    for index,definition in ipairs(navGroupData) do
-        local shell=obj("Frame",nav,{
-            Size=UDim2.new(1,-6,0,32),
-            BackgroundTransparency=1,
-            LayoutOrder=index
+    local groups={
+        {title="PRINCIPAL",ids={"HOME","COMMANDS","GAMES","PLAYERS","TELEPORT","RECENT"}},
+        {title="FERRAMENTAS",ids={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
+        {title="UTILITARIOS",ids={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","AIM"}}
+    }
+    v14.navigation={
+        groups={},byPage={},labels={},icons={},markers={},
+        searchBox=navSearch
+    }
+
+    local order=0
+    local function makeNavButton(id,parent,parentOrder)
+        local button=round(obj("TextButton",parent,{
+            Name="Nav_"..id,
+            Size=UDim2.new(1,-5,0,36),
+            LayoutOrder=parentOrder,
+            BackgroundColor3=Color3.fromRGB(21,21,28),
+            BorderSizePixel=0,
+            Text="",
+            AutoButtonColor=true
+        }),9)
+        local border=obj("UIStroke",button,{
+            Color=Color3.fromRGB(64,57,68),
+            Transparency=.65,Thickness=1
         })
-        stack(shell,4)
-        local head=btn(shell,"",nil,32)
-        head.Size=UDim2.new(1,0,0,32)
-        head.LayoutOrder=1
-        head.BackgroundColor3=Color3.fromRGB(45,14,27)
-        head.TextColor3=accent
-        head.TextSize=11
-        local list=obj("Frame",shell,{
-            Size=UDim2.new(1,0,0,0),
-            BackgroundTransparency=1,
-            LayoutOrder=2
-        })
-        stack(list,3)
-        local group={
-            definition=definition,button=head,frame=shell,content=list,
-            expanded=v13Data.layout.groups[definition.key]==nil and index==1
-                or v13Data.layout.groups[definition.key]==true,items={}
-        }
+        local line=round(obj("Frame",button,{
+            Position=UDim2.fromOffset(0,8),
+            Size=UDim2.fromOffset(3,20),
+            BackgroundColor3=Color3.fromRGB(255,64,93),
+            BackgroundTransparency=0,
+            BorderSizePixel=0,
+            Visible=false
+        }),2)
+        local icon=txt(button,iconMap[id] or "•",24,15,true)
+        icon.Position=UDim2.fromOffset(11,6)
+        icon.Size=UDim2.fromOffset(26,24)
+        icon.TextXAlignment=Enum.TextXAlignment.Center
+        icon.TextColor3=Color3.fromRGB(190,188,201)
+        local caption=txt(button,id,26,12,true)
+        caption.Position=UDim2.fromOffset(43,5)
+        caption.Size=UDim2.new(1,-48,0,26)
+        caption.TextColor3=Color3.fromRGB(215,213,222)
+        caption.TextWrapped=false
+        caption.TextTruncate=Enum.TextTruncate.AtEnd
+        navButtons[id]=button
+        v14.navigation.labels[id]=caption
+        v14.navigation.icons[id]=icon
+        v14.navigation.markers[id]=line
+        return button
+    end
+
+    for _,def in ipairs(groups) do
+        order=order+1
+        local heading=txt(nav,def.title,19,10,true)
+        heading.Name="Section_"..def.title
+        heading.LayoutOrder=order
+        heading.Size=UDim2.new(1,-5,0,19)
+        heading.TextColor3=Color3.fromRGB(131,124,139)
+        heading.TextWrapped=false
+        local group={items=def.ids,header=heading,expanded=true}
         v14.navigation.groups[#v14.navigation.groups+1]=group
-        for order,id in ipairs(definition.pages) do
-            local tab=btn(list,id,nil,35)
-            tab.LayoutOrder=order
-            tab.Size=UDim2.new(1,0,0,35)
-            tab.TextSize=11
-            navButtons[id]=tab
-            group.items[#group.items+1]=id
+        for _,id in ipairs(def.ids) do
+            order=order+1
+            makeNavButton(id,nav,order)
             v14.navigation.byPage[id]=group
         end
-        bind(head.MouseButton1Click,function()
-            if navSearch.Text~="" then navSearch.Text="" end
-            group.expanded=not group.expanded
-            v13Data.layout.groups[definition.key]=group.expanded
-            saveV13()
-            if v14.navigation.update then v14.navigation.update() end
-        end)
     end
-    v14.navigation.update=function(page)
+
+    local footDivider=obj("Frame",sidebar,{
+        Position=UDim2.new(0,11,1,-73),
+        Size=UDim2.new(1,-22,0,1),
+        BackgroundColor3=Color3.fromRGB(69,58,67),
+        BackgroundTransparency=.44,BorderSizePixel=0
+    })
+    local footTitle=txt(sidebar,"CONFIGURACOES",19,10,true)
+    footTitle.Position=UDim2.new(0,14,1,-66)
+    footTitle.Size=UDim2.new(1,-28,0,18)
+    footTitle.TextColor3=Color3.fromRGB(139,132,150)
+    local settingsButton=makeNavButton("SETTINGS",sidebar,1)
+    settingsButton.Position=UDim2.new(0,10,1,-45)
+    settingsButton.Size=UDim2.new(1,-20,0,36)
+
+    v14.navigation.update=function(currentPage)
         local query=navSearch.Text:lower():gsub("^%s+",""):gsub("%s+$","")
         for _,group in ipairs(v14.navigation.groups) do
-            if query=="" and page and v14.navigation.byPage[page]==group then
-                group.expanded=true
-            end
-            local matching=0
+            local found=0
             for _,id in ipairs(group.items) do
                 local b=navButtons[id]
-                local match=(query==""
+                local label=v14.navigation.labels[id]
+                local match=moduleEnabled(id) and (query==""
                     or id:lower():find(query,1,true)~=nil
-                    or b.Text:lower():find(query,1,true)~=nil)
-                    and moduleEnabled(id)
+                    or label.Text:lower():find(query,1,true)~=nil)
                 b.Visible=match
-                if match then matching=matching+1 end
+                if match then found=found+1 end
             end
-            group.frame.Visible=matching>0
-            local open=(query~="" or group.expanded) and matching>0
-            group.content.Visible=open
-            -- Alturas explicitas: AutomaticSize nao expandia em alguns clientes.
-            local contentHeight=open and
-                (matching*35+math.max(0,matching-1)*3) or 0
-            group.content.Size=UDim2.new(1,0,0,contentHeight)
-            group.frame.Size=UDim2.new(1,-6,0,32+(open and 4+contentHeight or 0))
-            local def=group.definition
-            local language=config.lang
-            local name=def[language] or def.en
-            group.button.Text=(open and "[-]  " or "[+]  ")..name..
-                "  ("..matching..")"
+            group.header.Visible=found>0
+        end
+        -- Botao de ajustes fica sempre acessivel.
+        navButtons.SETTINGS.Visible=true
+        local active=currentPage or selected or "HOME"
+        for id,b in pairs(navButtons) do
+            local isActive=(id==active)
+            b.BackgroundColor3=isActive and Color3.fromRGB(82,16,34)
+                or Color3.fromRGB(21,21,28)
+            local outline=b:FindFirstChildOfClass("UIStroke")
+            if outline then
+                outline.Color=isActive and Color3.fromRGB(244,40,75)
+                    or Color3.fromRGB(65,58,70)
+                outline.Transparency=isActive and .12 or .66
+                outline.Thickness=isActive and 1.2 or 1
+            end
+            v14.navigation.labels[id].TextColor3=isActive
+                and Color3.fromRGB(255,250,252)
+                or Color3.fromRGB(209,207,218)
+            v14.navigation.icons[id].TextColor3=isActive
+                and Color3.fromRGB(255,230,236)
+                or Color3.fromRGB(174,170,187)
+            v14.navigation.markers[id].Visible=isActive
         end
     end
     bind(navSearch:GetPropertyChangedSignal("Text"),function()
-        if v14.navigation.update then v14.navigation.update() end
+        nav.CanvasPosition=Vector2.zero
+        v14.navigation.update(selected)
     end)
     v14.navigation.update("HOME")
 end
-
--- Identidade visual na base da barra lateral.
-local sidePanel = round(obj("Frame",sidebar,{
-    Position = UDim2.new(0,9,1,-121),
-    Size = UDim2.new(1,-18,0,111),
-    BackgroundColor3 = Color3.fromRGB(33,8,17),
-    BorderSizePixel = 0
-}),10)
-obj("UIStroke",sidePanel,{Color=accent,Transparency=.4,Thickness=1})
-local sideLogo = txt(sidePanel,"B  BRAB0X",29,18,true)
-sideLogo.Position = UDim2.fromOffset(12,12)
-sideLogo.Size = UDim2.new(1,-24,0,29)
-sideLogo.TextColor3 = accent
-local sideSub = txt(sidePanel,"PRIME  •  RED EDITION",22,10,true)
-sideSub.Position = UDim2.fromOffset(12,47)
-sideSub.Size = UDim2.new(1,-24,0,22)
-sideSub.TextColor3 = white
-local sideTip = txt(sidePanel,"CRIADOR: @wendezao05153nh",29,10)
-sideTip.Position = UDim2.fromOffset(12,77)
-sideTip.Size = UDim2.new(1,-24,0,29)
-sideTip.TextColor3 = muted
 
 local status = txt(
     main,
@@ -1031,15 +1105,8 @@ local function show(page)
         end
     end
 
-    for name,b in pairs(navButtons) do
-        b.BackgroundColor3 = name == page and Color3.fromRGB(112,13,31) or control
-        b.TextColor3 = white
-        local border = b:FindFirstChildOfClass("UIStroke")
-        if border then
-            border.Color = name == page and accent or Color3.fromRGB(88,38,45)
-            border.Transparency = name == page and .08 or .56
-        end
-    end
+    -- O destaque visual fica centralizado no novo sistema de navegacao.
+    -- Sem aplicar o estilo antigo (barra vermelha e texto deslocado).
     if v14.navigation and v14.navigation.update then
         v14.navigation.update(page)
     end
@@ -1066,7 +1133,12 @@ local function relabel()
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
         local label=more[config.lang] and more[config.lang][name] or nil
-        navButtons[name].Text="   "..(label or (i and i<=9 and labels[i]) or name)
+        local cleanLabel=label or (i and i<=9 and labels[i]) or name
+        if v14.navigation and v14.navigation.labels and v14.navigation.labels[name] then
+            v14.navigation.labels[name].Text=cleanLabel
+        else
+            navButtons[name].Text=cleanLabel
+        end
     end
     if v14.navigation and v14.navigation.update then
         v14.navigation.update()
@@ -1729,7 +1801,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_4_AIM"
+local aimKey = "BRAB0X_V19_5_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2973,7 +3045,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.4 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.5 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4181,7 +4253,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.4: "..#registered.." comandos."
+        return "BRAB0X V19.5: "..#registered.." comandos."
     end)
 end
 
@@ -4230,7 +4302,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.4: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.5: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4259,7 +4331,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.4",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.5",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -4820,7 +4892,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.4 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.5 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -6023,7 +6095,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.4] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.5] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6707,7 +6779,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.4 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.5 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6945,8 +7017,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_4_STOP == closeHub then
-        _G.BRAB0X_V19_4_STOP = nil
+    if _G.BRAB0X_V19_5_STOP == closeHub then
+        _G.BRAB0X_V19_5_STOP = nil
     end
 end
 
@@ -7053,7 +7125,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_4_STOP = closeHub
+_G.BRAB0X_V19_5_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -7064,10 +7136,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_4")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_5")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_4",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_5",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -7441,7 +7513,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_4")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_5")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -7463,6 +7535,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V19.4 | "
+    "BRAB0X PRIME V19.5 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
