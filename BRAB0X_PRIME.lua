@@ -1,5 +1,6 @@
 
--- BRAB0X PRIME V17.7 | COMANDOS, USABILIDADE E ESTABILIDADE
+-- BRAB0X PRIME V18.0 | BANNER MINI PRO, DRAG SEGURO, SALVAMENTO
+-- NOVO: posicao do mini banner por tela, indicador do FLY, Alt+M para ocultar/abrir.
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V18_0_STOP",
     "BRAB0X_V17_7_STOP",
     "BRAB0X_V17_6_STOP",
     "BRAB0X_V17_5_STOP",
@@ -62,7 +64,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_7")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V18_0")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -401,7 +403,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_7",
+    Name = "BRAB0X_PRIME_V18_0",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -447,7 +449,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.7  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V18.0  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -600,7 +602,17 @@ miniArrow.TextXAlignment=Enum.TextXAlignment.Center
 miniArrow.TextColor3=Color3.fromRGB(255,75,108)
 miniArrow.ZIndex=115
 
+-- Restaura a posicao salva do mini banner. Coordenadas normalizadas
+-- acompanham mudancas na resolucao sem deixar o banner fora da tela.
+local miniSaved=v13Data.miniPosition
+if type(miniSaved)=="table" then
+    local x,y=tonumber(miniSaved.x),tonumber(miniSaved.y)
+    if x and y and x>=0 and x<=1 and y>=0 and y<=1 then
+        reopen.Position=UDim2.new(x,0,y,0)
+    end
+end
 local miniMoved=false
+local miniSuppressUntil=0
 bind(reopen.MouseEnter,function()
     if stopped then return end
     Tween:Create(miniStroke,TweenInfo.new(.15),{
@@ -1725,7 +1737,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_7_AIM"
+local aimKey = "BRAB0X_V18_0_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2834,7 +2846,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.7 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V18.0 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3957,7 +3969,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V17.7: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V18.0: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4565,7 +4577,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.7 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V18.0 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5767,7 +5779,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.7] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V18.0] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6427,6 +6439,11 @@ refresh = function()
     topState.Text =
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
+    -- O banner minimizado mostra o estado do voo sem poluir a tela.
+    miniSubtitle.Text = S.fly and "FLY ON  •  ABRIR" or "CLIQUE PARA ABRIR"
+    miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,101,119)
+        or Color3.fromRGB(218,202,214)
+
     aimTitle.Text = (
         "◎  AIM NPC TREINO %s  |  RAIO %d  |  SMOOTH %.2f"
     ):format(S.aim and "ON" or "OFF",S.aimRadius,S.aimSmooth)
@@ -6446,7 +6463,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V17.7 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V18.0 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6558,6 +6575,19 @@ local miniDragging=false
 local miniDragInput=nil
 local miniDragStart=nil
 local miniStartPosition=nil
+local function saveMiniPosition()
+    local cam=workspace.CurrentCamera
+    if not cam then return end
+    local view=cam.ViewportSize
+    if view.X<=0 or view.Y<=0 then return end
+    local px=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
+    local py=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
+    v13Data.miniPosition={
+        x=math.clamp(px/view.X,0,1),
+        y=math.clamp(py/view.Y,0,1)
+    }
+    saveV13()
+end
 local function clampMiniPosition()
     local view=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
         or Vector2.new(1280,720)
@@ -6617,6 +6647,11 @@ bind(UIS.InputEnded,function(input)
     miniDragStart=nil
     miniStartPosition=nil
     clampMiniPosition()
+    if miniMoved then
+        miniSuppressUntil=os.clock()+0.28
+        saveMiniPosition()
+    end
+    miniMoved=false
 end)
 bind(minimize.MouseButton1Click,function()
     main.Visible=false
@@ -6624,8 +6659,8 @@ bind(minimize.MouseButton1Click,function()
     clampMiniPosition()
 end)
 bind(reopen.MouseButton1Click,function()
-    -- Arrastar nunca deve abrir o hub por acidente.
-    if miniMoved then
+    -- Suprime o clique gerado pela soltura depois de arrastar.
+    if miniMoved or os.clock()<miniSuppressUntil then
         miniMoved=false
         return
     end
@@ -6657,8 +6692,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_7_STOP == closeHub then
-        _G.BRAB0X_V17_7_STOP = nil
+    if _G.BRAB0X_V18_0_STOP == closeHub then
+        _G.BRAB0X_V18_0_STOP = nil
     end
 end
 
@@ -6675,6 +6710,12 @@ bind(UIS.InputBegan,function(key,used)
         main.Visible=true
         reopen.Visible=false
         show("HELP")
+    elseif name=="M" and not used and
+        (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
+        if reopen.Visible then clampMiniPosition() end
+        return
     elseif name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
         or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
         main.Visible=true
@@ -6702,7 +6743,15 @@ local dragInput=nil
 local dragStart=nil
 local dragPosition=nil
 
+local function inputOnButton(button,input)
+    local p=button.AbsolutePosition
+    local s=button.AbsoluteSize
+    local m=input.Position
+    return m.X>=p.X and m.X<=p.X+s.X
+        and m.Y>=p.Y and m.Y<=p.Y+s.Y
+end
 bind(header.InputBegan,function(input)
+    if inputOnButton(minimize,input) or inputOnButton(close,input) then return end
     local kind=input.UserInputType
     if kind~=Enum.UserInputType.MouseButton1
         and kind~=Enum.UserInputType.Touch then return end
@@ -6747,7 +6796,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_7_STOP = closeHub
+_G.BRAB0X_V18_0_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6913,7 +6962,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.7 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V18.0 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6963,6 +7012,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.7 | "
+    "BRAB0X PRIME V18.0 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
