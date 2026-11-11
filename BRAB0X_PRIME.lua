@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V17.6 | BANNER CYBER COM ESPACAMENTO REVISADO
+-- BRAB0X PRIME V17.7 | COMANDOS, USABILIDADE E ESTABILIDADE
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -36,6 +36,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V17_7_STOP",
     "BRAB0X_V17_6_STOP",
     "BRAB0X_V17_5_STOP",
     "BRAB0X_V17_4_STOP",
@@ -61,7 +62,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_6")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V17_7")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -400,7 +401,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V17_6",
+    Name = "BRAB0X_PRIME_V17_7",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -446,7 +447,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V17.6  |  CYBER BANNER REFINADO   /   BY @wendezao05153nh",
+    "V17.7  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -856,7 +857,7 @@ local cmdInput = round(obj("TextBox",main,{
     BorderSizePixel = 0,
     Text = "",
     TextColor3 = white,
-    PlaceholderText = "Digite: fly | goto nearest | fav fly | saveprofile...",
+    PlaceholderText = "Digite: fly | speed 60 | wp casa | helpcommand fly...",
     PlaceholderColor3 = muted,
     ClearTextOnFocus = false,
     Font = Enum.Font.Code,
@@ -1724,7 +1725,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V17_6_AIM"
+local aimKey = "BRAB0X_V17_7_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2833,7 +2834,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V17.6 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V17.7 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3906,7 +3907,7 @@ exec = function(raw)
             v14.v17.reportError(command,"Comando desconhecido")
         end
         notify("Comando desconhecido: "..command,"error")
-        return
+        return false
     end
 
     if not moduleEnabled(entry.category) then
@@ -3914,12 +3915,12 @@ exec = function(raw)
             "Ative a categoria "..entry.category
             .." em Ajustes > Modulos"
         )
-        return
+        return false
     end
 
     local noticesBefore=noticeCounter
     if v14.safe and v14.requiresConfirmation and v14.requiresConfirmation(command,arg) then
-        return
+        return false
     end
     local ok,result = pcall(entry.run,arg)
 
@@ -3929,14 +3930,19 @@ exec = function(raw)
             v14.v17.reportError(command,tostring(err))
         end
         notify("Erro em "..command..": "..tostring(err),"error")
-        return
+        return false
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    if result == false then return end
+    -- V17.7: respostas silenciosas tambem atualizam botoes e indicadores.
+    if result == false then
+        if not stopped and refresh then refresh() end
+        return true
+    end
     if type(result)=="string" then
         notify(result)
-        return
+        if not stopped and refresh then refresh() end
+        return true
     end
 
     if stopped then return end
@@ -3946,6 +3952,7 @@ exec = function(raw)
     end
 
     refresh()
+    return true
 end
 
 -- COMANDOS / NOVA INTERFACE COM CONTROLES REAIS
@@ -4517,7 +4524,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.6 / CYBER",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V17.7 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5716,7 +5723,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V17.6] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V17.7] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6513,8 +6520,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V17_6_STOP == closeHub then
-        _G.BRAB0X_V17_6_STOP = nil
+    if _G.BRAB0X_V17_7_STOP == closeHub then
+        _G.BRAB0X_V17_7_STOP = nil
     end
 end
 
@@ -6603,7 +6610,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V17_6_STOP = closeHub
+_G.BRAB0X_V17_7_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6769,7 +6776,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V17.6 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V17.7 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -6819,6 +6826,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V17.6 | "
+    "BRAB0X PRIME V17.7 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
