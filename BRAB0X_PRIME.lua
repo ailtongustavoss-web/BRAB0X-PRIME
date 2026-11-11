@@ -3107,7 +3107,7 @@ do
         crosshair=true,zoomout=true,zoomin=true,fov=true,first=true,third=true,
         brightness=true,day=true,night=true,sunset=true,fullbright=true,
         unfullbright=true,walk=true,jump=true,savepos=true,
-        transparency=true,visible=true
+        transparent=true,visible=true
     }
     v14.macroSave=function(name,list)
         name=validName(name)
@@ -3136,18 +3136,41 @@ do
     v14.macroRun=function(name)
         name=validName(name)
         local cmds=name and v14.macros[name]
-        if type(cmds)~="table" then notify("Macro nao encontrada.","error");return false end
-        if v14.macroRunning then notify("Ja existe uma macro em execucao.","error");return false end
+        if type(cmds)~="table" or #cmds<1 or #cmds>12 then
+            notify("Macro invalida ou nao encontrada.","error")
+            return false
+        end
+        if v14.macroRunning then
+            notify("Ja existe uma macro em execucao.","error")
+            return false
+        end
         v14.macroRunning=true
-        for i,command in ipairs(cmds) do
-            if stopped then break end
-            local first=command:match("^(%S+)")
-            if first and byName[first:lower()] and v14.macroActions[first:lower()] then
-                exec(command)
+        local completed=0
+        local failedStep=nil
+        for index,rawCommand in ipairs(cmds) do
+            if stopped then failedStep=index break end
+            local command=type(rawCommand)=="string" and rawCommand or ""
+            local namePart=command:match("^(%S+)")
+            local normalized=namePart and namePart:lower()
+            if not normalized or not byName[normalized]
+                or not v14.macroActions[normalized] then
+                failedStep=index
+                break
             end
+            local ok,success=pcall(exec,command)
+            if not ok or success==false then
+                failedStep=index
+                break
+            end
+            completed=completed+1
         end
         v14.macroRunning=false
-        notify("Macro executada: "..name,"success")
+        if failedStep then
+            notify("Macro "..name.." interrompida no passo "..failedStep..
+                " ("..completed.." executados).","error")
+            return false
+        end
+        notify("Macro "..name.." concluida: "..completed.." comandos.","success")
         return true
     end
     v14.macroDelete=function(name)
@@ -5529,7 +5552,10 @@ do
                 local commands=v14.macros[name]
                 row(macroHolder,name.."  •  "..(type(commands)=="table" and #commands or 0).." comandos",{
                     {"EXECUTAR",function()v14.macroRun(name)end,91},
-                    {"EXCLUIR",function()v14.macroDelete(name)end,83}
+                    {"EXCLUIR",function()
+                        if v14.safe and v14.requiresConfirmation("macrodelete",name) then return end
+                        v14.macroDelete(name)
+                    end,83}
                 })
             end
         end
