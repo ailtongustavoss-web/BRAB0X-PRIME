@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V18.0 | BANNER MINI PRO, DRAG SEGURO, SALVAMENTO
+-- BRAB0X PRIME V19.0 | BANNER MINI PRO, DRAG SEGURO, SALVAMENTO
 -- NOVO: posicao do mini banner por tela, indicador do FLY, Alt+M para ocultar/abrir.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_0_STOP",
     "BRAB0X_V18_0_STOP",
     "BRAB0X_V17_7_STOP",
     "BRAB0X_V17_6_STOP",
@@ -64,7 +65,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V18_0")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_0")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -403,7 +404,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V18_0",
+    Name = "BRAB0X_PRIME_V19_0",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -449,7 +450,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V18.0  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.0  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -1481,7 +1482,9 @@ local function remember(h)
     end
 end
 
+local spectateCleanup
 local function cameraReset()
+    if spectateCleanup then spectateCleanup() end
     player.CameraMode = Enum.CameraMode.Classic
     player.CameraMinZoomDistance = .5
     player.CameraMaxZoomDistance = math.max(30,old.max)
@@ -1737,7 +1740,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V18_0_AIM"
+local aimKey = "BRAB0X_V19_0_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2439,6 +2442,8 @@ local function alias(name,category,description,target,example)
         return entry.run(a)
     end,example or name)
 end
+local leaveSpectate
+local cycleSpectate
 local function updateSpin()
     if extraState.spinConnection then
         extraState.spinConnection:Disconnect()
@@ -2483,7 +2488,7 @@ resetExtras=function()
     updateSpin()
     S.noRotate=false
     S.invisible=false
-    if extraState.lastSpectated then cameraReset() end
+    if leaveSpectate then leaveSpectate(true) elseif extraState.lastSpectated then cameraReset() end
     extraState.lastSpectated=nil
     if extraState.colorFX then
         extraState.colorFX:Destroy()
@@ -2667,22 +2672,143 @@ register("lookat","CAMERA","Olhar na direcao de um jogador",function(a)
     if not r or not c then notify("Jogador indisponivel"); return false end
     c.CFrame=CFrame.lookAt(c.CFrame.Position,r.Position)
 end,"lookat nearest")
-register("spectate","CAMERA","Assistir jogador pela camera",function(a)
-    local p=findPlayer(a)
-    local c=workspace.CurrentCamera
-    local h=p and p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-    if not h or not c then notify("Jogador indisponivel"); return false end
-    stopFly()
-    c.CameraType=Enum.CameraType.Custom
-    c.CameraSubject=h
-    extraState.lastSpectated=p
-end,"spectate nearest")
-alias("view","CAMERA","Alias para spectate","spectate","view nearest")
-register("unspectate","CAMERA","Voltar camera ao seu avatar",function()
-    extraState.lastSpectated=nil
-    cameraReset()
-end)
-alias("unview","CAMERA","Alias para unspectate","unspectate")
+-- V19: spectator com saida garantida, barra dedicada e troca de alvo.
+do
+    local target=nil
+    local targetRespawn=nil
+    local bar=round(obj("Frame",gui,{
+        Name="BRAB0X_SPECTATE_CONTROLS",
+        AnchorPoint=Vector2.new(.5,0),
+        Position=UDim2.new(.5,0,0,12),
+        Size=UDim2.fromOffset(520,54),
+        BackgroundColor3=Color3.fromRGB(23,11,19),
+        BorderSizePixel=0,Visible=false,ZIndex=150
+    }),10)
+    obj("UIStroke",bar,{Color=accent,Transparency=.08,Thickness=1.5})
+    local label=txt(bar,"ASSISTINDO: --",28,13,true)
+    label.Position=UDim2.fromOffset(12,3)
+    label.Size=UDim2.new(1,-247,0,28)
+    label.TextTruncate=Enum.TextTruncate.AtEnd
+    label.ZIndex=151
+    local hint=txt(bar,"ALT+S ou VOLTAR = sair",18,10)
+    hint.Position=UDim2.fromOffset(12,30)
+    hint.Size=UDim2.new(1,-247,0,18)
+    hint.TextColor3=muted; hint.ZIndex=151
+    local previous=btn(bar,"<",nil,34)
+    previous.Position=UDim2.new(1,-203,0,10)
+    previous.Size=UDim2.fromOffset(35,34); previous.ZIndex=151
+    local following=btn(bar,">",nil,34)
+    following.Position=UDim2.new(1,-164,0,10)
+    following.Size=UDim2.fromOffset(35,34); following.ZIndex=151
+    local exit=btn(bar,"VOLTAR",nil,34)
+    exit.Position=UDim2.new(1,-126,0,10)
+    exit.Size=UDim2.fromOffset(116,34)
+    exit.BackgroundColor3=Color3.fromRGB(140,17,38)
+    exit.ZIndex=151
+
+    spectateCleanup=function()
+        target=nil; extraState.lastSpectated=nil; bar.Visible=false
+        if targetRespawn then
+            targetRespawn:Disconnect()
+            targetRespawn=nil
+        end
+    end
+    leaveSpectate=function(silent)
+        local was=target~=nil
+        spectateCleanup()
+        cameraReset()
+        if was and not silent then notify("Spectate OFF: camera restaurada.","success") end
+        return true
+    end
+    local function focusPlayer(p,character)
+        if target~=p or not character then return false end
+        local hum=character:FindFirstChildOfClass("Humanoid")
+        local cam=workspace.CurrentCamera
+        if not hum or not cam then return false end
+        cam.CameraType=Enum.CameraType.Custom
+        cam.CameraSubject=hum
+        return true
+    end
+    local function begin(p)
+        if not p or p==player then return leaveSpectate() end
+        if target==p then return leaveSpectate() end
+        if not (p.Character and p.Character:FindFirstChildOfClass("Humanoid")) then
+            notify("Jogador sem personagem ativo.","error")
+            return false
+        end
+        stopFly()
+        spectateCleanup()
+        target=p; extraState.lastSpectated=p
+        label.Text="ASSISTINDO: @"..p.Name
+        bar.Visible=true
+        focusPlayer(p,p.Character)
+        targetRespawn=bind(p.CharacterAdded,function(character)
+            task.spawn(function()
+                local hum=character:WaitForChild("Humanoid",5)
+                if hum and target==p and not stopped then focusPlayer(p,character) end
+            end)
+        end)
+        return "Spectate ON: @"..p.Name.." | botao VOLTAR ou Alt+S"
+    end
+    cycleSpectate=function(step)
+        local eligible={}
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p~=player and p.Character
+                and p.Character:FindFirstChildOfClass("Humanoid") then
+                eligible[#eligible+1]=p
+            end
+        end
+        table.sort(eligible,function(a,b) return a.Name:lower()<b.Name:lower() end)
+        if #eligible==0 then leaveSpectate(); return "Nenhum jogador disponivel." end
+        local current=0
+        for i,p in ipairs(eligible) do if p==target then current=i break end end
+        local index=current==0 and (step<0 and #eligible or 1)
+            or ((current-1+step)%#eligible)+1
+        if target==eligible[index] then return "Assistindo @"..target.Name end
+        return begin(eligible[index])
+    end
+    bind(exit.MouseButton1Click,function() leaveSpectate() end)
+    bind(previous.MouseButton1Click,function() cycleSpectate(-1) end)
+    bind(following.MouseButton1Click,function() cycleSpectate(1) end)
+    bind(Players.PlayerRemoving,function(p)
+        if target==p then leaveSpectate() end
+    end)
+    bind(player.CharacterAdded,function()
+        if target then
+            task.defer(function() if not stopped then leaveSpectate(true) end end)
+        end
+    end)
+    register("spectate","CAMERA","Assistir jogador; repetindo, para",function(a)
+        local p=findPlayer(a~="" and a or "nearest")
+        if not p then return "Jogador nao encontrado." end
+        return begin(p)
+    end,"spectate nearest")
+    alias("view","CAMERA","Assistir jogador","spectate","view nearest")
+    register("unspectate","CAMERA","Retornar a camera ao seu avatar",leaveSpectate)
+    alias("unview","CAMERA","Alias para sair de spectate","unspectate")
+    register("camnext","CAMERA","Proximo jogador em spectate",function() return cycleSpectate(1) end)
+    register("camprev","CAMERA","Jogador anterior em spectate",function() return cycleSpectate(-1) end)
+    register("watchnearest","CAMERA","Assistir ao mais proximo",function()
+        return begin(findPlayer("nearest"))
+    end)
+    register("watchrandom","CAMERA","Assistir a jogador aleatorio",function()
+        local list={}
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p~=player and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
+                list[#list+1]=p
+            end
+        end
+        if #list==0 then return "Nenhum jogador disponivel." end
+        return begin(list[math.random(1,#list)])
+    end)
+    register("watchme","CAMERA","Assistir ao proprio avatar",leaveSpectate)
+    register("watchstatus","CAMERA","Situacao da camera spectator",function()
+        return target and ("Assistindo @"..target.Name) or "Spectate OFF"
+    end)
+    register("watchtoggle","CAMERA","Ligar/desligar spectate",function()
+        return target and leaveSpectate() or begin(findPlayer("nearest"))
+    end)
+end
 register("maxzoom","CAMERA","Ajustar zoom maximo",function(a)
     local n=num(a,35,1,100)
     player.CameraMode=Enum.CameraMode.Classic
@@ -2846,7 +2972,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V18.0 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.0 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3924,6 +4050,139 @@ do
     end)
 end
 
+-- V19 / COMANDOS ADICIONAIS, SEM REPETIR NOMES
+do
+    local function humanoid()
+        local _,h,r=chars()
+        return h,r
+    end
+    local function walk(n)
+        local h=humanoid()
+        if h then h.WalkSpeed=n end
+    end
+    local function setJump(n)
+        local h=humanoid()
+        if h then if h.UseJumpPower then h.JumpPower=n else h.JumpHeight=n/7 end end
+    end
+    local function time(n) Lighting.ClockTime=n end
+    local function ambient(c) Lighting.Ambient=c;Lighting.OutdoorAmbient=c end
+    local function prefScale(n) config.scale=n;responsive();saveV13() end
+    local function setFov(n)
+        local c=workspace.CurrentCamera
+        if c then c.FieldOfView=n end
+    end
+
+    register("flyslow","FLY","Voo de precisao 25",function() S.speed=25 end)
+    register("flycruise","FLY","Voo equilibrado 65",function() S.speed=65 end)
+    register("flyfast","FLY","Voo rapido 140",function() S.speed=140 end)
+    register("flymax","FLY","Voo extremo 280",function() S.speed=280 end)
+    register("flypause","FLY","Parar voo",stopFly)
+    register("flyresume","FLY","Retomar voo",startFly)
+    register("boost3","FLY","Boost 3x",function() S.boostX=3;S.boost=true end)
+    register("boostreset","FLY","Restaurar boost",function() S.boostX=2;S.boost=false end)
+    register("walkslow","PLAYER","Caminhada lenta",function() walk(10) end)
+    register("walknormal","PLAYER","Restaurar caminhada",function() byName.resetwalk.run() end)
+    register("walkfast","PLAYER","Caminhada rapida",function() walk(28) end)
+    register("walksprint","PLAYER","Sprint local",function() walk(40) end)
+    register("jumphigh","PLAYER","Pulo alto",function() setJump(80) end)
+    register("jumpnormal","PLAYER","Restaurar pulo",function() byName.resetjump.run() end)
+    register("turnleft","PLAYER","Virar 90 graus a esquerda",function()
+        local _,r=humanoid() if r then r.CFrame=r.CFrame*CFrame.Angles(0,math.rad(90),0) end
+    end)
+    register("turnright","PLAYER","Virar 90 graus a direita",function()
+        local _,r=humanoid() if r then r.CFrame=r.CFrame*CFrame.Angles(0,math.rad(-90),0) end
+    end)
+    register("facecam","PLAYER","Virar na direcao da camera",function()
+        local _,r=humanoid()
+        local c=workspace.CurrentCamera
+        if r and c then
+            local d=c.CFrame.LookVector
+            local flat=Vector3.new(d.X,0,d.Z)
+            if flat.Magnitude>0.01 then r.CFrame=CFrame.lookAt(r.Position,r.Position+flat) end
+        end
+    end)
+    register("stopmotion","PLAYER","Parar movimento local",function()
+        local _,r=humanoid()
+        if r then r.AssemblyLinearVelocity=Vector3.zero;r.AssemblyAngularVelocity=Vector3.zero end
+    end)
+    register("myvelocity","PLAYER","Velocidade atual em studs/s",function()
+        local _,r=humanoid()
+        return r and ("Velocidade: "..math.floor(r.AssemblyLinearVelocity.Magnitude)) or "Personagem ausente."
+    end)
+    register("fov60","CAMERA","FOV cinematografico 60",function() setFov(60) end)
+    register("fov80","CAMERA","FOV medio 80",function() setFov(80) end)
+    register("fov100","CAMERA","FOV amplo 100",function() setFov(100) end)
+    register("zoomnear","CAMERA","Zoom proximo",function() byName.zoom.run("8") end)
+    register("zoommedium","CAMERA","Zoom medio",function() byName.zoom.run("20") end)
+    register("zoomfar","CAMERA","Zoom distante",function() byName.zoom.run("50") end)
+    register("camerastate","CAMERA","Mostrar camera ativa",function()
+        local c=workspace.CurrentCamera
+        if not c then return "Camera indisponivel." end
+        return c.CameraType.Name.." | FOV "..math.floor(c.FieldOfView)
+            .." | "..(extraState.lastSpectated and ("@"..extraState.lastSpectated.Name) or "voce")
+    end)
+    register("cameralocal","CAMERA","Restaurar camera local",cameraReset)
+    register("sunrise","WORLD","Amanhecer",function() time(6) end)
+    register("morning","WORLD","Manha",function() time(9) end)
+    register("noon","WORLD","Meio-dia",function() time(12) end)
+    register("afternoon","WORLD","Tarde",function() time(16) end)
+    register("evening","WORLD","Anoitecer",function() time(19) end)
+    register("midnight","WORLD","Meia noite",function() time(0) end)
+    register("lightwarm","WORLD","Luz ambiente quente",function()
+        ambient(Color3.fromRGB(180,125,100))
+    end)
+    register("lightcold","WORLD","Luz ambiente fria",function()
+        ambient(Color3.fromRGB(100,145,190))
+    end)
+    register("lightneutral","WORLD","Luz ambiente neutra",function()
+        ambient(Color3.fromRGB(145,145,145))
+    end)
+    register("lightreset","WORLD","Restaurar ambiente",function() byName.resetambient.run() end)
+    register("fognear","WORLD","Neblina proxima",function() Lighting.FogEnd=120 end)
+    register("fogfar","WORLD","Neblina distante",function() Lighting.FogEnd=900 end)
+    register("nofog","WORLD","Sem neblina",function() byName.clearfog.run() end)
+    register("ultrabright","WORLD","Luz extra",function()
+        Lighting.Brightness=5; Lighting.ClockTime=12;Lighting.FogEnd=100000
+    end)
+    register("wavehello","EMOTES","Acenar",function() return playEmote("wave") end)
+    register("cheerup","EMOTES","Comemorar",function() return playEmote("cheer") end)
+    register("pointout","EMOTES","Apontar",function() return playEmote("point") end)
+    register("laughnow","EMOTES","Rir",function() return playEmote("laugh") end)
+    register("dancegroove","EMOTES","Danca groove",function() return originalMove("groove") end)
+    register("dancerobot","EMOTES","Danca robot",function() return originalMove("robot") end)
+    register("dancesamba","EMOTES","Danca samba",function() return originalMove("samba") end)
+    register("dancestop","EMOTES","Parar dancas",stopEmote)
+    register("hubmini","SETTINGS","Minimizar para banner",function()
+        main.Visible=false;reopen.Visible=true;return false
+    end)
+    register("hubopen","SETTINGS","Abrir painel",function()
+        main.Visible=true;reopen.Visible=false;return false
+    end)
+    register("hubsmall","SETTINGS","Painel pequeno",function() prefScale(.7) end)
+    register("hubnormal","SETTINGS","Painel medio",function() prefScale(1) end)
+    register("hublarge","SETTINGS","Painel grande",function() prefScale(1.15) end)
+    register("themered","SETTINGS","Tema vermelho",function() byName.theme.run("red") end)
+    register("themeice","SETTINGS","Tema gelo",function() byName.theme.run("ice") end)
+    register("quiet","SETTINGS","Notificacoes OFF",function()
+        config.notifications=false;saveV13()
+    end)
+    register("notifyon","SETTINGS","Notificacoes ON",function()
+        config.notifications=true;saveV13()
+    end)
+    register("commandsearch","SETTINGS","Abrir pesquisa de comandos",function()
+        show("COMMANDS")
+        if search then search:CaptureFocus() end
+        return false
+    end)
+    register("camerasafe","SETTINGS","Sair do Spectate e cinema",function()
+        if leaveSpectate then leaveSpectate(true) else cameraReset() end
+        return "Camera local restaurada."
+    end)
+    register("commandstats","SETTINGS","Contar comandos cadastrados",function()
+        return "BRAB0X V19.0: "..#registered.." comandos."
+    end)
+end
+
 -- EXECUTAR COMANDO
 
 exec = function(raw)
@@ -3969,7 +4228,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V18.0: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.0: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -3998,10 +4257,10 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS PREMIUM",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.0",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
-local cmdHint = txt(cmdHeader,"Funcoes organizadas • Ajustes instantaneos",22,11)
+local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
 cmdHint.Position=UDim2.fromOffset(17,37)
 cmdHint.Size=UDim2.new(1,-28,0,22)
 cmdHint.TextColor3=muted
@@ -4027,22 +4286,27 @@ clearSearch.Position=UDim2.new(1,-68,0,0)
 clearSearch.Size=UDim2.fromOffset(68,40)
 clearSearch.TextSize=11
 
-local filterRow = obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,43),BackgroundTransparency=1})
+local filterRow=obj("ScrollingFrame",cmdPage,{
+    Size=UDim2.new(1,-8,0,49),BackgroundTransparency=1,BorderSizePixel=0,
+    ScrollingDirection=Enum.ScrollingDirection.X,ScrollBarThickness=3,
+    ScrollBarImageColor3=accent,CanvasSize=UDim2.fromOffset(8*117,0)
+})
 obj("UIListLayout",filterRow,{
     FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,6),
     SortOrder=Enum.SortOrder.LayoutOrder
 })
 local activeFilter="ALL"
 local filters={{"ALL","TODOS"},{"FLY","VOO"},{"PLAYER","JOGADOR"},
-    {"CAMERA","CAMERA"},{"WORLD","MUNDO"},{"EMOTES","EMOTES"}}
+    {"CAMERA","CAMERA"},{"WORLD","MUNDO"},{"EMOTES","EMOTES"},
+    {"SETTINGS","SISTEMA"},{"AIM","AIM TREINO"}}
 local filterButtons={}
 for _,entry in ipairs(filters) do
-    local b=btn(filterRow,entry[2],nil,40)
-    b.Size=UDim2.new(1/6,-5,0,40)
+    local b=btn(filterRow,entry[2],nil,38)
+    b.Size=UDim2.fromOffset(111,38)
     filterButtons[entry[1]]=b
     bind(b.MouseButton1Click,function()
         activeFilter=entry[1]
-        if refreshCommandList then refreshCommandList() end
+        if refreshCommandList then refreshCommandList(true) end
     end)
 end
 
@@ -4208,160 +4472,136 @@ end,46)
 playerListBtn.Position=UDim2.new(.83,0,0,0)
 playerListBtn.Size=UDim2.new(.17,-1,1,0)
 
-local listHeading=titleRow(cmdPage,">  SECOES DE COMANDOS - TOQUE PARA ABRIR/FECHAR")
-local categories={
-    {"FLY","MOVIMENTO / VOO"},
-    {"PLAYER","JOGADOR / TELEPORTE"},
-    {"CAMERA","CAMERA / VISUAL"},
-    {"WORLD","MUNDO / GRAFICOS"},
-    {"EMOTES","EMOTES / ANIMACOES"},
-    {"SETTINGS","SISTEMA / UTILIDADES"}
-}
-local accordion={}
-local foldRows={}
-local function foldedHeight(count)
-    if count<=0 then return 0 end
-    local rows=math.ceil(count/2)
-    return rows*46+(rows-1)*8+12
-end
-for _,row in ipairs(categories) do
-    local category,title=row[1],row[2]
-    local section=obj("Frame",cmdPage,{
-        Size=UDim2.new(1,-8,0,51),
-        BackgroundTransparency=1,
-        ClipsDescendants=true
-    })
-    local headerBtn=round(obj("TextButton",section,{
-        Size=UDim2.new(1,0,0,47),
-        Position=UDim2.fromOffset(0,0),
-        BackgroundColor3=Color3.fromRGB(33,21,30),
-        BorderSizePixel=0,
-        Text="",
-        AutoButtonColor=true
-    }),10)
-    obj("UIStroke",headerBtn,{Color=accent,Transparency=.45,Thickness=1})
-    local name=txt(headerBtn,title,30,15,true)
-    name.Position=UDim2.fromOffset(16,8)
-    name.Size=UDim2.new(1,-100,0,30)
-    local counter=txt(headerBtn,"",28,11,true)
-    counter.Position=UDim2.new(1,-98,0,9)
-    counter.Size=UDim2.fromOffset(52,28)
-    counter.TextColor3=accent
-    counter.TextXAlignment=Enum.TextXAlignment.Right
-    local arrow=txt(headerBtn,">",34,23,true)
-    arrow.Position=UDim2.new(1,-40,0,6)
-    arrow.Size=UDim2.fromOffset(30,34)
-    arrow.TextXAlignment=Enum.TextXAlignment.Center
-    arrow.TextColor3=accent
-    local content=obj("Frame",section,{
-        Position=UDim2.fromOffset(0,53),
-        Size=UDim2.new(1,0,0,0),
-        BackgroundTransparency=1
-    })
-    obj("UIGridLayout",content,{
-        CellSize=UDim2.new(.5,-6,0,46),
-        CellPadding=UDim2.fromOffset(9,8),
-        SortOrder=Enum.SortOrder.LayoutOrder
-    })
-    local g={
-        category=category,
-        section=section,
-        header=headerBtn,
-        arrow=arrow,
-        counter=counter,
-        content=content,
-        items={},
-        expanded=category=="PLAYER"
-    }
-    accordion[category]=g
-    bind(headerBtn.MouseButton1Click,function()
-        g.expanded=not g.expanded
-        if refreshCommandList then refreshCommandList() end
+local listHeading=titleRow(cmdPage,"CATALOGO COMPACTO - BUSCA E PAGINACAO")
+local pageSize=9
+local catalogPage=1
+local entries={}
+local list=obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,0),BackgroundTransparency=1})
+obj("UIListLayout",list,{SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,5)})
+local rows={}
+for i=1,pageSize do
+    local r=round(obj("Frame",list,{
+        LayoutOrder=i,Size=UDim2.new(1,0,0,55),
+        BackgroundColor3=Color3.fromRGB(25,19,28),
+        BorderSizePixel=0,Visible=false
+    }),9)
+    obj("UIStroke",r,{Color=Color3.fromRGB(90,37,50),Transparency=.5,Thickness=1})
+    local index=txt(r,"",20,10,true)
+    index.Position=UDim2.fromOffset(9,4)
+    index.Size=UDim2.fromOffset(28,20);index.TextColor3=muted
+    local name=txt(r,"",23,13,true)
+    name.Position=UDim2.fromOffset(39,4)
+    name.Size=UDim2.fromOffset(149,24)
+    name.TextTruncate=Enum.TextTruncate.AtEnd
+    local kind=txt(r,"",17,9,true)
+    kind.Position=UDim2.fromOffset(40,29)
+    kind.Size=UDim2.fromOffset(135,17);kind.TextColor3=accent
+    local description=txt(r,"",45,11)
+    description.Position=UDim2.fromOffset(193,4)
+    description.Size=UDim2.new(1,-370,0,45)
+    description.TextTruncate=Enum.TextTruncate.AtEnd;description.TextColor3=muted
+    local use=btn(r,"EXECUTAR",nil,34)
+    use.Position=UDim2.new(1,-164,0,10)
+    use.Size=UDim2.fromOffset(102,34);use.ZIndex=3
+    local help=btn(r,"?",nil,34)
+    help.Position=UDim2.new(1,-56,0,10)
+    help.Size=UDim2.fromOffset(45,34);help.ZIndex=3
+    rows[i]={frame=r,index=index,name=name,kind=kind,desc=description,use=use,help=help}
+    bind(use.MouseButton1Click,function()
+        local e=rows[i].entry
+        if not e then return end
+        if e.example~=e.name and e.example:sub(1,#e.name+1)==e.name.." " then
+            cmdInput.Text=e.example
+            cmdInput:CaptureFocus()
+            notify("Comando preparado. Revise os parametros e pressione ENTER.")
+        else
+            exec(e.name)
+        end
+    end)
+    bind(help.MouseButton1Click,function()
+        local e=rows[i].entry
+        if e and openCommandHelp then openCommandHelp(e.name) end
     end)
 end
-
-for _,entry in ipairs(registered) do
-    local g=accordion[entry.category]
-    if g then
-        local cell=obj("Frame",g.content,{
-            BackgroundTransparency=1
-        })
-        local b=btn(cell,
-            entry.example.."  |  "..entry.description,
-            function()
-                local needsArgs=(entry.name=="goto" or entry.name=="to" or entry.name=="tp")
-                if needsArgs then
-                    local target=gotoBox.Text~="" and gotoBox.Text or "nearest"
-                    exec(entry.name.." "..target)
-                else
-                    exec(entry.example)
-                end
-            end,46)
-        b.Size=UDim2.new(1,-42,1,0)
-        b.TextWrapped=true
-        b.TextSize=10
-        local helpButton=btn(cell,"?",function()
-            if openCommandHelp then openCommandHelp(entry.name) end
-        end,46)
-        helpButton.Position=UDim2.new(1,-38,0,0)
-        helpButton.Size=UDim2.fromOffset(37,46)
-        helpButton.TextSize=18
-        g.items[#g.items+1]={
-            button=cell,
-            commandName=entry.name,
-            lookup=(entry.name.." "..entry.description.." "..entry.category):lower()
-        }
+local pager=round(obj("Frame",cmdPage,{
+    Size=UDim2.new(1,-8,0,43),BackgroundColor3=Color3.fromRGB(29,14,23),
+    BorderSizePixel=0
+}),8)
+local backward=btn(pager,"< ANTERIOR",nil,35)
+backward.Position=UDim2.fromOffset(4,4)
+backward.Size=UDim2.fromOffset(132,35)
+local forward=btn(pager,"PROXIMA >",nil,35)
+forward.Position=UDim2.new(1,-136,0,4)
+forward.Size=UDim2.fromOffset(132,35)
+local pagesLabel=txt(pager,"",35,12,true)
+pagesLabel.Position=UDim2.fromOffset(146,3)
+pagesLabel.Size=UDim2.new(1,-292,0,35)
+pagesLabel.TextXAlignment=Enum.TextXAlignment.Center
+local function draw()
+    local pagesCount=math.max(1,math.ceil(#entries/pageSize))
+    catalogPage=math.clamp(catalogPage,1,pagesCount)
+    local visible=0
+    for i,r in ipairs(rows) do
+        local index=(catalogPage-1)*pageSize+i
+        local e=entries[index]
+        r.entry=e;r.frame.Visible=e~=nil
+        if e then
+            visible=visible+1
+            r.index.Text=string.format("%02d",index)
+            r.name.Text=e.name:upper()
+            r.kind.Text=e.category
+            r.desc.Text=e.description
+            r.use.Text=(e.example~=e.name and e.example:sub(1,#e.name+1)==e.name.." ") and "PREENCHER" or "EXECUTAR"
+            r.use.TextSize=10
+        end
     end
+    list.Size=UDim2.new(1,-8,0,visible*55+math.max(0,visible-1)*5)
+    pagesLabel.Text=string.format("PAGINA %d / %d | %d COMANDOS",catalogPage,pagesCount,#entries)
+    backward.TextTransparency=catalogPage>1 and 0 or .55
+    forward.TextTransparency=catalogPage<pagesCount and 0 or .55
 end
-
-refreshCommandList=function()
+bind(backward.MouseButton1Click,function()
+    catalogPage=math.max(1,catalogPage-1);draw()
+end)
+bind(forward.MouseButton1Click,function()
+    catalogPage=math.min(math.max(1,math.ceil(#entries/pageSize)),catalogPage+1);draw()
+end)
+refreshCommandList=function(resetPage)
+    if resetPage then catalogPage=1 end
     local q=search.Text:lower():gsub("^%s+",""):gsub("%s+$","")
-    local totalMatches=0
-    for name,g in pairs(accordion) do
-        local count=0
-        local categoryAllowed=activeFilter=="ALL" or activeFilter==name
-        for _,item in ipairs(g.items) do
-            local match=categoryAllowed and (q=="" or item.lookup:find(q,1,true)~=nil)
-            item.button.Visible=match
-            if match then count=count+1 end
-        end
-        g.counter.Text=tostring(count)
-        g.section.Visible=count>0
-        totalMatches=totalMatches+count
-        -- Quando ha pesquisa ou filtro, abre automaticamente a secao correspondente.
-        local open=(q~="" or activeFilter~="ALL") and count>0 or
-            (q=="" and activeFilter=="ALL" and g.expanded)
-        g.arrow.Rotation=open and 90 or 0
-        local h=open and foldedHeight(count) or 0
-        g.content.Size=UDim2.new(1,0,0,h)
-        local target=UDim2.new(1,-8,0,53+h)
-        if g.section.Size~=target then
-            Tween:Create(g.section,TweenInfo.new(.18,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
-                Size=target
-            }):Play()
+    entries={}
+    for _,e in ipairs(registered) do
+        if moduleEnabled(e.category) and (activeFilter=="ALL" or e.category==activeFilter) then
+            local hay=(e.name.." "..e.category.." "..e.description.." "..e.example):lower()
+            if q=="" or hay:find(q,1,true) then entries[#entries+1]=e end
         end
     end
-    for name,b in pairs(filterButtons) do
-        local current=name==activeFilter
-        b.BackgroundColor3=current and Color3.fromRGB(146,15,36) or control
-        b.TextColor3=white
+    table.sort(entries,function(x,y)
+        if q~="" then
+            local xs=x.name:sub(1,#q)==q and 0 or 1
+            local ys=y.name:sub(1,#q)==q and 0 or 1
+            if xs~=ys then return xs<ys end
+        end
+        if x.category~=y.category then return x.category<y.category end
+        return x.name<y.name
+    end)
+    for name,button in pairs(filterButtons) do
+        button.BackgroundColor3=name==activeFilter and Color3.fromRGB(146,15,36) or control
+        button.Visible=name~="AIM" or config.aimEnabled==true
     end
     local showQuick=q=="" and activeFilter=="ALL"
     quickGrid.Visible=showQuick
     quickTitle.Visible=showQuick
     utilityStrip.Visible=showQuick
-    if totalMatches==0 then
-        listHeading.Text="NENHUM COMANDO ENCONTRADO - LIMPE A PESQUISA"
-    elseif q~="" then
-        listHeading.Text="BUSCA: "..q:upper().."  |  "..totalMatches.." RESULTADOS"
-    elseif activeFilter~="ALL" then
-        listHeading.Text="FILTRO: "..activeFilter.."  |  "..totalMatches.." COMANDOS"
-    else
-        listHeading.Text="SECOES DE COMANDOS  |  "..totalMatches.." DISPONIVEIS"
-    end
     sizeQuick()
+    if q~="" then listHeading.Text="RESULTADOS: "..q:upper()
+    elseif activeFilter~="ALL" then listHeading.Text="CATEGORIA: "..activeFilter
+    else listHeading.Text="CATALOGO COMPACTO DE COMANDOS" end
+    draw()
 end
-bind(search:GetPropertyChangedSignal("Text"),refreshCommandList)
+bind(search:GetPropertyChangedSignal("Text"),function()
+    if refreshCommandList then refreshCommandList(true) end
+end)
 
 homeFilter=function(filter)
     if filter=="SETTINGS" then
@@ -4577,7 +4817,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V18.0 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.0 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5029,6 +5269,7 @@ heading(pages.PLAYERS,"♙  PLAYER MANAGER","Goto, espectar, distancia e copia d
 local playerSearch=editBox(pages.PLAYERS,"Buscar jogador pelo nome ou apelido...")
 local playersActions=actionRow(pages.PLAYERS,{
     {"ATUALIZAR",function() if updatePlayerManager then updatePlayerManager() end end},
+    {"VOLTAR CAMERA",function() exec("unspectate") end},
     {"IR AO MAIS PROXIMO",function() exec("goto nearest") end}
 })
 local playersHolder=dynamicHolder(pages.PLAYERS)
@@ -5072,7 +5313,7 @@ updatePlayerManager=function()
             subtitle.TextColor3=muted
             local labels={
                 {"GOTO",function()exec("goto "..user.Name)end},
-                {"ESPECTAR",function()exec("spectate "..user.Name)end},
+                {"ESPECTAR",function()exec(extraState.lastSpectated==user and "unspectate" or ("spectate "..user.Name))end},
                 {"DISTANCIA",function()exec("distance "..user.Name)end},
                 {"COPIAR NOME",function()
                     if type(setclipboard)=="function" then
@@ -5779,7 +6020,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V18.0] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.0] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6463,7 +6704,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V18.0 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.0 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6692,8 +6933,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V18_0_STOP == closeHub then
-        _G.BRAB0X_V18_0_STOP = nil
+    if _G.BRAB0X_V19_0_STOP == closeHub then
+        _G.BRAB0X_V19_0_STOP = nil
     end
 end
 
@@ -6710,6 +6951,10 @@ bind(UIS.InputBegan,function(key,used)
         main.Visible=true
         reopen.Visible=false
         show("HELP")
+    elseif name=="S" and not used and leaveSpectate
+        and (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
+        leaveSpectate()
+        return
     elseif name=="M" and not used and
         (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
         main.Visible=not main.Visible
@@ -6796,7 +7041,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V18_0_STOP = closeHub
+_G.BRAB0X_V19_0_STOP = closeHub
 
 -- ABERTURA ANIMADA
 do
@@ -6962,7 +7207,7 @@ bind(launch.MouseButton1Click,function()
     show("HOME")
     if refreshCommandList then refreshCommandList() end
     if refresh then refresh() end
-    notify("BRAB0X V18.0 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
+    notify("BRAB0X V19.0 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
 end)
 
 -- ANIMACAO DE CARREGAMENTO
@@ -7012,6 +7257,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V18.0 | "
+    "BRAB0X PRIME V19.0 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
