@@ -3971,14 +3971,26 @@ cmdHint.Position=UDim2.fromOffset(17,37)
 cmdHint.Size=UDim2.new(1,-28,0,22)
 cmdHint.TextColor3=muted
 
-search = round(obj("TextBox",cmdPage,{
-    Size=UDim2.new(1,-8,0,40),BackgroundColor3=control,
-    Text="",PlaceholderText="⌕  Buscar comando...",
+local commandSearchRow=obj("Frame",cmdPage,{
+    Size=UDim2.new(1,-8,0,40),
+    BackgroundTransparency=1,
+    BorderSizePixel=0
+})
+search = round(obj("TextBox",commandSearchRow,{
+    Size=UDim2.new(1,-76,0,40),BackgroundColor3=control,
+    Text="",PlaceholderText="Buscar comando...",
     TextColor3=white,PlaceholderColor3=muted,
     ClearTextOnFocus=false,Font=Enum.Font.Gotham,TextSize=13,
     BorderSizePixel=0
 }),9)
 obj("UIStroke",search,{Color=accent,Thickness=1,Transparency=.55})
+local clearSearch=btn(commandSearchRow,"LIMPAR",function()
+    search.Text=""
+    search:ReleaseFocus()
+end,40)
+clearSearch.Position=UDim2.new(1,-68,0,0)
+clearSearch.Size=UDim2.fromOffset(68,40)
+clearSearch.TextSize=11
 
 local filterRow = obj("Frame",cmdPage,{Size=UDim2.new(1,-8,0,43),BackgroundTransparency=1})
 obj("UIListLayout",filterRow,{
@@ -4268,8 +4280,8 @@ for _,entry in ipairs(registered) do
 end
 
 refreshCommandList=function()
-    local q=search.Text:lower()
-    local anyResults=false
+    local q=search.Text:lower():gsub("^%s+",""):gsub("%s+$","")
+    local totalMatches=0
     for name,g in pairs(accordion) do
         local count=0
         local categoryAllowed=activeFilter=="ALL" or activeFilter==name
@@ -4280,7 +4292,7 @@ refreshCommandList=function()
         end
         g.counter.Text=tostring(count)
         g.section.Visible=count>0
-        if count>0 then anyResults=true end
+        totalMatches=totalMatches+count
         -- Quando ha pesquisa ou filtro, abre automaticamente a secao correspondente.
         local open=(q~="" or activeFilter~="ALL") and count>0 or
             (q=="" and activeFilter=="ALL" and g.expanded)
@@ -4303,9 +4315,15 @@ refreshCommandList=function()
     quickGrid.Visible=showQuick
     quickTitle.Visible=showQuick
     utilityStrip.Visible=showQuick
-    listHeading.Text=q~="" and ("RESULTADOS DE BUSCA: "..q:upper()) or
-        (activeFilter~="ALL" and ("FILTRO: "..activeFilter) or
-        ">  SECOES DE COMANDOS - TOQUE PARA ABRIR/FECHAR")
+    if totalMatches==0 then
+        listHeading.Text="NENHUM COMANDO ENCONTRADO - LIMPE A PESQUISA"
+    elseif q~="" then
+        listHeading.Text="BUSCA: "..q:upper().."  |  "..totalMatches.." RESULTADOS"
+    elseif activeFilter~="ALL" then
+        listHeading.Text="FILTRO: "..activeFilter.."  |  "..totalMatches.." COMANDOS"
+    else
+        listHeading.Text="SECOES DE COMANDOS  |  "..totalMatches.." DISPONIVEIS"
+    end
     sizeQuick()
 end
 bind(search:GetPropertyChangedSignal("Text"),refreshCommandList)
@@ -6402,17 +6420,110 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
-bind(execute.MouseButton1Click,function()
-    if cmdInput.Text ~= "" then
-        exec(cmdInput.Text)
-        cmdInput.Text = ""
-    end
-end)
+-- V17.7 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- Sem nova aba, sem executar automaticamente codigo digitado.
+local cmdHint=txt(main,"",18,10)
+cmdHint.Position=UDim2.fromOffset(18,555)
+cmdHint.Size=UDim2.new(1,-32,0,20)
+cmdHint.BackgroundTransparency=1
+cmdHint.TextColor3=accent
+cmdHint.Visible=false
 
+local barIndex=0
+local barDraft=""
+local editingHistory=false
+local commandBarFocused=false
+local suggestedCommand=nil
+local function commandSuggestion(raw)
+    local verb=tostring(raw or ""):lower():match("^%s*/?(%S+)") or ""
+    if verb=="" then return nil end
+    local exact=byName[verb]
+    if exact and moduleEnabled(exact.category) then return exact end
+    local first=nil
+    for _,entry in ipairs(registered) do
+        if moduleEnabled(entry.category) and entry.name:sub(1,#verb)==verb then
+            if not first or entry.name<first.name then first=entry end
+        end
+    end
+    return first
+end
+local function updateCommandHint()
+    if not commandBarFocused then
+        cmdHint.Visible=false
+        status.Visible=true
+        return
+    end
+    suggestedCommand=commandSuggestion(cmdInput.Text)
+    local raw=cmdInput.Text:match("^%s*(.-)%s*$")
+    if raw=="" then
+        cmdHint.Text="TAB completa  |  SETAS consultam comandos recentes  |  ESC limpa"
+    elseif suggestedCommand then
+        cmdHint.Text="TAB: "..suggestedCommand.example..
+            "   |   ENTER executa   |   SETAS historico"
+    else
+        cmdHint.Text="Comando nao reconhecido  |  use a aba COMANDOS"
+    end
+    status.Visible=false
+    cmdHint.Visible=true
+end
+local function submitCommandBar()
+    local raw=cmdInput.Text:match("^%s*(.-)%s*$")
+    if raw=="" then return end
+    cmdInput.Text=""
+    barIndex=0
+    barDraft=""
+    exec(raw)
+end
+bind(execute.MouseButton1Click,submitCommandBar)
+bind(cmdInput.Focused,function()
+    commandBarFocused=true
+    barIndex=0
+    barDraft=cmdInput.Text
+    updateCommandHint()
+end)
+bind(cmdInput:GetPropertyChangedSignal("Text"),function()
+    if not editingHistory then
+        barIndex=0
+        barDraft=cmdInput.Text
+    end
+    updateCommandHint()
+end)
 bind(cmdInput.FocusLost,function(enter)
-    if enter and cmdInput.Text ~= "" then
-        exec(cmdInput.Text)
-        cmdInput.Text = ""
+    commandBarFocused=false
+    cmdHint.Visible=false
+    status.Visible=true
+    if enter then submitCommandBar() end
+end)
+bind(UIS.InputBegan,function(input)
+    if stopped or UIS:GetFocusedTextBox()~=cmdInput then return end
+    local key=input.KeyCode
+    if key==Enum.KeyCode.Tab and suggestedCommand then
+        editingHistory=true
+        cmdInput.Text=suggestedCommand.example
+        cmdInput.CursorPosition=#cmdInput.Text+1
+        editingHistory=false
+        barIndex=0
+        barDraft=cmdInput.Text
+        updateCommandHint()
+    elseif key==Enum.KeyCode.Up then
+        if #v14.recent==0 then return end
+        if barIndex==0 then barDraft=cmdInput.Text end
+        barIndex=math.min(barIndex+1,#v14.recent)
+        editingHistory=true
+        cmdInput.Text=v14.recent[barIndex].raw
+        cmdInput.CursorPosition=#cmdInput.Text+1
+        editingHistory=false
+        updateCommandHint()
+    elseif key==Enum.KeyCode.Down then
+        barIndex=math.max(0,barIndex-1)
+        editingHistory=true
+        cmdInput.Text=barIndex>0 and v14.recent[barIndex].raw or barDraft
+        cmdInput.CursorPosition=#cmdInput.Text+1
+        editingHistory=false
+        updateCommandHint()
+    elseif key==Enum.KeyCode.Escape then
+        cmdInput.Text=""
+        cmdInput:ReleaseFocus()
     end
 end)
 
