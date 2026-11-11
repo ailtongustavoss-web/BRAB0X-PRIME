@@ -2796,7 +2796,7 @@ do
         return begin(p)
     end,"spectate nearest")
     alias("view","CAMERA","Assistir jogador","spectate","view nearest")
-    register("unspectate","CAMERA","Retornar a camera ao seu avatar",leaveSpectate)
+    register("unspectate","CAMERA","Retornar a camera ao seu avatar",function() return leaveSpectate(false) end)
     alias("unview","CAMERA","Alias para sair de spectate","unspectate")
     register("camnext","CAMERA","Proximo jogador em spectate",function() return cycleSpectate(1) end)
     register("camprev","CAMERA","Jogador anterior em spectate",function() return cycleSpectate(-1) end)
@@ -2813,7 +2813,7 @@ do
         if #list==0 then return "Nenhum jogador disponivel." end
         return begin(list[math.random(1,#list)])
     end)
-    register("watchme","CAMERA","Assistir ao proprio avatar",leaveSpectate)
+    register("watchme","CAMERA","Assistir ao proprio avatar",function() return leaveSpectate(false) end)
     register("watchstatus","CAMERA","Situacao da camera spectator",function()
         return target and ("Assistindo @"..target.Name) or "Spectate OFF"
     end)
@@ -4580,6 +4580,7 @@ bind(forward.MouseButton1Click,function()
     catalogPage=math.min(math.max(1,math.ceil(#entries/pageSize)),catalogPage+1);draw()
 end)
 refreshCommandList=function(resetPage)
+    if activeFilter=="AIM" and not config.aimEnabled then activeFilter="ALL" end
     if resetPage then catalogPage=1 end
     local q=search.Text:lower():gsub("^%s+",""):gsub("%s+$","")
     entries={}
