@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.2 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.3 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_3_STOP",
     "BRAB0X_V19_2_STOP",
     "BRAB0X_V19_1_STOP",
     "BRAB0X_V19_0_STOP",
@@ -67,7 +68,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_2")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_3")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -406,7 +407,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_2",
+    Name = "BRAB0X_PRIME_V19_3",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -452,7 +453,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.2  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.3  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -473,15 +474,15 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V17.6 / BANNER CYBER REFINADO - INSPIRADO NO MODELO 3
--- GUI nativa do Roblox sem depender de assetId de imagem.
--- API reopen.Visible preservada para os demais sistemas.
+-- V19.3 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- Mantem o nome reopen para os atalhos e sistemas antigos.
+local MINI_WIDTH,MINI_HEIGHT=282,66
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_CYBER_V17_6",
-    Size=UDim2.fromOffset(352,96),
+    Name="BRAB0X_MINI_PREMIUM_V19_3",
+    Size=UDim2.fromOffset(MINI_WIDTH,MINI_HEIGHT),
     AnchorPoint=Vector2.new(.5,0),
-    Position=UDim2.new(.5,0,.085,0),
-    BackgroundColor3=Color3.fromRGB(9,8,14),
+    Position=UDim2.new(.5,0,.075,0),
+    BackgroundColor3=Color3.fromRGB(19,15,21),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
@@ -489,124 +490,102 @@ local reopen=round(obj("TextButton",gui,{
     ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),18)
+}),14)
 local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
-    Color=Color3.fromRGB(235,31,66),
-    Thickness=1.9,
-    Transparency=.07,
+    Color=Color3.fromRGB(236,51,85),
+    Thickness=1.45,
+    Transparency=.24,
     ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 })
 obj("UIGradient",reopen,{
     Rotation=0,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(19,9,20)),
-        ColorSequenceKeypoint.new(.60,Color3.fromRGB(7,7,12)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(28,8,19))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(42,15,28)),
+        ColorSequenceKeypoint.new(.33,Color3.fromRGB(23,19,27)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(15,17,23))
     })
 })
--- Ornamentos nas margens: nenhum passa sobre o nome ou a legenda.
-do
-    local function stripe(x,y,w,h,alpha)
-        return obj("Frame",reopen,{
-            Position=UDim2.fromOffset(x,y),
-            Size=UDim2.fromOffset(w,h),
-            BackgroundColor3=Color3.fromRGB(244,39,73),
-            BackgroundTransparency=alpha or 0,
-            BorderSizePixel=0,
-            ZIndex=111
-        })
-    end
-    stripe(20,8,63,2,.24)
-    stripe(110,8,127,1,.48)
-    stripe(255,8,46,2,.26)
-    stripe(313,8,18,2,.26)
-    stripe(19,87,64,2,.35)
-    stripe(102,89,192,2,.10)
-    stripe(309,87,22,2,.36)
-    stripe(88,22,1,49,.51)
-    stripe(294,21,1,53,.58)
-    for i=0,2 do
-        stripe(112+i*11,83,5,2,.55)
-    end
-end
-local miniIcon=round(obj("Frame",reopen,{
-    Name="NeonEmblem",
-    Position=UDim2.fromOffset(12,14),
-    Size=UDim2.fromOffset(66,66),
-    BackgroundColor3=Color3.fromRGB(43,10,27),
+-- Somente uma barra superior discreta, sem listras atraves do texto.
+local miniAccent=obj("Frame",reopen,{
+    Position=UDim2.fromOffset(64,0),
+    Size=UDim2.fromOffset(132,2),
+    BackgroundColor3=Color3.fromRGB(241,45,78),
+    BackgroundTransparency=.24,
     BorderSizePixel=0,
-    ZIndex=113
-}),12)
+    ZIndex=111
+})
+obj("UIGradient",miniAccent,{
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),
+        NumberSequenceKeypoint.new(.5,.05),
+        NumberSequenceKeypoint.new(1,1)
+    })
+})
+local miniIcon=round(obj("Frame",reopen,{
+    Name="BRAB0X_LOGO",
+    Position=UDim2.fromOffset(8,8),
+    Size=UDim2.fromOffset(49,49),
+    BackgroundColor3=Color3.fromRGB(63,18,36),
+    BorderSizePixel=0,
+    ZIndex=112
+}),11)
 local miniIconStroke=obj("UIStroke",miniIcon,{
-    Color=Color3.fromRGB(253,45,82),
-    Thickness=1.7,
-    Transparency=.06
+    Color=Color3.fromRGB(244,58,92),
+    Thickness=1,
+    Transparency=.32
 })
 obj("UIGradient",miniIcon,{
-    Rotation=45,
-    Color=ColorSequence.new(
-        Color3.fromRGB(69,10,30),
-        Color3.fromRGB(20,7,20)
-    )
+    Rotation=60,
+    Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(105,23,51)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(42,12,29))
+    })
 })
-local miniLetter=txt(miniIcon,"B",59,44,true)
-miniLetter.Position=UDim2.fromOffset(0,1)
+local miniLetter=txt(miniIcon,"B",43,32,true)
+miniLetter.Position=UDim2.fromOffset(0,2)
 miniLetter.Size=UDim2.fromScale(1,1)
 miniLetter.TextXAlignment=Enum.TextXAlignment.Center
 miniLetter.Font=Enum.Font.GothamBlack
-miniLetter.TextColor3=Color3.fromRGB(255,51,87)
-miniLetter.ZIndex=114
+miniLetter.TextColor3=Color3.fromRGB(255,255,255)
+miniLetter.ZIndex=113
 
-local miniTitle=txt(reopen,"BRAB0X",31,20,true)
-miniTitle.Position=UDim2.fromOffset(104,24)
-miniTitle.Size=UDim2.fromOffset(111,31)
-miniTitle.TextWrapped=false
+local miniTitle=txt(reopen,"BRAB0X",23,18,true)
+miniTitle.Position=UDim2.fromOffset(69,7)
+miniTitle.Size=UDim2.fromOffset(157,24)
 miniTitle.Font=Enum.Font.GothamBlack
-miniTitle.TextColor3=Color3.fromRGB(250,250,252)
-miniTitle.ZIndex=115
-
-local miniPrime=txt(reopen,"PRIME",31,20,true)
-miniPrime.Position=UDim2.fromOffset(218,24)
-miniPrime.Size=UDim2.fromOffset(72,31)
+miniTitle.TextWrapped=false
+miniTitle.TextColor3=Color3.fromRGB(252,250,253)
+miniTitle.ZIndex=114
+local miniPrime=txt(reopen,"P R I M E",15,10,true)
+miniPrime.Position=UDim2.fromOffset(70,28)
+miniPrime.Size=UDim2.fromOffset(136,15)
 miniPrime.TextWrapped=false
-miniPrime.Font=Enum.Font.GothamBlack
-miniPrime.TextColor3=Color3.fromRGB(253,51,85)
-miniPrime.ZIndex=115
-
-local miniUnderline=obj("Frame",reopen,{
-    Position=UDim2.fromOffset(105,58),
-    Size=UDim2.fromOffset(182,1),
-    BackgroundColor3=Color3.fromRGB(232,46,78),
-    BackgroundTransparency=.45,
-    BorderSizePixel=0,
-    ZIndex=114
-})
-local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",18,11,true)
-miniSubtitle.Position=UDim2.fromOffset(106,64)
-miniSubtitle.Size=UDim2.fromOffset(178,19)
+miniPrime.TextColor3=Color3.fromRGB(255,76,109)
+miniPrime.ZIndex=114
+local miniSubtitle=txt(reopen,"TOQUE PARA ABRIR",16,10,true)
+miniSubtitle.Position=UDim2.fromOffset(70,46)
+miniSubtitle.Size=UDim2.fromOffset(162,16)
 miniSubtitle.TextWrapped=false
-miniSubtitle.TextColor3=Color3.fromRGB(218,202,214)
-miniSubtitle.ZIndex=115
+miniSubtitle.TextColor3=Color3.fromRGB(179,172,187)
+miniSubtitle.ZIndex=114
 
 local miniArrowPanel=round(obj("Frame",reopen,{
-    Name="ArrowPanel",
-    Position=UDim2.fromOffset(306,31),
-    Size=UDim2.fromOffset(35,36),
-    BackgroundColor3=Color3.fromRGB(58,10,28),
-    BackgroundTransparency=.15,
+    Name="REOPEN_ARROW",
+    Position=UDim2.fromOffset(238,15),
+    Size=UDim2.fromOffset(32,36),
+    BackgroundColor3=Color3.fromRGB(98,26,48),
     BorderSizePixel=0,
-    ZIndex=114
-}),8)
-local miniArrow=txt(miniArrowPanel,">",33,23,true)
-miniArrow.Position=UDim2.fromOffset(0,1)
+    ZIndex=113
+}),9)
+local miniArrow=txt(miniArrowPanel,">",32,22,true)
+miniArrow.Position=UDim2.fromOffset(0,0)
 miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
-miniArrow.TextColor3=Color3.fromRGB(255,75,108)
-miniArrow.ZIndex=115
+miniArrow.TextColor3=Color3.fromRGB(255,220,225)
+miniArrow.ZIndex=114
 
--- Restaura a posicao salva do mini banner. Coordenadas normalizadas
--- acompanham mudancas na resolucao sem deixar o banner fora da tela.
+-- Posicao gravada anteriormente continua compativel.
 local miniSaved=v13Data.miniPosition
 if type(miniSaved)=="table" then
     local x,y=tonumber(miniSaved.x),tonumber(miniSaved.y)
@@ -618,26 +597,26 @@ local miniMoved=false
 local miniSuppressUntil=0
 bind(reopen.MouseEnter,function()
     if stopped then return end
-    Tween:Create(miniStroke,TweenInfo.new(.15),{
-        Transparency=0,Thickness=2.3
+    Tween:Create(miniStroke,TweenInfo.new(.16),{
+        Transparency=0,Thickness=1.8
     }):Play()
-    Tween:Create(miniIconStroke,TweenInfo.new(.15),{
-        Thickness=2.1
+    Tween:Create(miniIconStroke,TweenInfo.new(.16),{
+        Transparency=.08
     }):Play()
-    Tween:Create(miniArrowPanel,TweenInfo.new(.15),{
-        BackgroundColor3=Color3.fromRGB(92,16,42)
+    Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(160,36,65)
     }):Play()
 end)
 bind(reopen.MouseLeave,function()
     if stopped then return end
-    Tween:Create(miniStroke,TweenInfo.new(.15),{
-        Transparency=.07,Thickness=1.9
+    Tween:Create(miniStroke,TweenInfo.new(.16),{
+        Transparency=.24,Thickness=1.45
     }):Play()
-    Tween:Create(miniIconStroke,TweenInfo.new(.15),{
-        Thickness=1.7
+    Tween:Create(miniIconStroke,TweenInfo.new(.16),{
+        Transparency=.32
     }):Play()
-    Tween:Create(miniArrowPanel,TweenInfo.new(.15),{
-        BackgroundColor3=Color3.fromRGB(58,10,28)
+    Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
+        BackgroundColor3=Color3.fromRGB(98,26,48)
     }):Play()
 end)
 
@@ -1143,6 +1122,7 @@ end
 
 local exec
 local closeHub
+local introCleanup
 local refresh
 local homeFilter
 
@@ -1742,7 +1722,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_2_AIM"
+local aimKey = "BRAB0X_V19_3_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2986,7 +2966,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.2 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.3 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4194,7 +4174,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.2: "..#registered.." comandos."
+        return "BRAB0X V19.3: "..#registered.." comandos."
     end)
 end
 
@@ -4243,7 +4223,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.2: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.3: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4272,7 +4252,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.2",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.3",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -4833,7 +4813,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.2 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.3 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -6036,7 +6016,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.2] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.3] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6697,9 +6677,9 @@ refresh = function()
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
     -- O banner minimizado mostra o estado do voo sem poluir a tela.
-    miniSubtitle.Text = S.fly and "FLY ON  •  ABRIR" or "CLIQUE PARA ABRIR"
-    miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,101,119)
-        or Color3.fromRGB(218,202,214)
+    miniSubtitle.Text = S.fly and "● FLY ATIVO  /  ABRIR" or "TOQUE PARA ABRIR"
+    miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,112,134)
+        or Color3.fromRGB(179,172,187)
 
     aimTitle.Text = (
         "◎  AIM NPC TREINO %s  |  RAIO %d  |  SMOOTH %.2f"
@@ -6720,7 +6700,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.2 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.3 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6836,6 +6816,10 @@ local function saveMiniPosition()
     local cam=workspace.CurrentCamera
     if not cam then return end
     local view=cam.ViewportSize
+    local ok,top,bottom=pcall(function() return GuiService:GetGuiInset() end)
+    if ok and top and bottom then
+        view=Vector2.new(view.X,math.max(90,view.Y-top.Y-bottom.Y))
+    end
     if view.X<=0 or view.Y<=0 then return end
     local px=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local py=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
@@ -6848,12 +6832,16 @@ end
 local function clampMiniPosition()
     local view=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
         or Vector2.new(1280,720)
-    -- Mantem todo o banner visivel em telas pequenas, inclusive no celular.
+    local ok,top,bottom=pcall(function() return GuiService:GetGuiInset() end)
+    if ok and top and bottom then
+        view=Vector2.new(view.X,math.max(90,view.Y-top.Y-bottom.Y))
+    end
+    -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/352,(view.Y-20)/96
+        1,(view.X-20)/MINI_WIDTH,(view.Y-20)/MINI_HEIGHT
     ),.35,1)
-    local w=352*miniUIScale.Scale
-    local h=96*miniUIScale.Scale
+    local w=MINI_WIDTH*miniUIScale.Scale
+    local h=MINI_HEIGHT*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
@@ -6937,6 +6925,7 @@ closeHub = function()
     if stopped then return end
 
     if v14.cleanup then pcall(v14.cleanup) end
+    if introCleanup then pcall(introCleanup) end
     saveV13()
     resetAll()
     stopped = true
@@ -6949,8 +6938,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_2_STOP == closeHub then
-        _G.BRAB0X_V19_2_STOP = nil
+    if _G.BRAB0X_V19_3_STOP == closeHub then
+        _G.BRAB0X_V19_3_STOP = nil
     end
 end
 
@@ -7057,7 +7046,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_2_STOP = closeHub
+_G.BRAB0X_V19_3_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Inspirada no conceito visual aprovado: coroa, emblema, aura rubra e logo metalico.
@@ -7066,9 +7055,25 @@ do
 local red=Color3.fromRGB(245,29,62)
 local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
-local gate=obj("CanvasGroup",gui,{
+-- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
+-- A interface principal continua usando a area segura nativa.
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_3")
+if priorIntro then priorIntro:Destroy() end
+local introGui=obj("ScreenGui",pg,{
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_3",
+    ResetOnSpawn=false,
+    DisplayOrder=gui.DisplayOrder+20,
+    IgnoreGuiInset=true,
+    ZIndexBehavior=Enum.ZIndexBehavior.Sibling
+})
+pcall(function()
+    introGui.ScreenInsets=Enum.ScreenInsets.None
+    introGui.ClipToDeviceSafeArea=false
+end)
+local gate=obj("CanvasGroup",introGui,{
     Name="BRAB0X_CINEMATIC_INTRO",
     Size=UDim2.fromScale(1,1),
+    Position=UDim2.fromScale(0,0),
     BackgroundColor3=dark,
     BorderSizePixel=0,
     GroupTransparency=0,
@@ -7099,7 +7104,7 @@ local stageScale=obj("UIScale",stage,{Scale=1})
 local function fitStage()
     local cam=workspace.CurrentCamera
     local v=cam and cam.ViewportSize or Vector2.new(1280,720)
-    stageScale.Scale=math.clamp(math.min(1,(v.X-16)/900,(v.Y-20)/580),.25,1)
+    stageScale.Scale=math.clamp(math.min((v.X-16)/900,(v.Y-16)/580),.25,1.6)
 end
 fitStage()
 bind(workspace:GetPropertyChangedSignal("CurrentCamera"),fitStage)
@@ -7350,6 +7355,10 @@ skip.TextSize=10
 skip.ZIndex=90
 
 local introFinished=false
+introCleanup=function()
+    introFinished=true
+    if introGui and introGui.Parent then introGui:Destroy() end
+end
 local function revealHub()
     if introFinished or stopped then return end
     introFinished=true
@@ -7362,7 +7371,7 @@ local function revealHub()
         GroupTransparency=1
     }):Play()
     task.delay(.43,function()
-        if gate and gate.Parent then gate:Destroy() end
+        if introGui and introGui.Parent then introGui:Destroy() end
     end)
 end
 bind(skip.MouseButton1Click,revealHub)
@@ -7429,6 +7438,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V19.2 | "
+    "BRAB0X PRIME V19.3 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
