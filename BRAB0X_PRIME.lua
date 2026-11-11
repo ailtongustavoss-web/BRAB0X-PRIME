@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.1 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.2 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_2_STOP",
     "BRAB0X_V19_1_STOP",
     "BRAB0X_V19_0_STOP",
     "BRAB0X_V18_0_STOP",
@@ -66,7 +67,7 @@ for _, name in ipairs({
     end
 end
 
-local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_1")
+local previous = pg:FindFirstChild("BRAB0X_PRIME_V19_2")
 if previous then previous:Destroy() end
 
 -- CONFIGURACOES
@@ -405,7 +406,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_1",
+    Name = "BRAB0X_PRIME_V19_2",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -451,7 +452,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.1  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.2  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -1741,7 +1742,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_1_AIM"
+local aimKey = "BRAB0X_V19_2_AIM"
 local npcCache = {}
 local nextScan = 0
 
@@ -2985,7 +2986,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.1 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.2 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4193,7 +4194,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.1: "..#registered.." comandos."
+        return "BRAB0X V19.2: "..#registered.." comandos."
     end)
 end
 
@@ -4242,7 +4243,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.1: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.2: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4271,7 +4272,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.1",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.2",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -4832,7 +4833,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.1 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.2 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -6035,7 +6036,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.1] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.2] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6719,7 +6720,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.1 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.2 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -6948,8 +6949,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_1_STOP == closeHub then
-        _G.BRAB0X_V19_1_STOP = nil
+    if _G.BRAB0X_V19_2_STOP == closeHub then
+        _G.BRAB0X_V19_2_STOP = nil
     end
 end
 
@@ -7056,315 +7057,363 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_1_STOP = closeHub
+_G.BRAB0X_V19_2_STOP = closeHub
 
--- ABERTURA ANIMADA
+-- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
+-- Inspirada no conceito visual aprovado: coroa, emblema, aura rubra e logo metalico.
+-- Sem modo classico/AIM, numero de comandos, versao ou icones do Roblox.
 do
-
-local gate = obj("Frame",gui,{
-    Size = UDim2.fromScale(1,1),
-    Position = UDim2.fromScale(0,0),
-    BackgroundColor3 = ink,
-    BackgroundTransparency = .42,
-    BorderSizePixel = 0,
-    Active = true,
-    ZIndex = 50
+local red=Color3.fromRGB(245,29,62)
+local ember=Color3.fromRGB(255,76,89)
+local dark=Color3.fromRGB(13,3,9)
+local gate=obj("CanvasGroup",gui,{
+    Name="BRAB0X_CINEMATIC_INTRO",
+    Size=UDim2.fromScale(1,1),
+    BackgroundColor3=dark,
+    BorderSizePixel=0,
+    GroupTransparency=0,
+    Active=true,
+    Visible=true,
+    ZIndex=50
+})
+obj("UIGradient",gate,{
+    Rotation=92,
+    Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(2,2,6)),
+        ColorSequenceKeypoint.new(.38,Color3.fromRGB(30,3,13)),
+        ColorSequenceKeypoint.new(.73,Color3.fromRGB(12,2,9)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(52,5,19))
+    })
 })
 
-local splash = round(obj("Frame",gate,{
-    AnchorPoint = Vector2.new(.5,.5),
-    Position = UDim2.fromScale(.5,.5),
-    Size = UDim2.fromOffset(410,180),
-    BackgroundColor3 = card,
-    BorderSizePixel = 0,
-    ZIndex = 51
-}),15)
-
-obj("UIStroke",splash,{
-    Color = accent,
-    Thickness = 2,
-    Transparency = .25
-})
-
-local logo = txt(
-    splash,"BRAB0X PRIME",45,27,true
-)
-
-logo.Position = UDim2.fromOffset(32,27)
-logo.Size = UDim2.fromOffset(354,46)
-logo.TextTransparency = 1
-logo.ZIndex = 52
-logo.TextXAlignment = Enum.TextXAlignment.Center
-
-local splashSubtitle = txt(
-    splash,"CRIADO POR @wendezao05153nh",25,12
-)
-
-splashSubtitle.Position = UDim2.fromOffset(40,83)
-splashSubtitle.Size = UDim2.fromOffset(330,28)
-splashSubtitle.TextXAlignment = Enum.TextXAlignment.Center
-splashSubtitle.TextColor3 = muted
-splashSubtitle.ZIndex = 52
-
-local progressBG = round(obj("Frame",splash,{
-    Size = UDim2.fromOffset(330,8),
-    Position = UDim2.fromOffset(40,142),
-    BackgroundColor3 = control,
-    BorderSizePixel = 0,
-    ZIndex = 52
-}),6)
-
-local progress = round(obj("Frame",progressBG,{
-    Size = UDim2.fromScale(0,1),
-    BackgroundColor3 = accent,
-    BorderSizePixel = 0,
-    ZIndex = 53
-}),6)
-
--- V19.1 / ABERTURA REDESENHADA: CONTRASTE, ESCALA E HIERARQUIA
--- O modo AIM e opcional; os demais comandos permanecem acessiveis.
-local picker = round(obj("Frame",gate,{
+-- Halo principal com orbitas de luz animadas.
+local stage=obj("Frame",gate,{
     AnchorPoint=Vector2.new(.5,.5),
     Position=UDim2.fromScale(.5,.5),
-    Size=UDim2.fromOffset(640,430),
-    BackgroundColor3=Color3.fromRGB(12,12,19),
+    Size=UDim2.fromOffset(900,580),
+    BackgroundTransparency=1,
     BorderSizePixel=0,
-    Visible=false,
-    ZIndex=55
-}),17)
-local pickerScale=obj("UIScale",picker,{Scale=1})
-local pickerStroke=obj("UIStroke",picker,{
-    Color=Color3.fromRGB(195,38,64),
-    Thickness=1.5,
-    Transparency=.08
+    ZIndex=51
 })
-obj("UIGradient",picker,{
+local stageScale=obj("UIScale",stage,{Scale=1})
+local function fitStage()
+    local cam=workspace.CurrentCamera
+    local v=cam and cam.ViewportSize or Vector2.new(1280,720)
+    stageScale.Scale=math.clamp(math.min(1,(v.X-16)/900,(v.Y-20)/580),.25,1)
+end
+fitStage()
+bind(workspace:GetPropertyChangedSignal("CurrentCamera"),fitStage)
+if workspace.CurrentCamera then
+    bind(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"),fitStage)
+end
+
+local function cinematicFrame(parent,props,corner)
+    local frame=obj("Frame",parent,props)
+    if corner then round(frame,corner) end
+    return frame
+end
+-- Glow ambiental: luz difusa sutil em vez de um painel preto solido.
+for i=1,5 do
+    local x=({-130,570,-180,670,280})[i]
+    local y=({240,100,-90,340,410})[i]
+    local fog=cinematicFrame(stage,{
+        Position=UDim2.fromOffset(x,y),
+        Size=UDim2.fromOffset(355,145),
+        BackgroundColor3=(i%2==0) and Color3.fromRGB(120,13,41) or Color3.fromRGB(77,6,24),
+        BackgroundTransparency=.77,
+        BorderSizePixel=0,
+        Rotation=({-14,17,9,-8,0})[i],
+        ZIndex=52
+    },80)
+    obj("UIGradient",fog,{
+        Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1),
+            NumberSequenceKeypoint.new(.5,.48),
+            NumberSequenceKeypoint.new(1,1)
+        })
+    })
+    Tween:Create(fog,TweenInfo.new(5+i*.35,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{
+        Position=UDim2.fromOffset(x+(i%2==0 and -65 or 75),y-34)
+    }):Play()
+end
+
+local orbit=cinematicFrame(stage,{
+    AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.fromOffset(450,260),
+    Size=UDim2.fromOffset(470,330),
+    BackgroundTransparency=1,
+    BorderSizePixel=0,
+    ZIndex=53
+},999)
+obj("UIStroke",orbit,{Color=red,Thickness=2,Transparency=.48})
+local orbitGradient=obj("UIGradient",orbit,{
+    Rotation=32,
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,.85),
+        NumberSequenceKeypoint.new(.28,.12),
+        NumberSequenceKeypoint.new(.56,.8),
+        NumberSequenceKeypoint.new(.79,.05),
+        NumberSequenceKeypoint.new(1,.86)
+    })
+})
+local orbitGlow=cinematicFrame(stage,{
+    AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.fromOffset(450,260),
+    Size=UDim2.fromOffset(492,346),
+    BackgroundTransparency=1,
+    BorderSizePixel=0,
+    ZIndex=52
+},999)
+obj("UIStroke",orbitGlow,{Color=red,Thickness=7,Transparency=.87})
+local orbitDot=round(obj("Frame",orbit,{
+    Position=UDim2.fromScale(.08,.14),
+    Size=UDim2.fromOffset(10,10),
+    BackgroundColor3=Color3.fromRGB(255,154,172),
+    BackgroundTransparency=.05,
+    BorderSizePixel=0,
+    ZIndex=56
+}),99)
+obj("UIStroke",orbitDot,{Color=red,Thickness=3,Transparency=.4})
+-- Um piso reflexivo abstrato deixa a intro parecida com o conceito renderizado.
+local floor=cinematicFrame(stage,{
+    Position=UDim2.fromOffset(75,477),
+    Size=UDim2.fromOffset(750,2),
+    BackgroundColor3=red,
+    BackgroundTransparency=.56,
+    BorderSizePixel=0,ZIndex=53
+})
+obj("UIGradient",floor,{
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),
+        NumberSequenceKeypoint.new(.5,.04),
+        NumberSequenceKeypoint.new(1,1)
+    })
+})
+local reflection=cinematicFrame(stage,{
+    Position=UDim2.fromOffset(190,483),
+    Size=UDim2.fromOffset(520,38),
+    BackgroundColor3=Color3.fromRGB(115,4,27),
+    BackgroundTransparency=.86,
+    BorderSizePixel=0,ZIndex=52
+},99)
+obj("UIGradient",reflection,{
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),
+        NumberSequenceKeypoint.new(.48,.4),
+        NumberSequenceKeypoint.new(1,1)
+    })
+})
+
+-- Emblema grande com bordas luminosas e coroa geometrica.
+local emblem=obj("Frame",stage,{
+    AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.fromOffset(450,182),
+    Size=UDim2.fromOffset(260,222),
+    BackgroundTransparency=1,
+    BorderSizePixel=0,
+    ZIndex=58
+})
+local emblemScale=obj("UIScale",emblem,{Scale=.65})
+local shadow=txt(emblem,"B",180,164,true)
+shadow.Position=UDim2.fromOffset(0,26)
+shadow.Size=UDim2.fromScale(1,1)
+shadow.TextXAlignment=Enum.TextXAlignment.Center
+shadow.Font=Enum.Font.GothamBlack
+shadow.TextColor3=red
+shadow.TextTransparency=.65
+shadow.ZIndex=58
+local letter=txt(emblem,"B",180,164,true)
+letter.Position=UDim2.fromOffset(0,14)
+letter.Size=UDim2.fromScale(1,1)
+letter.TextXAlignment=Enum.TextXAlignment.Center
+letter.Font=Enum.Font.GothamBlack
+letter.TextTransparency=1
+letter.ZIndex=60
+obj("UIGradient",letter,{
+    Rotation=75,
+    Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(255,255,255)),
+        ColorSequenceKeypoint.new(.38,Color3.fromRGB(171,175,188)),
+        ColorSequenceKeypoint.new(.65,Color3.fromRGB(252,255,255)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(229,37,70))
+    })
+})
+-- Coroa desenhada com pecas de interface, sem imagem de terceiros.
+local crown=obj("Frame",emblem,{
+    Position=UDim2.fromOffset(73,0),
+    Size=UDim2.fromOffset(114,64),
+    BackgroundTransparency=1,ZIndex=62
+})
+local crownBase=round(obj("Frame",crown,{
+    Position=UDim2.fromOffset(13,39),Size=UDim2.fromOffset(88,11),
+    BackgroundColor3=red,BorderSizePixel=0,ZIndex=62
+}),3)
+obj("UIGradient",crownBase,{Color=ColorSequence.new(Color3.fromRGB(255,122,150),red)})
+local spires={{22,17,18},{53,1,28},{84,17,18}}
+for _,item in ipairs(spires) do
+    local spike=obj("Frame",crown,{
+        Position=UDim2.fromOffset(item[1],item[2]),
+        Size=UDim2.fromOffset(11,item[3]),
+        Rotation=45,BackgroundColor3=red,
+        BorderSizePixel=0,ZIndex=62
+    })
+    local gem=round(obj("Frame",crown,{
+        Position=UDim2.fromOffset(item[1]+2,item[2]-1),
+        Size=UDim2.fromOffset(9,9),
+        Rotation=45,BackgroundColor3=Color3.fromRGB(255,182,198),
+        BorderSizePixel=0,ZIndex=63
+    }),2)
+end
+local leftWing=obj("Frame",crown,{
+    Position=UDim2.fromOffset(14,23),
+    Size=UDim2.fromOffset(42,10),Rotation=25,
+    BackgroundColor3=red,BorderSizePixel=0,ZIndex=62
+})
+local rightWing=obj("Frame",crown,{
+    Position=UDim2.fromOffset(57,23),
+    Size=UDim2.fromOffset(42,10),Rotation=-25,
+    BackgroundColor3=red,BorderSizePixel=0,ZIndex=62
+})
+
+local brandName=txt(stage,"BRAB0X",72,64,true)
+brandName.Position=UDim2.fromOffset(130,299)
+brandName.Size=UDim2.fromOffset(640,72)
+brandName.TextXAlignment=Enum.TextXAlignment.Center
+brandName.Font=Enum.Font.GothamBlack
+brandName.TextTransparency=1
+brandName.ZIndex=64
+obj("UIGradient",brandName,{
     Rotation=90,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(27,15,25)),
-        ColorSequenceKeypoint.new(.42,Color3.fromRGB(13,13,21)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(10,11,17))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(255,255,255)),
+        ColorSequenceKeypoint.new(.5,Color3.fromRGB(208,212,222)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(117,123,140))
     })
 })
-local function fitPicker()
-    local camera=workspace.CurrentCamera
-    local v=camera and camera.ViewportSize or Vector2.new(1280,720)
-    local factor=math.min(1,(v.X-26)/640,(v.Y-42)/430)
-    pickerScale.Scale=math.max(.33,factor)
-end
-bind(workspace:GetPropertyChangedSignal("CurrentCamera"),fitPicker)
-if workspace.CurrentCamera then
-    bind(workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"),fitPicker)
-end
-local topAccent=obj("Frame",picker,{
-    Size=UDim2.new(1,-38,0,3),
-    Position=UDim2.fromOffset(19,0),
-    BackgroundColor3=Color3.fromRGB(242,38,74),
-    BorderSizePixel=0,ZIndex=57
-})
-local versionTag=round(obj("TextLabel",picker,{
-    Position=UDim2.fromOffset(22,22),
-    Size=UDim2.fromOffset(154,26),
-    BackgroundColor3=Color3.fromRGB(58,21,36),
-    BorderSizePixel=0,
-    Text="BRAB0X  /  V19.1",
-    TextColor3=Color3.fromRGB(255,122,143),
-    TextSize=11,Font=Enum.Font.GothamBold,
-    ZIndex=57
-}),7)
-local commandTag=round(obj("TextLabel",picker,{
-    Position=UDim2.new(1,-177,0,22),
-    Size=UDim2.fromOffset(155,26),
-    BackgroundColor3=Color3.fromRGB(33,31,40),
-    BorderSizePixel=0,
-    Text=tostring(#registered).." COMANDOS",
-    TextColor3=Color3.fromRGB(213,215,225),
-    TextSize=11,Font=Enum.Font.GothamBold,
-    ZIndex=57
-}),7)
-local pickerTitle=txt(picker,"CONFIGURE SEU HUB",43,27,true)
-pickerTitle.Position=UDim2.fromOffset(22,62)
-pickerTitle.Size=UDim2.new(1,-44,0,43)
-pickerTitle.TextColor3=Color3.fromRGB(249,249,253)
-pickerTitle.ZIndex=57
-local pickerSubtitle=txt(picker,
-    "Escolha um perfil para iniciar. As outras ferramentas estao sempre disponiveis.",
-    35,13)
-pickerSubtitle.Position=UDim2.fromOffset(23,108)
-pickerSubtitle.Size=UDim2.new(1,-46,0,36)
-pickerSubtitle.TextColor3=Color3.fromRGB(178,182,196)
-pickerSubtitle.ZIndex=57
-obj("Frame",picker,{
-    Position=UDim2.fromOffset(22,154),
-    Size=UDim2.new(1,-44,0,1),
-    BackgroundColor3=Color3.fromRGB(61,44,55),
-    BorderSizePixel=0,ZIndex=57
-})
-
-local selectedAim=false
-local function choiceCard(x,index,title,description)
-    local base=round(obj("TextButton",picker,{
-        Position=UDim2.fromOffset(x,171),
-        Size=UDim2.fromOffset(291,145),
-        BackgroundColor3=Color3.fromRGB(24,24,32),
-        BorderSizePixel=0,Text="",
-        AutoButtonColor=false,
-        ZIndex=57
-    }),12)
-    local outline=obj("UIStroke",base,{
-        Color=Color3.fromRGB(70,62,75),
-        Thickness=1.2,Transparency=.28
+local primeName=txt(stage,"P R I M E",43,31,true)
+primeName.Position=UDim2.fromOffset(220,372)
+primeName.Size=UDim2.fromOffset(460,43)
+primeName.TextXAlignment=Enum.TextXAlignment.Center
+primeName.Font=Enum.Font.GothamBold
+primeName.TextColor3=Color3.fromRGB(255,61,94)
+primeName.TextTransparency=1
+primeName.ZIndex=64
+local underline=round(cinematicFrame(stage,{
+    Position=UDim2.fromOffset(450,427),
+    AnchorPoint=Vector2.new(.5,0),
+    Size=UDim2.fromOffset(0,3),
+    BackgroundColor3=red,
+    BackgroundTransparency=.12,
+    BorderSizePixel=0,ZIndex=62
+}),2)
+obj("UIGradient",underline,{
+    Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),
+        NumberSequenceKeypoint.new(.3,.2),
+        NumberSequenceKeypoint.new(.7,.2),
+        NumberSequenceKeypoint.new(1,1)
     })
-    local icon=round(obj("TextLabel",base,{
-        Position=UDim2.fromOffset(14,15),
-        Size=UDim2.fromOffset(36,34),
-        BackgroundColor3=Color3.fromRGB(44,37,48),
-        BorderSizePixel=0,
-        Text=index,Font=Enum.Font.GothamBold,
-        TextColor3=Color3.fromRGB(202,191,204),
-        TextSize=12,ZIndex=58
-    }),8)
-    local heading=txt(base,title,27,16,true)
-    heading.Position=UDim2.fromOffset(60,17)
-    heading.Size=UDim2.fromOffset(218,27)
-    heading.TextColor3=Color3.fromRGB(242,242,249)
-    heading.ZIndex=58
-    local sub=txt(base,description,49,12)
-    sub.Position=UDim2.fromOffset(15,58)
-    sub.Size=UDim2.fromOffset(258,49)
-    sub.TextColor3=Color3.fromRGB(190,189,201)
-    sub.ZIndex=58
-    local selection=txt(base,"",19,11,true)
-    selection.Position=UDim2.fromOffset(15,116)
-    selection.Size=UDim2.fromOffset(259,20)
-    selection.TextColor3=Color3.fromRGB(255,98,125)
-    selection.ZIndex=58
-    return {frame=base,outline=outline,icon=icon,
-        heading=heading,sub=sub,selection=selection}
-end
-local standardCard=choiceCard(22,"01","CLASSICO",
-    "Voo, jogador, camera, visual, mundo, emotes e utilitarios.")
-local practiceCard=choiceCard(327,"02","TREINO DE AIM",
-    "Todos os recursos classicos, com a aba de mira para NPCs de treino.")
-
-local function updateChoices()
-    for _,option in ipairs({
-        {standardCard,not selectedAim},
-        {practiceCard,selectedAim}
-    }) do
-        local c,chosen=option[1],option[2]
-        c.frame.BackgroundColor3=chosen
-            and Color3.fromRGB(51,22,33)
-            or Color3.fromRGB(25,25,34)
-        c.outline.Color=chosen
-            and Color3.fromRGB(252,53,88)
-            or Color3.fromRGB(78,71,85)
-        c.outline.Transparency=chosen and .02 or .32
-        c.outline.Thickness=chosen and 1.8 or 1
-        c.icon.BackgroundColor3=chosen
-            and Color3.fromRGB(163,26,55)
-            or Color3.fromRGB(44,39,50)
-        c.icon.TextColor3=chosen
-            and Color3.fromRGB(255,255,255)
-            or Color3.fromRGB(195,187,205)
-        c.selection.Text=chosen and "✓  SELECIONADO" or "TOQUE PARA SELECIONAR"
-        c.selection.TextColor3=chosen
-            and Color3.fromRGB(255,102,132)
-            or Color3.fromRGB(148,150,168)
-    end
-end
-bind(standardCard.frame.MouseButton1Click,function()
-    selectedAim=false
-    updateChoices()
-end)
-bind(practiceCard.frame.MouseButton1Click,function()
-    selectedAim=true
-    updateChoices()
-end)
-
-local launch=round(obj("TextButton",picker,{
-    Position=UDim2.fromOffset(22,336),
-    Size=UDim2.new(1,-44,0,51),
-    BackgroundColor3=Color3.fromRGB(234,35,70),
-    BorderSizePixel=0,
-    Text="ENTRAR NO BRAB0X PRIME     >",
-    TextColor3=Color3.fromRGB(255,255,255),
-    TextSize=15,
-    Font=Enum.Font.GothamBold,
-    AutoButtonColor=true,ZIndex=58
-}),10)
-local launchStroke=obj("UIStroke",launch,{
-    Color=Color3.fromRGB(251,95,121),
-    Thickness=1,
-    Transparency=.3
 })
-local note=txt(picker,
-    "Voce pode trocar o modo depois em Ajustes > Modulos.",
-    22,11)
-note.Position=UDim2.fromOffset(22,394)
-note.Size=UDim2.new(1,-44,0,22)
-note.TextXAlignment=Enum.TextXAlignment.Center
-note.TextColor3=Color3.fromRGB(153,152,169)
-note.ZIndex=58
+local statusText=txt(stage,"",28,13,true)
+statusText.Position=UDim2.fromOffset(280,448)
+statusText.Size=UDim2.fromOffset(340,28)
+statusText.TextXAlignment=Enum.TextXAlignment.Center
+statusText.TextColor3=Color3.fromRGB(239,201,209)
+statusText.TextTransparency=1
+statusText.ZIndex=65
 
-openModulePicker=function()
-    if stopped then return end
-    selectedAim=config.aimEnabled==true
-    updateChoices()
-    commandTag.Text=tostring(#registered).." COMANDOS"
-    fitPicker()
-    gate.Visible=true
-    picker.Visible=true
-    splash.Visible=false
-    main.Visible=false
-    reopen.Visible=false
+-- Pequenas faiscas, animadas uma unica vez para evitar processos permanentes.
+for i=1,16 do
+    local xpos=(i*97)%850+25
+    local ypos=(i*127)%475+15
+    local point=round(obj("Frame",stage,{
+        Position=UDim2.fromOffset(xpos,ypos),
+        Size=UDim2.fromOffset(i%3+2,i%3+2),
+        BackgroundColor3=i%4==0 and Color3.fromRGB(255,152,161) or red,
+        BackgroundTransparency=.5,
+        BorderSizePixel=0,ZIndex=55
+    }),99)
+    Tween:Create(point,TweenInfo.new(2+(i%4)*.4,Enum.EasingStyle.Sine),{
+        Position=UDim2.fromOffset(xpos+(i%2==0 and 24 or -18),ypos-48),
+        BackgroundTransparency=1
+    }):Play()
 end
 
-bind(launch.MouseButton1Click,function()
-    config.aimEnabled=selectedAim
-    if not selectedAim then S.aim=false end
-    saveV13()
-    gate.Visible=false
+-- Pular e uma alternativa de acessibilidade; a intro abre sozinha.
+local skip=btn(gate,"PULAR INTRO",nil,28)
+skip.AnchorPoint=Vector2.new(1,0)
+skip.Position=UDim2.new(1,-14,0,12)
+skip.Size=UDim2.fromOffset(112,28)
+skip.BackgroundColor3=Color3.fromRGB(32,12,21)
+skip.TextColor3=Color3.fromRGB(211,182,191)
+skip.TextSize=10
+skip.ZIndex=90
+
+local introFinished=false
+local function revealHub()
+    if introFinished or stopped then return end
+    introFinished=true
     main.Visible=true
     reopen.Visible=false
     show("HOME")
     if refreshCommandList then refreshCommandList(true) end
     if refresh then refresh() end
-    notify("BRAB0X V19.1 pronto! AIM: "..(selectedAim and "ATIVO" or "OCULTO"))
-end)
+    Tween:Create(gate,TweenInfo.new(.4,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{
+        GroupTransparency=1
+    }):Play()
+    task.delay(.43,function()
+        if gate and gate.Parent then gate:Destroy() end
+    end)
+end
+bind(skip.MouseButton1Click,revealHub)
 
--- ANIMACAO DE CARREGAMENTO
+-- A opcao de configurar AIM permanece nos ajustes, nao na abertura.
+openModulePicker=function()
+    if stopped then return end
+    if gate and gate.Parent and not introFinished then revealHub() end
+    show("SETTINGS")
+end
 
 task.spawn(function()
-    if stopped or not splash.Parent then return end
-
-    Tween:Create(
-        logo,
-        TweenInfo.new(
-            .48,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ),
-        {TextTransparency=0}
-    ):Play()
-
-    Tween:Create(
-        progress,
-        TweenInfo.new(
-            1.12,
-            Enum.EasingStyle.Quad,
-            Enum.EasingDirection.Out
-        ),
-        {Size=UDim2.fromScale(1,1)}
-    ):Play()
-
-    task.wait(1.2)
-
-    if not stopped and gate.Parent then
-        openModulePicker()
-    end
+    task.wait(.14)
+    if stopped or introFinished or not gate.Parent then return end
+    Tween:Create(orbit,TweenInfo.new(2.8,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{
+        Rotation=135
+    }):Play()
+    Tween:Create(orbitGlow,TweenInfo.new(2.7,Enum.EasingStyle.Sine),{
+        Size=UDim2.fromOffset(525,370),
+        BackgroundTransparency=1
+    }):Play()
+    Tween:Create(emblemScale,TweenInfo.new(1.0,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+        Scale=1
+    }):Play()
+    task.wait(.35)
+    if stopped or introFinished then return end
+    Tween:Create(letter,TweenInfo.new(.52,Enum.EasingStyle.Quad),{
+        TextTransparency=0
+    }):Play()
+    task.wait(.3)
+    if stopped or introFinished then return end
+    Tween:Create(brandName,TweenInfo.new(.58,Enum.EasingStyle.Quart),{
+        TextTransparency=0
+    }):Play()
+    task.wait(.24)
+    if stopped or introFinished then return end
+    Tween:Create(primeName,TweenInfo.new(.4,Enum.EasingStyle.Quad),{
+        TextTransparency=0
+    }):Play()
+    Tween:Create(underline,TweenInfo.new(.65,Enum.EasingStyle.Quint),{
+        Size=UDim2.fromOffset(420,3)
+    }):Play()
+    task.wait(.53)
+    if stopped or introFinished then return end
+    statusText.Text="SISTEMA PRONTO"
+    Tween:Create(statusText,TweenInfo.new(.32,Enum.EasingStyle.Quad),{
+        TextTransparency=0
+    }):Play()
+    task.wait(.64)
+    revealHub()
 end)
-
 end -- fim do escopo abertura
 -- INICIALIZAR
 
@@ -7380,6 +7429,6 @@ if refreshCommandList then
 end
 
 notify(
-    "BRAB0X PRIME V19.1 | "
+    "BRAB0X PRIME V19.2 | "
     ..#registered.." comandos | PlaceId "..v15PlaceId
 )
