@@ -1,6 +1,6 @@
 
--- BRAB0X PRIME V19.0 | BANNER MINI PRO, DRAG SEGURO, SALVAMENTO
--- NOVO: posicao do mini banner por tela, indicador do FLY, Alt+M para ocultar/abrir.
+-- BRAB0X PRIME V19.0 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -2730,7 +2730,8 @@ do
         return true
     end
     local function begin(p)
-        if not p or p==player then return leaveSpectate() end
+        if not p then return "Nenhum jogador disponivel para assistir." end
+        if p==player then return leaveSpectate() end
         if target==p then return leaveSpectate() end
         if not (p.Character and p.Character:FindFirstChildOfClass("Humanoid")) then
             notify("Jogador sem personagem ativo.","error")
@@ -2773,10 +2774,21 @@ do
     bind(Players.PlayerRemoving,function(p)
         if target==p then leaveSpectate() end
     end)
-    bind(player.CharacterAdded,function()
-        if target then
-            task.defer(function() if not stopped then leaveSpectate(true) end end)
-        end
+    bind(player.CharacterAdded,function(character)
+        if not target then return end
+        local watched=target
+        task.spawn(function()
+            local newHum=character:WaitForChild("Humanoid",8)
+            if stopped then return end
+            if target==watched then leaveSpectate(true) end
+            if newHum and not extraState.lastSpectated then
+                local cam=workspace.CurrentCamera
+                if cam then
+                    cam.CameraType=Enum.CameraType.Custom
+                    cam.CameraSubject=newHum
+                end
+            end
+        end)
     end)
     register("spectate","CAMERA","Assistir jogador; repetindo, para",function(a)
         local p=findPlayer(a~="" and a or "nearest")
@@ -4175,6 +4187,7 @@ do
         return false
     end)
     register("camerasafe","SETTINGS","Sair do Spectate e cinema",function()
+        if v14.cinematic and byName.uncinema then byName.uncinema.run() end
         if leaveSpectate then leaveSpectate(true) else cameraReset() end
         return "Camera local restaurada."
     end)
@@ -4610,7 +4623,7 @@ homeFilter=function(filter)
         activeFilter=filter or "ALL"
         search.Text=""
         show("COMMANDS")
-        refreshCommandList()
+        refreshCommandList(true)
     end
 end
 
