@@ -65,6 +65,19 @@ viewport.Ambient = Color3.fromRGB(200, 200, 200)
 viewport.Parent = root
 Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 8)
 
+local avatarHint = Instance.new("TextLabel")
+avatarHint.Name = "TesteNoSeuAvatar"
+avatarHint.BackgroundTransparency = 1
+avatarHint.Size = UDim2.new(1, -30, 0, 72)
+avatarHint.AnchorPoint = Vector2.new(.5, .5)
+avatarHint.Position = UDim2.fromScale(.5, .5)
+avatarHint.Font = Enum.Font.GothamBold
+avatarHint.TextSize = 14
+avatarHint.TextWrapped = true
+avatarHint.TextColor3 = Color3.fromRGB(255, 228, 235)
+avatarHint.Text = "A DANCA VAI ACONTECER\nNO SEU PERSONAGEM\nDENTRO DO JOGO"
+avatarHint.Parent = viewport
+
 local status = label(root, "Selecione o emote: ele toca no seu personagem do jogo.", 128)
 status.Position = UDim2.fromOffset(12, 246)
 status.TextYAlignment = Enum.TextYAlignment.Top
@@ -88,6 +101,7 @@ stack.Parent = scroll
 local currentWorld
 local busy = false
 local closed = false
+local activeRestore = nil
 local testMessages = {}
 
 local function log(msg)
@@ -156,8 +170,6 @@ close.MouseButton1Click:Connect(stop)
 
 -- Testa no Humanoid do LocalPlayer, pois PlayEmoteAsync rejeita
 -- Humanoids de bonecos de preview, mesmo com descricao aplicada.
-local activeRestore=nil
-
 local function testId(id,name)
     if busy or closed then return end
     busy=true
