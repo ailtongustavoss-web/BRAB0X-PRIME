@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.7 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.8 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_STOP",
     "BRAB0X_V19_7_STOP",
     "BRAB0X_V19_6_STOP",
     "BRAB0X_V19_5_STOP",
@@ -79,11 +80,13 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_5",
     "BRAB0X_INTRO_FULLSCREEN_V19_6",
     "BRAB0X_INTRO_FULLSCREEN_V19_7",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
     "BRAB0X_PRIME_V19_6",
-    "BRAB0X_PRIME_V19_7"
+    "BRAB0X_PRIME_V19_8",
+    "BRAB0X_PRIME_V19_8"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -427,7 +430,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_7",
+    Name = "BRAB0X_PRIME_V19_8",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -473,7 +476,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.7  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.8  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -494,10 +497,10 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V19.7 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_7",
+    Name="BRAB0X_MINI_PREMIUM_V19_8",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -725,7 +728,7 @@ for _,id in ipairs(sections) do
     stack(pages[id],6)
 end
 
--- V19.7 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
+-- V19.8 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
 -- Todas as paginas antigas continuam disponiveis, sem menus duplicados.
 do
     sidebar.BackgroundColor3=Color3.fromRGB(14,14,20)
@@ -1589,6 +1592,9 @@ local classics = {
 }
 
 local joints = {}
+-- Velocidade comum para emotes oficiais autorizados, classicos e movimentos proprios.
+v14.emoteSpeed=math.clamp(tonumber(v14.emoteSpeed) or 1,.2,3)
+v14.officialEmoteTracks={}
 
 local function stopEmote()
     if danceStep then
@@ -1604,6 +1610,10 @@ local function stopEmote()
 
     joints = {}
     S.emote = nil
+    for _,track in ipairs(v14.officialEmoteTracks) do
+        pcall(function() track:Stop(.12) end)
+    end
+    v14.officialEmoteTracks={}
 
     if animTrack then
         pcall(function()
@@ -1636,77 +1646,103 @@ local function equippedEmotes()
 end
 
 local function playEmote(name)
-    local _,h = chars()
-    if not h then return false end
-
-    stopFly()
-    stopEmote()
-
-    h.Sit = false
-    h.PlatformStand = false
-
-    local equipped = equippedEmotes()
-    local proper
-
-    for n in pairs(equipped) do
-        if n:lower() == name:lower() then
-            proper = n
-            break
+    local _,h=chars()
+    if not h then notify("Seu personagem ainda nao carregou") return false end
+    local query=tostring(name or ""):lower():gsub("^%s+",""):gsub("%s+$","")
+    if query=="" then
+        notify("Use: emote jamal ou abra a aba Emotes")
+        return false
+    end
+    local normal=query:gsub("[%s%p_]","")
+    local equipped=equippedEmotes()
+    local candidate=nil
+    local matchScore=-1
+    for label,ids in pairs(equipped) do
+        local clean=label:lower():gsub("[%s%p_]","")
+        local score=-1
+        if clean==normal then score=100
+        elseif clean:sub(1,#normal)==normal then score=80
+        elseif clean:find(normal,1,true) then score=50 end
+        if tonumber(query) and type(ids)=="table" then
+            for _,id in ipairs(ids) do
+                if tonumber(id)==tonumber(query) then score=110 break end
+            end
         end
+        if score>matchScore then candidate=label matchScore=score end
     end
 
-    if proper then
+    if matchScore>=0 and candidate then
+        stopFly()
+        stopEmote()
+        h.Sit=false
+        h.PlatformStand=false
+        S.emote=candidate
         task.spawn(function()
-            local ok,result = pcall(function()
-                return h:PlayEmoteAsync(proper)
+            local ch=h
+            local animator=ch:FindFirstChildOfClass("Animator")
+            local before={}
+            if animator then
+                for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+                    before[track]=true
+                end
+            end
+            local ok,played=pcall(function()
+                return ch:PlayEmoteAsync(candidate)
             end)
-
-            notify(
-                ok and result and ("Emote: "..proper)
-                or ("Emote indisponivel: "..proper)
-            )
+            if not ok or played~=true then
+                if S.emote==candidate then S.emote=nil end
+                notify("Emote indisponivel: "..candidate..
+                    " (avatar/rig/permissao do jogo)","error")
+                if not ok then warn("[BRAB0X EMOTE] "..tostring(played)) end
+                return
+            end
+            task.wait(.12)
+            if stopped or S.emote~=candidate then return end
+            if animator and animator.Parent then
+                for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+                    if not before[track] and track.IsPlaying then
+                        v14.officialEmoteTracks[#v14.officialEmoteTracks+1]=track
+                        pcall(function() track:AdjustSpeed(v14.emoteSpeed) end)
+                    end
+                end
+            end
+            notify("Emote autorizado: "..candidate..
+                " | velocidade "..string.format("%.2f",v14.emoteSpeed).."x","success")
         end)
-
         return true
     end
 
-    local idPair = classics[name:lower()]
-
-    if not idPair then
-        notify("Emote nao equipado: "..name)
+    local pair=classics[query]
+    if not pair then
+        notify("Emote nao encontrado no avatar: "..query..
+            ". Experimente 'dance brazilgroove' ou pesquise no catalogo.","info")
         return false
     end
-
-    local animator = h:FindFirstChildOfClass("Animator")
-
-    if not animator then
-        notify("Animator indisponivel")
-        return false
-    end
-
-    local id =
-        h.RigType == Enum.HumanoidRigType.R6
-        and idPair[1] or idPair[2]
-
-    local anim = Instance.new("Animation")
-    anim.AnimationId = "rbxassetid://"..id
-
-    local ok,track = pcall(function()
-        return animator:LoadAnimation(anim)
-    end)
-
+    local animator=h:FindFirstChildOfClass("Animator")
+    if not animator then notify("Animator indisponivel") return false end
+    stopFly()
+    stopEmote()
+    h.Sit=false
+    h.PlatformStand=false
+    local id=h.RigType==Enum.HumanoidRigType.R6 and pair[1] or pair[2]
+    local anim=Instance.new("Animation")
+    anim.AnimationId="rbxassetid://"..id
+    local ok,track=pcall(function() return animator:LoadAnimation(anim) end)
     anim:Destroy()
-
     if not ok or not track then
-        notify("Animacao nao autorizada")
+        notify("Animacao classica sem permissao ou incompatível.","error")
         return false
     end
-
-    animTrack = track
-    track.Looped = name:find("dance") ~= nil
-    track.Priority = Enum.AnimationPriority.Action
-
-    track:Play(.12)
+    animTrack=track
+    S.emote=query
+    track.Looped=query:find("dance")~=nil
+    track.Priority=Enum.AnimationPriority.Action
+    local okPlay=pcall(function() track:Play(.12,1,v14.emoteSpeed) end)
+    if not okPlay then
+        stopEmote()
+        notify("Erro ao iniciar animacao classica.","error")
+        return false
+    end
     return true
 end
 
@@ -1724,7 +1760,13 @@ local moves = {
     moonwalk = {5,.35,.22},
     sway = {3,.38,.55},
     jive = {9,.9,.35},
-    zombie = {3,.5,.13}
+    zombie = {3,.5,.13},
+    -- Estilos originais com ritmo mais atual; nao sao copias de UGC.
+    brazilgroove={8.8,.82,.41},
+    jamalstyle={9.6,.78,.47},
+    shoulderpop={11,.92,.33},
+    sidebounce={7.2,.64,.57},
+    neonshuffle={10.5,.68,.52}
 }
 
 local function originalMove(name)
@@ -1760,7 +1802,7 @@ local function originalMove(name)
             return
         end
 
-        t = t+math.min(dt,.05)*style[1]
+        t = t+math.min(dt,.05)*style[1]*v14.emoteSpeed
 
         local a = math.sin(t)
         local b = math.cos(t)
@@ -1784,6 +1826,20 @@ local function originalMove(name)
             neck =
                 CFrame.Angles(.08*b,0,0)
         }
+
+        -- Variacao original de ombros/quadril para as dancas modernas.
+        if name=="brazilgroove" or name=="jamalstyle"
+            or name=="shoulderpop" or name=="sidebounce"
+            or name=="neonshuffle" then
+            local accentBeat=math.sin(t*1.35)
+            poses.rightshoulder=CFrame.Angles(
+                -.5-style[2]*a,.22*accentBeat,.27*b)
+            poses.leftshoulder=CFrame.Angles(
+                -.5+style[2]*a,-.22*accentBeat,-.27*b)
+            poses.waist=CFrame.Angles(
+                .11*math.sin(t*.55),style[3]*a,.17*math.cos(t*.7))
+            poses.neck=CFrame.Angles(.07*b,0,.10*math.sin(t*.7))
+        end
 
         for part,cf in pairs(poses) do
             local motor = joints[part]
@@ -1905,6 +1961,8 @@ Run:BindToRenderStep(
 local resetExtras = function() end
 local function resetAll()
     resetExtras()
+    if v14.exitPhotoMode then v14.exitPhotoMode() end
+    if v14.stopWallJump then v14.stopWallJump() end
     if v14.stopFreecam then v14.stopFreecam() end
     if v14.stopPlayerLight then v14.stopPlayerLight() end
     if v14.stopPlayerAlerts then v14.stopPlayerAlerts() end
@@ -2235,6 +2293,41 @@ register("dance","EMOTES","Danca original Motor6D",function(a)
 end,"dance groove")
 
 register("stopemote","EMOTES","Parar emote",stopEmote)
+register("emotespeed","EMOTES","Velocidade dos emotes e dancas proprias",function(a)
+    local value=tonumber(a)
+    if not value then
+        return "Velocidade atual: "..string.format("%.2f",v14.emoteSpeed)..
+            "x | use: emotespeed 1.5"
+    end
+    v14.emoteSpeed=math.clamp(value,.2,3)
+    if animTrack then
+        pcall(function() animTrack:AdjustSpeed(v14.emoteSpeed) end)
+    end
+    for _,track in ipairs(v14.officialEmoteTracks) do
+        pcall(function() track:AdjustSpeed(v14.emoteSpeed) end)
+    end
+    return "Velocidade de emotes: "..string.format("%.2f",v14.emoteSpeed).."x"
+end,"emotespeed 1.5")
+register("emotecheck","EMOTES","Verificar emote no avatar pelo nome",function(a)
+    local query=tostring(a or ""):lower()
+    if query=="" then query="jamal" end
+    local names={}
+    for label in pairs(equippedEmotes()) do
+        if label:lower():find(query,1,true) then names[#names+1]=label end
+    end
+    table.sort(names)
+    if #names==0 then
+        return "Nenhum emote '"..query.."' disponivel no avatar atual."
+    end
+    return "Emotes disponiveis: "..table.concat(names,", ")
+end,"emotecheck jamal")
+register("emotelist","EMOTES","Listar emotes atualmente disponiveis",function()
+    local names={}
+    for label in pairs(equippedEmotes()) do names[#names+1]=label end
+    table.sort(names)
+    print("[BRAB0X] EMOTES NO AVATAR: "..table.concat(names,", "))
+    return #names.." emotes encontrados no avatar. Lista no console F9."
+end)
 
 -- CONFIGURACOES
 
@@ -3060,7 +3153,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.7 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3285,7 +3378,7 @@ register("findtab","SETTINGS","Pesquisar abas pelo menu lateral",function()
     end
     return false
 end)
--- V19.7: preferencias de abertura e recuperacao da GUI sem reexecutar o hub.
+-- V19.8: preferencias de abertura e recuperacao da GUI sem reexecutar o hub.
 register("intro","SETTINGS","Ativar/desativar a intro da proxima execucao",function(a)
     a=tostring(a or ""):lower()
     if a=="on" then config.intro=true
@@ -3305,16 +3398,16 @@ register("uicheck","SETTINGS","Mostrar diagnostico rapido da GUI",function()
     local message=v14.bootError and ("Falha ao iniciar: "..v14.bootError)
         or ("GUI "..(gui.Parent and "ativa" or "fechada")..
         " | Menu "..(main.Visible and "visivel" or "oculto"))
-    print("[BRAB0X V19.7] "..message)
+    print("[BRAB0X V19.8] "..message)
     notify(message,v14.bootError and "error" or "success")
     return false
 end)
 
--- V19.7 / FUNCOES ORIGINAIS INSPIRADAS EM HUBS OPEN SOURCE
+-- V19.8 / FUNCOES ORIGINAIS INSPIRADAS EM HUBS OPEN SOURCE
 -- Sem bibliotecas remotas, sem mudanca na interface e sem afetar saldos do servidor.
 do
     local CAS=game:GetService("ContextActionService")
-    local freecamAction="BRAB0X_V19_7_FREECAM_KEYS"
+    local freecamAction="BRAB0X_V19_8_FREECAM_KEYS"
     v14.freecamSpeed=28
     v14.freecamState=nil
     v14.stopFreecam=function()
@@ -3578,6 +3671,146 @@ do
                 if not stopped then v14.updatePlayerLight() end
             end)
         end
+    end)
+end
+
+-- V19.8 / MOVIMENTO E FERRAMENTAS DE FOTO - SEM NOVA UI
+do
+    v14.wallJumpEnabled=false
+    v14.wallJumpForce=48
+    v14.wallJumpCooldown=0
+    v14.stopWallJump=function()
+        v14.wallJumpEnabled=false
+    end
+    bind(UIS.JumpRequest,function()
+        if stopped or not v14.wallJumpEnabled or S.fly then return end
+        if os.clock()-v14.wallJumpCooldown<.65 then return end
+        local _,h,root=chars()
+        if not h or not root or h.Health<=0
+            or h.FloorMaterial~=Enum.Material.Air then return end
+        local params=RaycastParams.new()
+        params.FilterType=Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances={player.Character}
+        local closest=nil
+        local directions={
+            root.CFrame.LookVector,
+            root.CFrame.RightVector,
+            -root.CFrame.RightVector,
+            -root.CFrame.LookVector
+        }
+        for _,direction in ipairs(directions) do
+            local hit=workspace:Raycast(root.Position,direction*3.2,params)
+            if hit and hit.Instance and hit.Instance.CanCollide then
+                closest=hit break
+            end
+        end
+        if not closest then return end
+        v14.wallJumpCooldown=os.clock()
+        local push=closest.Normal*math.clamp(v14.wallJumpForce*.50,10,38)
+        local up=math.clamp(v14.wallJumpForce,25,80)
+        root.AssemblyLinearVelocity=Vector3.new(
+            push.X,up,push.Z)
+        pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end)
+    end)
+    register("walljump","PLAYER","Pulo extra ao tocar uma parede no ar",function(a)
+        local input=tostring(a or ""):lower()
+        if input=="on" then v14.wallJumpEnabled=true
+        elseif input=="off" then v14.wallJumpEnabled=false
+        else v14.wallJumpEnabled=not v14.wallJumpEnabled end
+        return "Wall Jump local: "..(v14.wallJumpEnabled and "ON" or "OFF")
+    end,"walljump on")
+    register("walljumpforce","PLAYER","Ajustar impulso do Wall Jump",function(a)
+        v14.wallJumpForce=math.clamp(tonumber(a) or v14.wallJumpForce,25,80)
+        return "Impulso Wall Jump: "..v14.wallJumpForce
+    end,"walljumpforce 48")
+
+    -- Foto: trava a composicao atual; F4 restaura camera e GUI.
+    v14.photoModeOn=false
+    v14.photoState=nil
+    v14.exitPhotoMode=function()
+        if not v14.photoModeOn then return false end
+        local state=v14.photoState
+        v14.photoModeOn=false
+        v14.photoState=nil
+        if not state then return false end
+        gui.Enabled=state.guiEnabled
+        main.Visible=state.mainVisible
+        reopen.Visible=state.reopenVisible
+        local cam=workspace.CurrentCamera
+        if cam then
+            cam.CameraType=state.cameraType or Enum.CameraType.Custom
+            if state.subject and state.subject.Parent then
+                cam.CameraSubject=state.subject
+            else
+                local _,h=chars()
+                if h then cam.CameraSubject=h end
+            end
+            cam.FieldOfView=state.fov or cam.FieldOfView
+            if state.cameraType==Enum.CameraType.Scriptable and state.cframe then
+                cam.CFrame=state.cframe
+            end
+        end
+        for coreType,enabled in pairs(state.coreGui) do
+            pcall(function()
+                game:GetService("StarterGui"):SetCoreGuiEnabled(coreType,enabled)
+            end)
+        end
+        return true
+    end
+    v14.enterPhotoMode=function()
+        if v14.photoModeOn then return true end
+        if v14.stopFreecam then v14.stopFreecam() end
+        if v14.cinematic and v14.stopCinema then v14.stopCinema() end
+        if leaveSpectate then leaveSpectate(true) end
+        local cam=workspace.CurrentCamera
+        if not cam then return false end
+        local state={
+            cameraType=cam.CameraType,cframe=cam.CFrame,
+            subject=cam.CameraSubject,fov=cam.FieldOfView,
+            guiEnabled=gui.Enabled,mainVisible=main.Visible,
+            reopenVisible=reopen.Visible,coreGui={}
+        }
+        for _,kind in ipairs({
+            Enum.CoreGuiType.Chat,Enum.CoreGuiType.PlayerList,
+            Enum.CoreGuiType.Backpack,Enum.CoreGuiType.Health,
+            Enum.CoreGuiType.EmotesMenu
+        }) do
+            local ok,value=pcall(function()
+                return game:GetService("StarterGui"):GetCoreGuiEnabled(kind)
+            end)
+            if ok then
+                state.coreGui[kind]=value
+                pcall(function()
+                    game:GetService("StarterGui"):SetCoreGuiEnabled(kind,false)
+                end)
+            end
+        end
+        v14.photoState=state
+        v14.photoModeOn=true
+        cam.CameraType=Enum.CameraType.Scriptable
+        main.Visible=false
+        reopen.Visible=false
+        gui.Enabled=false
+        print("[BRAB0X PHOTO] F4: sair do modo foto e restaurar interface.")
+        return true
+    end
+    register("photomode","CAMERA","Modo foto: congelar camera e esconder UI",function()
+        if v14.photoModeOn then
+            v14.exitPhotoMode()
+            return "Modo foto encerrado."
+        end
+        return v14.enterPhotoMode()
+            and "Modo foto ativado. Pressione F4 para sair."
+            or "Nao foi possivel abrir modo foto."
+    end)
+    register("unphotomode","CAMERA","Restaurar UI depois de modo foto",function()
+        return v14.exitPhotoMode() and "Modo foto encerrado."
+            or "Modo foto ja esta desligado."
+    end)
+    register("saferestore","SETTINGS","Restaurar movimento, camera e efeitos locais",function()
+        if v14.exitPhotoMode then v14.exitPhotoMode() end
+        resetAll()
+        return "Camera, efeitos e configuracoes de movimento restaurados."
     end)
 end
 
@@ -4563,7 +4796,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.7: "..#registered.." comandos."
+        return "BRAB0X V19.8: "..#registered.." comandos."
     end)
 end
 
@@ -4612,7 +4845,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.7: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.8: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4641,7 +4874,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.7",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.8",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -5202,7 +5435,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.7 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.8 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -5417,7 +5650,8 @@ local function rebuildEmotes()
     for _,name in ipairs({
         "groove","samba","robot","disco",
         "shuffle","bounce","wave","party",
-        "moonwalk","sway","jive","zombie"
+        "moonwalk","sway","jive","zombie",
+        "brazilgroove","jamalstyle","shoulderpop","sidebounce","neonshuffle"
     }) do
         btn(emotesPage,"♫ "..name,function()
             if originalMove(name) then
@@ -5426,6 +5660,22 @@ local function rebuildEmotes()
         end)
     end
 
+    titleRow(emotesPage,"EMOTES MODERNOS • REPRODUCAO AUTORIZADA")
+    btn(emotesPage,"▶ JAMAL (SE DISPONIVEL)",function()
+        playEmote("jamal")
+    end)
+    btn(emotesPage,"♫ BRAZIL GROOVE (DANCA ORIGINAL)",function()
+        originalMove("brazilgroove")
+    end)
+    btn(emotesPage,"♫ JAMAL STYLE (ALTERNATIVA ORIGINAL)",function()
+        originalMove("jamalstyle")
+    end)
+    titleRow(emotesPage,"VELOCIDADE DAS ANIMACOES")
+    for _,value in ipairs({"0.5","1","1.5","2"}) do
+        btn(emotesPage,"VELOCIDADE "..value.."x",function()
+            if exec then exec("emotespeed "..value) end
+        end)
+    end
     btn(emotesPage,"PARAR EMOTE",stopEmote)
 
     btn(
@@ -6405,7 +6655,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.7] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.8] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -7097,7 +7347,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.7 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.8 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -7319,8 +7569,9 @@ end
 -- Recuperacao independente da intro, util para menus fechados acidentalmente.
 v14.forceShow=function()
     if stopped then return end
+    if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -7335,6 +7586,8 @@ end
 closeHub = function()
     if stopped then return end
 
+    if v14.exitPhotoMode then pcall(v14.exitPhotoMode) end
+    if v14.stopWallJump then pcall(v14.stopWallJump) end
     if v14.stopFreecam then pcall(v14.stopFreecam) end
     if v14.stopPlayerLight then pcall(v14.stopPlayerLight) end
     if v14.stopPlayerAlerts then pcall(v14.stopPlayerAlerts) end
@@ -7352,8 +7605,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_7_STOP == closeHub then
-        _G.BRAB0X_V19_7_STOP = nil
+    if _G.BRAB0X_V19_8_STOP == closeHub then
+        _G.BRAB0X_V19_8_STOP = nil
     end
 end
 
@@ -7362,6 +7615,11 @@ bind(close.MouseButton1Click,closeHub)
 -- ATALHOS
 
 bind(UIS.InputBegan,function(key,used)
+    if v14.photoModeOn and (key.KeyCode==Enum.KeyCode.F4
+        or key.KeyCode==Enum.KeyCode.F8) then
+        v14.exitPhotoMode()
+        return
+    end
     if keyCaptureHandler and keyCaptureHandler(key) then return end
     if v14.onInput and v14.onInput(key,used) then return end
     if UIS:GetFocusedTextBox() then return end
@@ -7474,7 +7732,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_7_STOP = closeHub
+_G.BRAB0X_V19_8_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -7491,10 +7749,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_7",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -7868,7 +8126,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -7876,7 +8134,7 @@ if not v14.introOk then
     if refreshCommandList then refreshCommandList(true) end
 end
 end -- fim do escopo abertura
--- INICIALIZAR / V19.7: isola falhas de modulos, nao esconde o menu inteiro.
+-- INICIALIZAR / V19.8: isola falhas de modulos, nao esconde o menu inteiro.
 do
     local bootErrors={}
     local function bootStep(label,callback)
@@ -7884,7 +8142,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.7] "..detail)
+            warn("[BRAB0X PRIME V19.8] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -7901,7 +8159,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.7 | "..#registered..
+        notify("BRAB0X PRIME V19.8 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
