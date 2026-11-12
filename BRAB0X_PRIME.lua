@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.8.1 | MELHORIA DE EMOTES POR ID E CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -1595,6 +1595,8 @@ local joints = {}
 -- Velocidade comum para emotes oficiais autorizados, classicos e movimentos proprios.
 v14.emoteSpeed=math.clamp(tonumber(v14.emoteSpeed) or 1,.2,3)
 v14.officialEmoteTracks={}
+v14.directEmoteSession=nil
+v14.lastEmoteError=nil
 
 local function stopEmote()
     if danceStep then
@@ -1610,6 +1612,7 @@ local function stopEmote()
 
     joints = {}
     S.emote = nil
+    v14.directEmoteSession=nil
     for _,track in ipairs(v14.officialEmoteTracks) do
         pcall(function() track:Stop(.12) end)
     end
@@ -1645,6 +1648,72 @@ local function equippedEmotes()
         and emotes or {}
 end
 
+-- Testa Animations acessiveis por ID, sem contornar permissoes do Roblox.
+local function playEmoteId(rawId,label)
+    local id=tonumber(rawId)
+    if not id or id<1 or id~=math.floor(id) or id>=1e16 then
+        notify("ID invalido. Exemplo: emoteid 3360689775","error")
+        return false
+    end
+    local _,h=chars()
+    if not h or h.Health<=0 then notify("Avatar indisponivel","error") return false end
+    local animator=h:FindFirstChildOfClass("Animator")
+    if not animator then notify("Animator indisponivel","error") return false end
+    stopFly()
+    stopEmote()
+    h.Sit=false
+    h.PlatformStand=false
+    local a=Instance.new("Animation")
+    a.AnimationId="rbxassetid://"..string.format("%.0f",id)
+    local loaded,track=pcall(function() return animator:LoadAnimation(a) end)
+    a:Destroy()
+    if not loaded or not track then
+        v14.lastEmoteError="Falha ao carregar asset "..tostring(id)..": "..tostring(track)
+        warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
+        notify("Animacao inacessivel ou formato incompatível.","error")
+        return false
+    end
+    local token={}
+    local display=tostring(label or ("ID "..string.format("%.0f",id)))
+    v14.directEmoteSession=token
+    animTrack=track
+    S.emote=display
+    local played,reason=pcall(function()
+        track.Priority=Enum.AnimationPriority.Action
+        track:Play(.12,1,v14.emoteSpeed)
+    end)
+    if not played then
+        v14.lastEmoteError="Falha ao reproduzir "..tostring(id)..": "..tostring(reason)
+        warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
+        stopEmote()
+        notify("Erro ao reproduzir este ID.","error")
+        return false
+    end
+    notify("Testando "..display.." | ID "..string.format("%.0f",id),"info")
+    task.spawn(function()
+        local start=os.clock()
+        local ready=false
+        while os.clock()-start<2.5 do
+            if stopped or v14.directEmoteSession~=token then return end
+            local ok,len=pcall(function() return track.Length end)
+            if ok and len>0 then ready=true break end
+            task.wait(.12)
+        end
+        if stopped or v14.directEmoteSession~=token then return end
+        if ready then
+            v14.lastEmoteError=nil
+            notify("Animacao carregada: "..display,"success")
+        else
+            v14.lastEmoteError="O asset "..tostring(id)..
+                " nao disponibilizou animacao nesta experiencia."
+            warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
+            stopEmote()
+            notify("Este ID nao pode ser reproduzido aqui. Veja F9.","error")
+        end
+    end)
+    return true
+end
+
 local function playEmote(name)
     local _,h=chars()
     if not h then notify("Seu personagem ainda nao carregou") return false end
@@ -1653,6 +1722,7 @@ local function playEmote(name)
         notify("Use: emote jamal ou abra a aba Emotes")
         return false
     end
+    if query:match("^%d+$") then return playEmoteId(query) end
     local normal=query:gsub("[%s%p_]","")
     local equipped=equippedEmotes()
     local candidate=nil
@@ -1690,9 +1760,15 @@ local function playEmote(name)
                 return ch:PlayEmoteAsync(candidate)
             end)
             if not ok or played~=true then
-                if S.emote==candidate then S.emote=nil end
-                notify("Emote indisponivel: "..candidate..
-                    " (avatar/rig/permissao do jogo)","error")
+                local ids=equipped[candidate]
+                local id=type(ids)=="table" and tonumber(ids[1]) or nil
+                if id and not stopped and S.emote==candidate then
+                    playEmoteId(id,candidate)
+                else
+                    if S.emote==candidate then S.emote=nil end
+                    notify("Emote indisponivel: "..candidate..
+                        " (avatar/rig/permissao do jogo)","error")
+                end
                 if not ok then warn("[BRAB0X EMOTE] "..tostring(played)) end
                 return
             end
@@ -2284,9 +2360,19 @@ register("emotes","EMOTES","Abrir lista de emotes",function()
     show("EMOTES")
 end)
 
-register("emote","EMOTES","Executar emote equipado",function(a)
+register("emote","EMOTES","Emote por nome ou ID autorizado",function(a)
     playEmote(a)
-end,"emote dance")
+    return false
+end,"emote jamal")
+register("emoteid","EMOTES","Testar animacao permitida por ID do catalogo",function(a)
+    playEmoteId(a)
+    return false
+end,"emoteid 3360689775")
+register("emoteerror","EMOTES","Mostrar ultimo erro de emote",function()
+    local message=v14.lastEmoteError or "Nenhum erro de emote registrado."
+    print("[BRAB0X EMOTES] "..message)
+    return message
+end)
 
 register("dance","EMOTES","Danca original Motor6D",function(a)
     originalMove(a)
@@ -3153,7 +3239,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.1 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4796,7 +4882,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.8: "..#registered.." comandos."
+        return "BRAB0X V19.8.1: "..#registered.." comandos."
     end)
 end
 
@@ -5733,10 +5819,8 @@ local function rebuildEmotes()
                             end
                         end
 
-                        notify(
-                            "O emote "..name..
-                            " precisa estar equipado e autorizado"
-                        )
+                        -- Tenta IDs acessiveis mesmo quando nao equipados.
+                        playEmoteId(id,name)
                     end
                 )
             end
@@ -8142,7 +8226,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8] "..detail)
+            warn("[BRAB0X PRIME V19.8.1] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -8159,7 +8243,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8 | "..#registered..
+        notify("BRAB0X PRIME V19.8.1 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
