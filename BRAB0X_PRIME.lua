@@ -1934,7 +1934,7 @@ local function originalMove(name)
             local joint=joints[role]
             if joint and joint.Parent then
                 local ok,err=pcall(function()
-                    joint.Transform=transform*joint.Transform
+                    joint.Transform=transform
                 end)
                 if not ok and not v14.jointWarning then
                     v14.jointWarning=true
@@ -5826,6 +5826,8 @@ local function dropPreview(item)
     if item.track then pcall(function() item.track:Stop(0) end) end
     item.track=nil
     if item.world then item.world:Destroy() item.world=nil end
+    if item.camera then item.camera:Destroy() item.camera=nil end
+    if item.view and item.view.Parent then item.view.CurrentCamera=nil end
     item.active=false
     item.joints=nil
 end
@@ -5844,7 +5846,7 @@ local function preloadPreviewSource(rigType)
     task.spawn(function()
         local description=Instance.new("HumanoidDescription")
         local ok,result=pcall(function()
-            return Players:CreateHumanoidModelFromDescription(description,rigType)
+            return Players:CreateHumanoidModelFromDescriptionAsync(description,rigType)
         end)
         description:Destroy()
         if ok and result then
@@ -5853,6 +5855,7 @@ local function preloadPreviewSource(rigType)
             previewSources[key]=result
         else
             warn("[BRAB0X PREVIEW] Boneco "..key..": "..tostring(result))
+            -- A lista continua utilizavel mesmo se a criacao do rig falhar.
         end
     end)
 end
@@ -5931,6 +5934,7 @@ local function initializePreview(item)
     camera.CFrame=CFrame.lookAt(Vector3.new(0,2.2,8),Vector3.new(0,1,0))
     camera.Parent=item.view
     item.view.CurrentCamera=camera
+    item.camera=camera
     item.world=world
     item.active=true
     if item.kind=="own" then
