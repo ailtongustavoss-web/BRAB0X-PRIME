@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.6 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
+-- BRAB0X PRIME V19.7 | MEGA UPDATE: SPECTATE FIX + 301 COMANDOS + CATALOGO
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_7_STOP",
     "BRAB0X_V19_6_STOP",
     "BRAB0X_V19_5_STOP",
     "BRAB0X_V19_4_STOP",
@@ -77,10 +78,12 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_4",
     "BRAB0X_INTRO_FULLSCREEN_V19_5",
     "BRAB0X_INTRO_FULLSCREEN_V19_6",
+    "BRAB0X_INTRO_FULLSCREEN_V19_7",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
-    "BRAB0X_PRIME_V19_6"
+    "BRAB0X_PRIME_V19_6",
+    "BRAB0X_PRIME_V19_7"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -424,7 +427,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_6",
+    Name = "BRAB0X_PRIME_V19_7",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -470,7 +473,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.6  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V19.7  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -491,10 +494,10 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V19.6 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- V19.7 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_6",
+    Name="BRAB0X_MINI_PREMIUM_V19_7",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -722,7 +725,7 @@ for _,id in ipairs(sections) do
     stack(pages[id],6)
 end
 
--- V19.6 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
+-- V19.7 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
 -- Todas as paginas antigas continuam disponiveis, sem menus duplicados.
 do
     sidebar.BackgroundColor3=Color3.fromRGB(14,14,20)
@@ -1902,6 +1905,9 @@ Run:BindToRenderStep(
 local resetExtras = function() end
 local function resetAll()
     resetExtras()
+    if v14.stopFreecam then v14.stopFreecam() end
+    if v14.stopPlayerLight then v14.stopPlayerLight() end
+    if v14.stopPlayerAlerts then v14.stopPlayerAlerts() end
     stopFly()
     setNoclip(false)
     stopEmote()
@@ -3054,7 +3060,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.6 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.7 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -3279,7 +3285,7 @@ register("findtab","SETTINGS","Pesquisar abas pelo menu lateral",function()
     end
     return false
 end)
--- V19.6: preferencias de abertura e recuperacao da GUI sem reexecutar o hub.
+-- V19.7: preferencias de abertura e recuperacao da GUI sem reexecutar o hub.
 register("intro","SETTINGS","Ativar/desativar a intro da proxima execucao",function(a)
     a=tostring(a or ""):lower()
     if a=="on" then config.intro=true
@@ -3299,10 +3305,281 @@ register("uicheck","SETTINGS","Mostrar diagnostico rapido da GUI",function()
     local message=v14.bootError and ("Falha ao iniciar: "..v14.bootError)
         or ("GUI "..(gui.Parent and "ativa" or "fechada")..
         " | Menu "..(main.Visible and "visivel" or "oculto"))
-    print("[BRAB0X V19.6] "..message)
+    print("[BRAB0X V19.7] "..message)
     notify(message,v14.bootError and "error" or "success")
     return false
 end)
+
+-- V19.7 / FUNCOES ORIGINAIS INSPIRADAS EM HUBS OPEN SOURCE
+-- Sem bibliotecas remotas, sem mudanca na interface e sem afetar saldos do servidor.
+do
+    local CAS=game:GetService("ContextActionService")
+    local freecamAction="BRAB0X_V19_7_FREECAM_KEYS"
+    v14.freecamSpeed=28
+    v14.freecamState=nil
+    v14.stopFreecam=function()
+        local state=v14.freecamState
+        if not state then return false end
+        v14.freecamState=nil
+        if state.look then state.look:Disconnect() end
+        if state.step then state.step:Disconnect() end
+        pcall(function() CAS:UnbindAction(freecamAction) end)
+        local camera=workspace.CurrentCamera
+        if camera then
+            camera.CameraType=state.type or Enum.CameraType.Custom
+            if state.subject and state.subject.Parent then
+                camera.CameraSubject=state.subject
+            else
+                local _,humanoid=chars()
+                if humanoid then camera.CameraSubject=humanoid end
+            end
+            camera.FieldOfView=state.fov or camera.FieldOfView
+            if state.type==Enum.CameraType.Scriptable and state.cframe then
+                camera.CFrame=state.cframe
+            end
+        end
+        return true
+    end
+    v14.startFreecam=function()
+        if v14.freecamState then return true end
+        if v14.cinematic and v14.stopCinema then v14.stopCinema() end
+        if leaveSpectate then leaveSpectate(true) end
+        local cam=workspace.CurrentCamera
+        if not cam then return false end
+        local pitch,yaw=cam.CFrame:ToOrientation()
+        local state={
+            type=cam.CameraType,
+            subject=cam.CameraSubject,
+            cframe=cam.CFrame,
+            fov=cam.FieldOfView,
+            pitch=pitch,
+            yaw=yaw
+        }
+        v14.freecamState=state
+        cam.CameraType=Enum.CameraType.Scriptable
+        -- Bloqueia apenas movimento do avatar enquanto usa WASD na camera.
+        pcall(function()
+            CAS:BindActionAtPriority(freecamAction,function()
+                return Enum.ContextActionResult.Sink
+            end,false,3000,
+                Enum.KeyCode.W,Enum.KeyCode.A,Enum.KeyCode.S,
+                Enum.KeyCode.D,Enum.KeyCode.E,Enum.KeyCode.Q)
+        end)
+        state.look=UIS.InputChanged:Connect(function(input)
+            if not v14.freecamState or main.Visible
+                or UIS:GetFocusedTextBox() then return end
+            if input.UserInputType~=Enum.UserInputType.MouseMovement
+                or not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+                return
+            end
+            state.yaw=state.yaw-input.Delta.X*.003
+            state.pitch=math.clamp(state.pitch-input.Delta.Y*.003,-1.47,1.47)
+        end)
+        state.step=Run.RenderStepped:Connect(function(dt)
+            if stopped then v14.stopFreecam() return end
+            if not v14.freecamState then return end
+            local current=workspace.CurrentCamera
+            if not current or main.Visible or UIS:GetFocusedTextBox() then return end
+            current.CameraType=Enum.CameraType.Scriptable
+            local rotation=CFrame.fromOrientation(state.pitch,state.yaw,0)
+            local vec=Vector3.zero
+            if UIS:IsKeyDown(Enum.KeyCode.W) then vec=vec+rotation.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then vec=vec-rotation.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then vec=vec-rotation.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then vec=vec+rotation.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.E) then vec=vec+Vector3.yAxis end
+            if UIS:IsKeyDown(Enum.KeyCode.Q) then vec=vec-Vector3.yAxis end
+            local speed=v14.freecamSpeed
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift)
+                or UIS:IsKeyDown(Enum.KeyCode.RightShift) then speed=speed*3 end
+            if UIS:IsKeyDown(Enum.KeyCode.LeftControl)
+                or UIS:IsKeyDown(Enum.KeyCode.RightControl) then speed=speed*.3 end
+            local move=vec.Magnitude>0 and vec.Unit*speed*math.min(dt,.1)
+                or Vector3.zero
+            current.CFrame=CFrame.new(current.CFrame.Position+move)*rotation
+        end)
+        main.Visible=false
+        reopen.Visible=true
+        notify("Freecam: WASD mover, E/Q subir/descer, RMB girar, Shift rapido, F7 sair.")
+        return true
+    end
+
+    register("freecam","CAMERA","Camera livre com WASD e mouse direito",function()
+        if v14.freecamState then
+            v14.stopFreecam()
+            return "Freecam desativada."
+        end
+        return v14.startFreecam() and "Freecam ativada. F7 para sair."
+            or "Camera nao disponivel."
+    end)
+    register("unfreecam","CAMERA","Restaurar camera apos freecam",function()
+        return v14.stopFreecam() and "Camera restaurada."
+            or "Freecam ja estava desativada."
+    end)
+    register("freecamspeed","CAMERA","Ajustar velocidade da camera livre",function(a)
+        v14.freecamSpeed=math.clamp(tonumber(a) or v14.freecamSpeed,2,180)
+        return "Velocidade da freecam: "..v14.freecamSpeed
+    end,"freecamspeed 40")
+    register("freecampos","CAMERA","Exibir posicao da camera livre",function()
+        local cam=workspace.CurrentCamera
+        if not cam then return "Camera indisponivel." end
+        local p=cam.CFrame.Position
+        return string.format("Camera: %.1f, %.1f, %.1f",p.X,p.Y,p.Z)
+    end)
+
+    local function copyLocal(value,description)
+        local textValue=tostring(value)
+        if type(setclipboard)=="function" then
+            local ok=pcall(setclipboard,textValue)
+            if ok then return description.." copiado." end
+        end
+        print("[BRAB0X] "..description..": "..textValue)
+        return description..": "..textValue.." (copie do console F9)"
+    end
+    register("copycoords","PLAYER","Copiar coordenadas do personagem",function()
+        local _,_,root=chars()
+        if not root then return "Personagem ainda nao carregou." end
+        local p=root.Position
+        return copyLocal(string.format("%.2f, %.2f, %.2f",p.X,p.Y,p.Z),"Posicao")
+    end)
+    register("copyplaceid","SETTINGS","Copiar ID deste lugar",function()
+        return copyLocal(game.PlaceId,"PlaceId")
+    end)
+    register("copyuserid","SETTINGS","Copiar ID de usuario",function(a)
+        local target=(not a or a=="") and player or findPlayer(a)
+        if not target then return "Jogador nao encontrado." end
+        return copyLocal(target.UserId,"UserId de "..target.Name)
+    end,"copyuserid me")
+    register("copyjobid","SETTINGS","Copiar ID da sessao",function()
+        return copyLocal(game.JobId~="" and game.JobId or "Studio","JobId")
+    end)
+    register("sessiontime","SETTINGS","Tempo nesta sessao do BRAB0X",function()
+        local total=math.max(0,math.floor(os.clock()-v14.sessionStarted))
+        return string.format("Sessao: %02d:%02d:%02d",
+            math.floor(total/3600),math.floor(total/60)%60,total%60)
+    end)
+    register("velocity","PLAYER","Mostrar velocidade atual do personagem",function()
+        local _,_,root=chars()
+        if not root then return "Personagem indisponivel." end
+        return string.format("Velocidade atual: %.1f studs/s",
+            root.AssemblyLinearVelocity.Magnitude)
+    end)
+    register("lastcommand","SETTINGS","Repetir ultimo comando executado",function()
+        for _,item in ipairs(v14.recent) do
+            if item.command~="lastcommand" and item.command~="lastcmd"
+                and item.command~="close" and item.command~="resetall"
+                and item.command~="deleteprofile" and item.command~="clearwps"
+                and item.command~="resetkeys" then
+                if exec then
+                    return exec(item.raw) and "Comando repetido: "..item.raw
+                        or "Nao foi possivel repetir: "..item.raw
+                end
+            end
+        end
+        return "Nao ha comando anterior seguro para repetir."
+    end)
+    register("lastcmd","SETTINGS","Atalho para repetir comando anterior",function()
+        return byName.lastcommand.run()
+    end)
+
+    v14.playerLight={enabled=false,range=18,brightness=2,color=Color3.fromRGB(255,235,225)}
+    v14.updatePlayerLight=function()
+        local state=v14.playerLight
+        local _,_,root=chars()
+        if not root then return false end
+        local light=root:FindFirstChild("BRAB0X_LOCAL_POINT_LIGHT")
+        if state.enabled then
+            if not light then
+                light=Instance.new("PointLight")
+                light.Name="BRAB0X_LOCAL_POINT_LIGHT"
+                light.Parent=root
+            end
+            light.Range=state.range
+            light.Brightness=state.brightness
+            light.Color=state.color
+            light.Shadows=false
+        elseif light then
+            light:Destroy()
+        end
+        return true
+    end
+    v14.stopPlayerLight=function()
+        v14.playerLight.enabled=false
+        local _,_,root=chars()
+        if root then
+            local light=root:FindFirstChild("BRAB0X_LOCAL_POINT_LIGHT")
+            if light then light:Destroy() end
+        end
+    end
+    register("playerlight","WORLD","Luz local que acompanha seu personagem",function()
+        v14.playerLight.enabled=true
+        return v14.updatePlayerLight() and "Luz do personagem ativada."
+            or "Aguarde o personagem carregar."
+    end)
+    register("unplayerlight","WORLD","Desligar luz do personagem",function()
+        v14.stopPlayerLight()
+        return "Luz do personagem desligada."
+    end)
+    register("lightrange","WORLD","Ajustar alcance da luz do personagem",function(a)
+        local state=v14.playerLight
+        state.range=math.clamp(tonumber(a) or state.range,4,60)
+        v14.updatePlayerLight()
+        return "Alcance da luz: "..state.range
+    end,"lightrange 25")
+    register("lightpower","WORLD","Ajustar intensidade da luz do personagem",function(a)
+        local state=v14.playerLight
+        state.brightness=math.clamp(tonumber(a) or state.brightness,.1,8)
+        v14.updatePlayerLight()
+        return string.format("Brilho da luz: %.1f",state.brightness)
+    end,"lightpower 3")
+    register("lightcolor","WORLD","Cor da luz: branco, vermelho, azul ou verde",function(a)
+        local colors={
+            branco=Color3.fromRGB(255,255,255),
+            vermelho=Color3.fromRGB(255,85,105),
+            azul=Color3.fromRGB(80,160,255),
+            verde=Color3.fromRGB(110,255,170)
+        }
+        local name=tostring(a or ""):lower()
+        if not colors[name] then return "Use: lightcolor branco|vermelho|azul|verde" end
+        v14.playerLight.color=colors[name]
+        v14.updatePlayerLight()
+        return "Cor da luz: "..name
+    end,"lightcolor vermelho")
+
+    v14.playerAlerts=false
+    v14.alertConnections={}
+    v14.stopPlayerAlerts=function()
+        v14.playerAlerts=false
+        for _,connection in ipairs(v14.alertConnections) do connection:Disconnect() end
+        v14.alertConnections={}
+    end
+    register("playeralerts","SETTINGS","Avisar entrada e saida de jogadores",function(a)
+        local newValue=(a=="on") or (a~="off" and not v14.playerAlerts)
+        v14.stopPlayerAlerts()
+        if newValue then
+            v14.playerAlerts=true
+            v14.alertConnections={
+                Players.PlayerAdded:Connect(function(p)
+                    if not stopped then notify("Entrou: @"..p.Name,"info") end
+                end),
+                Players.PlayerRemoving:Connect(function(p)
+                    if not stopped then notify("Saiu: @"..p.Name,"info") end
+                end)
+            }
+        end
+        return "Avisos de jogadores: "..(newValue and "ON" or "OFF")
+    end,"playeralerts on")
+
+    -- Acoplamento a vida do hub e renascimento do avatar.
+    bind(player.CharacterAdded,function()
+        if v14.freecamState then v14.stopFreecam() end
+        if v14.playerLight.enabled then
+            task.delay(.4,function()
+                if not stopped then v14.updatePlayerLight() end
+            end)
+        end
+    end)
+end
 
 -- V14 / NUCLEO DOS RECURSOS (SEM CODIGO REMOTO NEM EFEITO EM OUTROS JOGADORES)
 do
@@ -4286,7 +4563,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.6: "..#registered.." comandos."
+        return "BRAB0X V19.7: "..#registered.." comandos."
     end)
 end
 
@@ -4335,7 +4612,7 @@ exec = function(raw)
     end
     if ok and v14.trackCommand then v14.trackCommand(command,tostring(raw)) end
     if ok and v14.v17 and v14.v17.onCommand then v14.v17.onCommand(command) end
-    -- V19.6: respostas silenciosas tambem atualizam botoes e indicadores.
+    -- V19.7: respostas silenciosas tambem atualizam botoes e indicadores.
     if result == false then
         if not stopped and refresh then refresh() end
         return true
@@ -4364,7 +4641,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.6",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.7",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -4925,7 +5202,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.6 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.7 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -6128,7 +6405,7 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.6] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then warn("[BRAB0X V19.7] Falha no painel "..page..": "..tostring(err)) end
             end
         end
         if v14.translate then v14.translate() end
@@ -6820,7 +7097,7 @@ end
 
 -- EXECUCAO PELO CAMPO DE TEXTO
 
--- V19.6 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
+-- V19.7 / BARRA INTELIGENTE: TAB COMPLETA, SETAS CONSULTAM HISTORICO.
 -- Sem nova aba, sem executar automaticamente codigo digitado.
 local cmdHint=txt(main,"",18,10)
 cmdHint.Position=UDim2.fromOffset(18,555)
@@ -7043,7 +7320,7 @@ end
 v14.forceShow=function()
     if stopped then return end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_6")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -7058,6 +7335,9 @@ end
 closeHub = function()
     if stopped then return end
 
+    if v14.stopFreecam then pcall(v14.stopFreecam) end
+    if v14.stopPlayerLight then pcall(v14.stopPlayerLight) end
+    if v14.stopPlayerAlerts then pcall(v14.stopPlayerAlerts) end
     if v14.cleanup then pcall(v14.cleanup) end
     if v14.introCleanup then pcall(v14.introCleanup) end
     saveV13()
@@ -7072,8 +7352,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_6_STOP == closeHub then
-        _G.BRAB0X_V19_6_STOP = nil
+    if _G.BRAB0X_V19_7_STOP == closeHub then
+        _G.BRAB0X_V19_7_STOP = nil
     end
 end
 
@@ -7086,7 +7366,11 @@ bind(UIS.InputBegan,function(key,used)
     if v14.onInput and v14.onInput(key,used) then return end
     if UIS:GetFocusedTextBox() then return end
     local name=key.KeyCode.Name
-    if name=="F8" and not used then
+    if name=="F7" and not used and v14.startFreecam then
+        if v14.freecamState then v14.stopFreecam()
+        else v14.startFreecam() end
+        return
+    elseif name=="F8" and not used then
         v14.forceShow()
         return
     elseif name=="P" and not used
@@ -7190,7 +7474,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_6_STOP = closeHub
+_G.BRAB0X_V19_7_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -7207,10 +7491,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_6")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_6",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_7",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -7584,7 +7868,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_6")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_7")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -7592,7 +7876,7 @@ if not v14.introOk then
     if refreshCommandList then refreshCommandList(true) end
 end
 end -- fim do escopo abertura
--- INICIALIZAR / V19.6: isola falhas de modulos, nao esconde o menu inteiro.
+-- INICIALIZAR / V19.7: isola falhas de modulos, nao esconde o menu inteiro.
 do
     local bootErrors={}
     local function bootStep(label,callback)
@@ -7600,7 +7884,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.6] "..detail)
+            warn("[BRAB0X PRIME V19.7] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -7617,7 +7901,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.6 | "..#registered..
+        notify("BRAB0X PRIME V19.7 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
