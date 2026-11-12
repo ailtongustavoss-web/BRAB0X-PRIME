@@ -1,4 +1,4 @@
--- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V3
+-- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V4 (SEM APPLYDESCRIPTION)
 -- Nao modifica o hub principal nem altera o avatar no servidor.
 -- Busca emotes de catalogo e tenta a API oficial no boneco de previa.
 -- Resultados no painel e no console F9.
@@ -198,63 +198,96 @@ local function testId(id,name)
             return
         end
 
-        local gotOriginal,original=pcall(function()
-            return humanoid:GetAppliedDescription()
-        end)
-        if not gotOriginal or not original then
-            log("Nao foi possivel salvar seu avatar: "..shortError(original))
+        -- Metodo documentado para LocalScript: mudar somente a lista
+        -- de emotes do HumanoidDescription local, sem ApplyDescriptionAsync.
+        local description=humanoid:FindFirstChildOfClass("HumanoidDescription")
+        if not description then
+            log("Sem HumanoidDescription no avatar atual.")
+            log("Esse jogo nao expos a lista local necessaria para o teste.")
             busy=false
             return
         end
-        local temporary=original:Clone()
+
+        local okEmotes,allEmotes=pcall(function()
+            return description:GetEmotes()
+        end)
+        local okEquipped,equipped=pcall(function()
+            return description:GetEquippedEmotes()
+        end)
+        if not okEmotes or not okEquipped or type(allEmotes)~="table"
+            or type(equipped)~="table" then
+            log("Nao foi possivel ler a lista de emotes locais.")
+            busy=false
+            return
+        end
+        -- Copias independentes para garantir restauracao da lista.
+        local originalEmotes={}
+        local testEmotes={}
+        for key,ids in pairs(allEmotes) do
+            if type(ids)=="table" then
+                local copy={}
+                for i,value in ipairs(ids) do copy[i]=value end
+                originalEmotes[key]=copy
+                local updated={}
+                for i,value in ipairs(ids) do updated[i]=value end
+                testEmotes[key]=updated
+            end
+        end
+        local originalEquipped={}
+        for i,entry in ipairs(equipped) do
+            if type(entry)=="table" then
+                local copied={}
+                for k,v in pairs(entry) do copied[k]=v end
+                originalEquipped[i]=copied
+            else
+                originalEquipped[i]=entry
+            end
+        end
+
         local testName="BRAB0X_TESTE_TEMPORARIO"
-        local created,creationError=pcall(function()
-            temporary:AddEmote(testName,id)
-            temporary:SetEquippedEmotes({testName})
-        end)
-        if not created then
-            log("Registro recusado: "..shortError(creationError))
-            temporary:Destroy()
-            original:Destroy()
-            busy=false
-            return
-        end
-        log("Emote registrado na descricao temporaria.")
-        local applying=true
+        testEmotes[testName]={id}
         local restored=false
         local function restore()
             if restored then return end
             restored=true
-            while applying do task.wait(.1) end
-            if humanoid.Parent and character==player.Character then
-                local ok,err=pcall(function()
-                    humanoid:ApplyDescriptionAsync(original)
+            if description.Parent and player.Character==character then
+                local okA,errA=pcall(function()
+                    description:SetEmotes(originalEmotes)
+                end)
+                local okB,errB=pcall(function()
+                    description:SetEquippedEmotes(originalEquipped)
                 end)
                 if not closed then
-                    log(ok and "Avatar original restaurado." or
-                        "Restauracao falhou: "..shortError(err))
+                    if okA and okB then
+                        log("Emotes anteriores restaurados.")
+                    else
+                        log("Falha ao restaurar: "..
+                            shortError((not okA and errA) or errB))
+                    end
                 end
             end
-            original:Destroy()
-            temporary:Destroy()
             if activeRestore==restore then activeRestore=nil end
         end
         activeRestore=restore
 
-        -- Modificacao temporaria apenas neste personagem, revertida depois.
-        local applied,applyErr=pcall(function()
-            humanoid:ApplyDescriptionAsync(temporary)
+        local setupOk,setupErr=pcall(function()
+            description:SetEmotes(testEmotes)
+            description:SetEquippedEmotes({testName})
         end)
-        applying=false
-        if not applied then
-            log("ApplyDescriptionAsync ERRO: "..shortError(applyErr))
+        if not setupOk then
+            log("SetEmotes/SetEquippedEmotes ERRO: "..shortError(setupErr))
             restore()
             busy=false
             return
         end
         if closed then restore() busy=false return end
-        log("Descricao temporaria aplicada ao LocalPlayer.")
-
+        log("Lista local de emotes alterada temporariamente.")
+        local checked,now=pcall(function()
+            return description:GetEmotes()
+        end)
+        log("Emote registrado no avatar: "..
+            tostring(checked and type(now)=="table" and
+                type(now[testName])=="table"))
         local previous={}
         for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
             previous[track]=true
@@ -362,5 +395,5 @@ task.spawn(function()
     addResult(3360689775, "Salute (controle oficial)")
     log(tostring(count) .. " Jamals encontrados.")
     log("Teste SALUTE primeiro; o teste usa o avatar dentro do jogo.")
-    log("A aparencia do personagem sera restaurada apos cada teste.")
+    log("A lista anterior de emotes sera restaurada apos cada teste.")
 end)
