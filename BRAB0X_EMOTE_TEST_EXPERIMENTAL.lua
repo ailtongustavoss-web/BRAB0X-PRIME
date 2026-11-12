@@ -1,4 +1,4 @@
--- BRAB0X PRIME - TESTE ISOLADO DE EMOTES ORIGINAIS V2 (DIAGNOSTICO VISIVEL)
+-- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V3
 -- Nao modifica o hub principal nem altera o avatar no servidor.
 -- Busca emotes de catalogo e tenta a API oficial no boneco de previa.
 -- Resultados no painel e no console F9.
@@ -42,7 +42,7 @@ local function label(parent, content, height)
     return item
 end
 
-local title = label(root, "BRAB0X  |  TESTE JAMAL ORIGINAL", 32)
+local title = label(root, "BRAB0X | TESTE NO PERSONAGEM", 32)
 title.Position = UDim2.fromOffset(10, 7)
 title.Font = Enum.Font.GothamBold
 
@@ -65,7 +65,7 @@ viewport.Ambient = Color3.fromRGB(200, 200, 200)
 viewport.Parent = root
 Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 8)
 
-local status = label(root, "Buscando emotes Jamal no catalogo...", 128)
+local status = label(root, "Selecione o emote: ele toca no seu personagem do jogo.", 128)
 status.Position = UDim2.fromOffset(12, 246)
 status.TextYAlignment = Enum.TextYAlignment.Top
 status.TextSize = 11
@@ -146,6 +146,7 @@ local function stop()
     closed = true
     clearPreview()
     gui:Destroy()
+    if activeRestore then task.spawn(activeRestore) end
     if _G.BRAB0X_EMOTE_TEST_STOP == stop then
         _G.BRAB0X_EMOTE_TEST_STOP = nil
     end
@@ -153,171 +154,155 @@ end
 _G.BRAB0X_EMOTE_TEST_STOP = stop
 close.MouseButton1Click:Connect(stop)
 
-local function testId(id, name)
+-- Testa no Humanoid do LocalPlayer, pois PlayEmoteAsync rejeita
+-- Humanoids de bonecos de preview, mesmo com descricao aplicada.
+local activeRestore=nil
+
+local function testId(id,name)
     if busy or closed then return end
-    busy = true
+    busy=true
     beginTest()
-    clearPreview()
-    log("TESTE: " .. name .. " | ID " .. tostring(id))
+    log("TESTE LOCAL: "..name.." | ID "..tostring(id))
+    log("A danca sera testada no SEU personagem, nao no boneco da janela.")
 
     task.spawn(function()
-        local emoteName = "BRAB0X_TEST_JAMAL"
-        local okDesc, desc = pcall(function()
-            return Players:GetHumanoidDescriptionFromUserIdAsync(player.UserId)
-        end)
-        if not okDesc or not desc then
-            log("Nao foi possivel obter seu avatar: " .. tostring(desc))
-            busy = false
+        local character=player.Character
+        local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+        if not humanoid or humanoid.Health<=0 then
+            log("Avatar local indisponivel. Entre no jogo e tente de novo.")
+            busy=false
+            return
+        end
+        if humanoid.RigType~=Enum.HumanoidRigType.R15 then
+            log("Rig atual: "..humanoid.RigType.Name..
+                ". Emotes modernos normalmente exigem R15.")
+            busy=false
+            return
+        end
+        local animator=humanoid:FindFirstChildOfClass("Animator")
+        if not animator then
+            log("Seu Humanoid nao tem Animator.")
+            busy=false
             return
         end
 
-        local okSetup, setupErr = pcall(function()
-            -- O numero do catalogo representa um EMOTE, nao
-            -- necessariamente o AnimationId interno.
-            desc:AddEmote(emoteName, id)
-            desc:SetEquippedEmotes({emoteName})
-        end)
-        if not okSetup then
-            desc:Destroy()
-            log("Falha no cadastro do emote: " .. tostring(setupErr))
-            busy = false
-            return
-        end
-
-        local configured, registered = pcall(function()
-            local e = desc:GetEmotes()
-            return e[emoteName]
-        end)
-        log("Descricao: "..(configured and type(registered)=="table"
-            and "emote registrado" or "emote NAO registrado"))
-        local okModel, model = pcall(function()
-            return Players:CreateHumanoidModelFromDescriptionAsync(
-                desc, Enum.HumanoidRigType.R15)
-        end)
-        if not okModel or not model then
-            desc:Destroy()
-            log("Falha ao criar a previa: " .. tostring(model))
-            busy = false
-            return
-        end
-        if closed then model:Destroy() desc:Destroy() busy = false return end
-
-        local world = Instance.new("WorldModel")
-        world.Parent = viewport
-        currentWorld = world
-        for _,object in ipairs(model:GetDescendants()) do
-            if object:IsA("LuaSourceContainer") then object:Destroy() end
-            if object:IsA("BasePart") then
-                object.CanCollide = false
-                object.CanTouch = false
-            end
-        end
-        model.Parent = world
-        model:PivotTo(CFrame.new())
-        local rootPart = model:FindFirstChild("HumanoidRootPart")
-        if rootPart then rootPart.Anchored = true end
-
-        local camera = Instance.new("Camera")
-        camera.FieldOfView = 35
-        camera.CFrame = CFrame.lookAt(Vector3.new(0, 2.1, -8.5), Vector3.new(0, 1.5, 0))
-        camera.Parent = viewport
-        viewport.CurrentCamera = camera
-
-        local humanoid = model:FindFirstChildOfClass("Humanoid")
-        if not humanoid then
-            desc:Destroy()
-            log("Erro: o modelo nao tem Humanoid.")
-            busy = false
-            return
-        end
-
-        local appliedOk, appliedDesc = pcall(function()
+        local gotOriginal,original=pcall(function()
             return humanoid:GetAppliedDescription()
         end)
-        local appliedName
-        if appliedOk and appliedDesc then
-            local ok, owned = pcall(function() return appliedDesc:GetEmotes() end)
-            if ok and type(owned) == "table" then
-                appliedName = owned[emoteName]
-            end
-            appliedDesc:Destroy()
+        if not gotOriginal or not original then
+            log("Nao foi possivel salvar seu avatar: "..shortError(original))
+            busy=false
+            return
         end
-
-        log("Avatar R15: "..(appliedName and "emote aplicado" or "emote nao aplicado"))
-        if not appliedName then
-            local okApply, applyErr = pcall(function()
-                humanoid:ApplyDescriptionAsync(desc)
-            end)
-            log(okApply and "Descricao aplicada novamente." or
-                "ApplyDescription: "..shortError(applyErr))
-        end
-        desc:Destroy()
-
-        local animator = humanoid:FindFirstChildOfClass("Animator")
-        if not animator then
-            animator = Instance.new("Animator")
-            animator.Parent = humanoid
-            log("Animator criado na previa.")
-        end
-
-        local playedOk, playedResult = pcall(function()
-            return humanoid:PlayEmoteAsync(emoteName)
+        local temporary=original:Clone()
+        local testName="BRAB0X_TESTE_TEMPORARIO"
+        local created,creationError=pcall(function()
+            temporary:AddEmote(testName,id)
+            temporary:SetEquippedEmotes({testName})
         end)
-        if playedOk then
-            log("PlayEmoteAsync retornou "..tostring(playedResult))
-        else
-            log("PlayEmoteAsync ERRO: "..shortError(playedResult))
+        if not created then
+            log("Registro recusado: "..shortError(creationError))
+            temporary:Destroy()
+            original:Destroy()
+            busy=false
+            return
         end
-
-        local fallbackOk, fallbackValue = false, nil
-        if not playedOk or playedResult ~= true then
-            fallbackOk, fallbackValue = pcall(function()
-                return humanoid:PlayEmote(emoteName)
-            end)
-            if fallbackOk then
-                log("PlayEmote retornou "..tostring(fallbackValue))
-            else
-                log("PlayEmote ERRO: "..shortError(fallbackValue))
-            end
-        end
-
-        local trackCount, loadedCount = 0, 0
-        -- Algumas animacoes demoram para transmitir dados ao WorldModel.
-        for _, delay in ipairs({.45, .9, 1.2}) do
-            task.wait(delay)
-            if closed or currentWorld ~= world then
-                busy = false
-                return
-            end
-            local ok, tracks = pcall(function()
-                return animator:GetPlayingAnimationTracks()
-            end)
-            trackCount, loadedCount = 0, 0
-            if ok and type(tracks) == "table" then
-                trackCount = #tracks
-                for _, track in ipairs(tracks) do
-                    local infoOk, valid = pcall(function()
-                        return track.IsPlaying and track.Length > 0
-                    end)
-                    if infoOk and valid then loadedCount += 1 end
+        log("Emote registrado na descricao temporaria.")
+        local applying=true
+        local restored=false
+        local function restore()
+            if restored then return end
+            restored=true
+            while applying do task.wait(.1) end
+            if humanoid.Parent and character==player.Character then
+                local ok,err=pcall(function()
+                    humanoid:ApplyDescriptionAsync(original)
+                end)
+                if not closed then
+                    log(ok and "Avatar original restaurado." or
+                        "Restauracao falhou: "..shortError(err))
                 end
             end
-            if loadedCount > 0 then break end
+            original:Destroy()
+            temporary:Destroy()
+            if activeRestore==restore then activeRestore=nil end
+        end
+        activeRestore=restore
+
+        -- Modificacao temporaria apenas neste personagem, revertida depois.
+        local applied,applyErr=pcall(function()
+            humanoid:ApplyDescriptionAsync(temporary)
+        end)
+        applying=false
+        if not applied then
+            log("ApplyDescriptionAsync ERRO: "..shortError(applyErr))
+            restore()
+            busy=false
+            return
+        end
+        if closed then restore() busy=false return end
+        log("Descricao temporaria aplicada ao LocalPlayer.")
+
+        local previous={}
+        for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+            previous[track]=true
         end
 
-        log("Tracks: "..trackCount.." | carregadas: "..loadedCount)
-        if loadedCount > 0 and
-            ((playedOk and playedResult == true) or
-             (fallbackOk and fallbackValue == true)) then
-            log("RESULTADO: animacao carregada na previa!")
-        elseif not playedOk and not fallbackOk then
-            log("RESULTADO: APIs rejeitadas. Veja a mensagem acima.")
-        elseif loadedCount == 0 then
-            log("RESULTADO: nenhuma animacao carregou neste jogo.")
+        local played,playResult=pcall(function()
+            return humanoid:PlayEmoteAsync(testName)
+        end)
+        if played then
+            log("PlayEmoteAsync: "..tostring(playResult))
         else
-            log("RESULTADO: API nao confirmou o emote.")
+            log("PlayEmoteAsync ERRO: "..shortError(playResult))
         end
-        busy = false
+
+        local fallbackOk,fallbackResult=false,nil
+        if not played or playResult~=true then
+            fallbackOk,fallbackResult=pcall(function()
+                return humanoid:PlayEmote(testName)
+            end)
+            if fallbackOk then
+                log("PlayEmote: "..tostring(fallbackResult))
+            else
+                log("PlayEmote ERRO: "..shortError(fallbackResult))
+            end
+        end
+
+        local freshTracks={}
+        for _,delay in ipairs({.35,.6,.9}) do
+            task.wait(delay)
+            if closed or not humanoid.Parent or character~=player.Character then
+                break
+            end
+            for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+                local ok,valid=pcall(function()
+                    return not previous[track] and track.IsPlaying and track.Length>0
+                end)
+                if ok and valid then freshTracks[track]=true end
+            end
+            if next(freshTracks) then break end
+        end
+        local count=0
+        for _ in pairs(freshTracks) do count+=1 end
+        if not closed then
+            log("Novas tracks carregadas: "..count)
+            if count>0 then
+                log("RESULTADO: emote tocou no SEU personagem.")
+            elseif played and playResult==true then
+                log("API aceitou, mas nenhum movimento novo foi confirmado.")
+            else
+                log("RESULTADO: emote nao reproduzido neste jogo.")
+            end
+        end
+
+        -- Alguns emotes sao curtos; deixe a animacao terminar antes de restaurar.
+        if count>0 and not closed then task.wait(2.5) end
+        for track in pairs(freshTracks) do
+            pcall(function() track:Stop(.1) end)
+        end
+        restore()
+        busy=false
     end)
 end
 
@@ -364,6 +349,6 @@ task.spawn(function()
     end
     addResult(3360689775, "Salute (controle oficial)")
     log(tostring(count) .. " Jamals encontrados.")
-    log("Teste SALUTE para comparar; clique em Jamal depois.")
-    log("O painel agora mostra os erros detalhados.")
+    log("Teste SALUTE primeiro; o teste usa o avatar dentro do jogo.")
+    log("A aparencia do personagem sera restaurada apos cada teste.")
 end)
