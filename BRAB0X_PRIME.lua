@@ -1607,7 +1607,7 @@ local function stopEmote()
 
     for _,m in pairs(joints) do
         if m.Parent then
-            m.Transform = CFrame.new()
+            pcall(function() m.Transform = CFrame.new() end)
         end
     end
 
