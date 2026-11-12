@@ -1,4 +1,4 @@
--- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V4 (SEM APPLYDESCRIPTION)
+-- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V5 (VERSAO VISIVEL)
 -- Nao modifica o hub principal nem altera o avatar no servidor.
 -- Busca emotes de catalogo e tenta a API oficial no boneco de previa.
 -- Resultados no painel e no console F9.
@@ -8,16 +8,26 @@ local AvatarEditorService = game:GetService("AvatarEditorService")
 local player = Players.LocalPlayer
 if not player then return end
 
+local BUILD_ID="BRAB0X_EMOTE_V5_SEM_APPLYDESCRIPTION"
 if type(_G.BRAB0X_EMOTE_TEST_STOP) == "function" then
     pcall(_G.BRAB0X_EMOTE_TEST_STOP)
 end
 
+local playerGui=player:WaitForChild("PlayerGui")
+-- Limpa paineis antigos, inclusive se o executor isolar _G entre scripts.
+for _,existing in ipairs(playerGui:GetChildren()) do
+    if existing.Name=="BRAB0X_EMOTE_TEST_ISOLADO"
+        or existing.Name=="BRAB0X_EMOTE_TEST_V5" then
+        existing:Destroy()
+    end
+end
+
 local gui = Instance.new("ScreenGui")
-gui.Name = "BRAB0X_EMOTE_TEST_ISOLADO"
+gui.Name = "BRAB0X_EMOTE_TEST_V5"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Parent = playerGui
 
 local root = Instance.new("Frame")
 root.AnchorPoint = Vector2.new(1, .5)
@@ -42,7 +52,7 @@ local function label(parent, content, height)
     return item
 end
 
-local title = label(root, "BRAB0X | TESTE NO PERSONAGEM", 32)
+local title = label(root, "BRAB0X | EMOTES V5", 32)
 title.Position = UDim2.fromOffset(10, 7)
 title.Font = Enum.Font.GothamBold
 
@@ -75,10 +85,10 @@ avatarHint.Font = Enum.Font.GothamBold
 avatarHint.TextSize = 14
 avatarHint.TextWrapped = true
 avatarHint.TextColor3 = Color3.fromRGB(255, 228, 235)
-avatarHint.Text = "A DANCA VAI ACONTECER\nNO SEU PERSONAGEM\nDENTRO DO JOGO"
+avatarHint.Text = "TESTE V5\nA DANCA VAI ACONTECER\nNO SEU PERSONAGEM"
 avatarHint.Parent = viewport
 
-local status = label(root, "Selecione o emote: ele toca no seu personagem do jogo.", 128)
+local status = label(root, "TESTE V5 | Sem ApplyDescriptionAsync\nEscolha Salute ou Jamal abaixo.", 128)
 status.Position = UDim2.fromOffset(12, 246)
 status.TextYAlignment = Enum.TextYAlignment.Top
 status.TextSize = 11
@@ -102,7 +112,7 @@ local currentWorld
 local busy = false
 local closed = false
 local activeRestore = nil
-local testMessages = {}
+local testMessages = {"VERSAO V5 | SEM ApplyDescriptionAsync | "..BUILD_ID}
 
 local function log(msg)
     if closed then return end
@@ -114,8 +124,8 @@ local function log(msg)
 end
 
 local function beginTest()
-    testMessages = {}
-    status.Text = ""
+    testMessages = {"VERSAO V5 | SEM ApplyDescriptionAsync"}
+    status.Text = testMessages[1]
 end
 
 local function shortError(value)
@@ -174,7 +184,7 @@ local function testId(id,name)
     if busy or closed then return end
     busy=true
     beginTest()
-    log("TESTE LOCAL: "..name.." | ID "..tostring(id))
+    log("TESTE LOCAL V5: "..name.." | ID "..tostring(id))
     log("A danca sera testada no SEU personagem, nao no boneco da janela.")
 
     task.spawn(function()
