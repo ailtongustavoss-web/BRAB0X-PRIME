@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.1 | MELHORIA DE EMOTES POR ID E CATALOGO
+-- BRAB0X PRIME V19.8.2 | EMOTES 3D, R15 FIX, ANTI-FLING
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -3273,7 +3273,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.1 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.2 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -5813,235 +5813,339 @@ for _,c in ipairs({
     item(pages.WORLD,c,c)
 end
 
--- ABA EMOTES
+-- ABA EMOTES | V19.8.2: UMA LISTA COM MINIATURAS 3D ANIMADAS
+-- Animacoes oficiais sao mostradas somente quando o Roblox libera a previa.
+local emotesPage=pages.EMOTES
+local emoteCards={}
+local previewSources={}
+local previewRequested={}
+local previewTimer
+local catalogIds={}
 
-local emotesPage = pages.EMOTES
+local function dropPreview(item)
+    if item.track then pcall(function() item.track:Stop(0) end) end
+    item.track=nil
+    if item.world then item.world:Destroy() item.world=nil end
+    item.active=false
+    item.joints=nil
+end
+local function clearEmotePreview()
+    if previewTimer then previewTimer:Disconnect() previewTimer=nil end
+    for _,item in ipairs(emoteCards) do dropPreview(item) end
+    emoteCards={}
+    catalogIds={}
+end
+v14.cleanupEmotePreviews=clearEmotePreview
+
+local function preloadPreviewSource(rigType)
+    local key=rigType==Enum.HumanoidRigType.R6 and "R6" or "R15"
+    if previewRequested[key] then return end
+    previewRequested[key]=true
+    task.spawn(function()
+        local description=Instance.new("HumanoidDescription")
+        local ok,result=pcall(function()
+            return Players:CreateHumanoidModelFromDescription(description,rigType)
+        end)
+        description:Destroy()
+        if ok and result then
+            result.Archivable=true
+            result.Parent=nil
+            previewSources[key]=result
+        else
+            warn("[BRAB0X PREVIEW] Boneco "..key..": "..tostring(result))
+        end
+    end)
+end
+
+local function addEmoteCard(data)
+    local item={
+        kind=data.kind,id=data.id,name=data.name,style=data.style,
+        rig=data.rig or Enum.HumanoidRigType.R15,
+        active=false,time=0
+    }
+    local row=round(obj("Frame",emotesPage,{
+        Size=UDim2.new(1,-10,0,94),
+        LayoutOrder=#emoteCards+1,
+        BackgroundColor3=control,BorderSizePixel=0
+    }),10)
+    obj("UIStroke",row,{Color=accent,Transparency=.78,Thickness=1})
+    local vp=round(obj("ViewportFrame",row,{
+        Position=UDim2.fromOffset(6,6),Size=UDim2.fromOffset(83,82),
+        BackgroundColor3=Color3.fromRGB(13,13,20),
+        BorderSizePixel=0,
+        LightColor=Color3.fromRGB(255,255,255),
+        Ambient=Color3.fromRGB(174,174,182),
+        LightDirection=Vector3.new(-1,-1,-1)
+    }),8)
+    local name=txt(row,data.name,24,13,true)
+    name.Position=UDim2.fromOffset(100,5)
+    name.Size=UDim2.new(1,-210,0,26)
+    name.TextWrapped=false
+    local category=data.kind=="own" and "DANCA BRAB0X"
+        or data.kind=="catalog" and "CATALOGO" or
+        data.kind=="equipped" and "NO AVATAR" or "CLASSICO"
+    local info=txt(row,category,18,10)
+    info.Position=UDim2.fromOffset(100,30)
+    info.Size=UDim2.new(1,-115,0,18)
+    info.TextColor3=muted
+    local status=txt(row,"AGUARDANDO PREVIA...",18,10)
+    status.Position=UDim2.fromOffset(100,49)
+    status.Size=UDim2.new(1,-113,0,18)
+    status.TextColor3=muted
+    local run=btn(row,"USAR",function()
+        if data.kind=="own" then originalMove(data.style)
+        elseif data.kind=="catalog" and data.id then playEmoteId(data.id,data.name)
+        else playEmote(data.name) end
+    end,35)
+    run.Size=UDim2.fromOffset(93,35)
+    run.Position=UDim2.new(1,-101,0,8)
+    item.row=row
+    item.view=vp
+    item.status=status
+    emoteCards[#emoteCards+1]=item
+end
+
+local function initializePreview(item)
+    local rigKey=item.rig==Enum.HumanoidRigType.R6 and "R6" or "R15"
+    local base=previewSources[rigKey]
+    if not base or not item.view or not item.view.Parent then return end
+    local clone=base:Clone()
+    for _,desc in ipairs(clone:GetDescendants()) do
+        if desc:IsA("LuaSourceContainer") then
+            desc:Destroy()
+        elseif desc:IsA("BasePart") then
+            desc.CanCollide=false
+            desc.CanQuery=false
+            desc.CanTouch=false
+        end
+    end
+    local world=Instance.new("WorldModel")
+    world.Name="EMOTE_WORLD"
+    world.Parent=item.view
+    clone.Parent=world
+    local root=clone:FindFirstChild("HumanoidRootPart")
+    if root then root.Anchored=true end
+    clone:PivotTo(CFrame.new(0,0,0))
+    local camera=Instance.new("Camera")
+    camera.FieldOfView=40
+    camera.CFrame=CFrame.lookAt(Vector3.new(0,2.2,8),Vector3.new(0,1,0))
+    camera.Parent=item.view
+    item.view.CurrentCamera=camera
+    item.world=world
+    item.active=true
+    if item.kind=="own" then
+        item.joints=select(1,discoverDanceJoints(clone))
+        item.status.Text="BONECO ANIMADO"
+        item.status.TextColor3=Color3.fromRGB(153,229,176)
+        return
+    end
+    local humanoid=clone:FindFirstChildOfClass("Humanoid")
+    local animator=humanoid and humanoid:FindFirstChildOfClass("Animator")
+    if not animator and humanoid then
+        animator=Instance.new("Animator",humanoid)
+    end
+    if not item.id or not animator then
+        item.status.Text="PREVIA NAO DISPONIVEL"
+        return
+    end
+    local anim=Instance.new("Animation")
+    anim.AnimationId="rbxassetid://"..tostring(item.id)
+    local ok,track=pcall(function() return animator:LoadAnimation(anim) end)
+    anim:Destroy()
+    if ok and track then
+        item.track=track
+        item.started=os.clock()
+        item.status.Text="TESTANDO ANIMACAO..."
+        pcall(function()
+            track.Looped=true
+            track:Play(.15,1,v14.emoteSpeed)
+        end)
+    else
+        item.status.Text="PREVIA INACESSIVEL"
+    end
+end
+
+local function stepEmotePreview(item,dt)
+    if item.kind=="own" and item.joints then
+        local style=moves[item.style] or moves.groove
+        item.time=item.time+math.min(dt,.08)*style[1]*v14.emoteSpeed
+        local a=math.sin(item.time)
+        local b=math.cos(item.time)
+        local pose={
+            rightshoulder=CFrame.Angles(-.6-style[2]*a,0,.25*b),
+            leftshoulder=CFrame.Angles(-.6+style[2]*a,0,-.25*b),
+            righthip=CFrame.Angles(style[3]*b,0,0),
+            lefthip=CFrame.Angles(-style[3]*b,0,0),
+            waist=CFrame.Angles(0,style[3]*a,0),
+            neck=CFrame.Angles(.08*b,0,0)
+        }
+        for name,cf in pairs(pose) do
+            local joint=item.joints[name]
+            if joint and joint.Parent then
+                pcall(function() joint.Transform=cf end)
+            end
+        end
+    elseif item.track then
+        local ok,len=pcall(function() return item.track.Length end)
+        if ok and len>0 and item.status.Text~="PREVIA ORIGINAL" then
+            item.status.Text="PREVIA ORIGINAL"
+            item.status.TextColor3=Color3.fromRGB(153,229,176)
+        elseif os.clock()-(item.started or os.clock())>3
+            and item.status.Text=="TESTANDO ANIMACAO..." then
+            item.status.Text="PREVIA INDISPONIVEL"
+        end
+    end
+end
+
+local function runEmotePreviews()
+    if previewTimer then previewTimer:Disconnect() end
+    local elapsed=0
+    previewTimer=Run.Heartbeat:Connect(function(dt)
+        if stopped or not emotesPage.Parent then
+            clearEmotePreview()
+            return
+        end
+        elapsed=elapsed+dt
+        if elapsed<.07 then return end
+        local step=elapsed
+        elapsed=0
+        local top=emotesPage.AbsolutePosition.Y
+        local bottom=top+emotesPage.AbsoluteSize.Y
+        local active=0
+        for _,item in ipairs(emoteCards) do
+            local row=item.row
+            local visible=main.Visible and emotesPage.Visible
+                and row and row.Parent
+                and row.AbsolutePosition.Y<bottom+15
+                and row.AbsolutePosition.Y+row.AbsoluteSize.Y>top-15
+            if visible and active<5 then
+                active=active+1
+                if not item.active and previewSources[
+                    item.rig==Enum.HumanoidRigType.R6 and "R6" or "R15"] then
+                    initializePreview(item)
+                end
+                if item.active then stepEmotePreview(item,step) end
+            elseif item.active then
+                dropPreview(item)
+                if item.status.Parent then
+                    item.status.Text="PREVIA AO ROLAR"
+                    item.status.TextColor3=muted
+                end
+            end
+        end
+    end)
+end
 
 local function rebuildEmotes()
+    clearEmotePreview()
     clear(emotesPage)
-
-    titleRow(
-        emotesPage,
-        "EMOTES EQUIPADOS NO AVATAR"
-    )
-
-    local names = {}
-
-    for name in pairs(equippedEmotes()) do
-        names[#names+1] = name
+    preloadPreviewSource(Enum.HumanoidRigType.R15)
+    preloadPreviewSource(Enum.HumanoidRigType.R6)
+    titleRow(emotesPage,"EMOTES • TODAS AS DANCAS JUNTAS")
+    local notice=txt(emotesPage,
+        "Bonecos 3D: animacoes oficiais so aparecem quando o asset e acessivel.",
+        42,11)
+    notice.TextColor3=muted
+    local equipped=equippedEmotes()
+    local rig=(player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        and player.Character:FindFirstChildOfClass("Humanoid").RigType)
+        or Enum.HumanoidRigType.R15
+    local entries={}
+    local used={}
+    for name,ids in pairs(equipped) do
+        entries[#entries+1]={name=name,kind="equipped",
+            id=type(ids)=="table" and tonumber(ids[1]) or nil,rig=rig}
+        used[name:lower()]=true
     end
-
-    table.sort(names)
-
-    if #names == 0 then
-        local l = txt(
-            emotesPage,
-            "Nao ha emotes extras no avatar atual.",
-            39,12
-        )
-
-        l.TextColor3 = muted
+    for _,name in ipairs({"wave","point","cheer","laugh","dance","dance2","dance3"}) do
+        if not used[name] then
+            local ids=classics[name]
+            entries[#entries+1]={name=name,kind="classic",rig=rig,
+                id=rig==Enum.HumanoidRigType.R6 and ids[1] or ids[2]}
+            used[name]=true
+        end
     end
-
-    for _,name in ipairs(names) do
-        btn(emotesPage,"▶ "..name,function()
-            playEmote(name)
-        end)
+    for _,name in ipairs({"groove","samba","robot","disco","shuffle",
+        "bounce","wave","party","moonwalk","sway","jive","zombie",
+        "brazilgroove","jamalstyle","shoulderpop","sidebounce","neonshuffle"}) do
+        entries[#entries+1]={name=name,style=name,
+            kind="own",rig=Enum.HumanoidRigType.R15}
     end
-
-    titleRow(
-        emotesPage,
-        "EMOTES CLASSICOS (SE PERMITIDOS)"
-    )
-
-    for _,name in ipairs({
-        "wave","point","cheer","laugh",
-        "dance","dance2","dance3"
-    }) do
-        btn(emotesPage,"▶ "..name,function()
-            playEmote(name)
-        end)
-    end
-
-    titleRow(
-        emotesPage,
-        "DANCAS ORIGINAIS (RIG MOTOR6D)"
-    )
-
-    for _,name in ipairs({
-        "groove","samba","robot","disco",
-        "shuffle","bounce","wave","party",
-        "moonwalk","sway","jive","zombie",
-        "brazilgroove","jamalstyle","shoulderpop","sidebounce","neonshuffle"
-    }) do
-        btn(emotesPage,"♫ "..name,function()
-            if originalMove(name) then
-                notify("Danca: "..name)
-            end
-        end)
-    end
-
-    titleRow(emotesPage,"EMOTES MODERNOS • REPRODUCAO AUTORIZADA")
-    btn(emotesPage,"▶ JAMAL (SE DISPONIVEL)",function()
-        playEmote("jamal")
-    end)
-    btn(emotesPage,"♫ BRAZIL GROOVE (DANCA ORIGINAL)",function()
-        originalMove("brazilgroove")
-    end)
-    btn(emotesPage,"♫ JAMAL STYLE (ALTERNATIVA ORIGINAL)",function()
-        originalMove("jamalstyle")
-    end)
-    titleRow(emotesPage,"VELOCIDADE DAS ANIMACOES")
-    for _,value in ipairs({"0.5","1","1.5","2"}) do
-        btn(emotesPage,"VELOCIDADE "..value.."x",function()
-            if exec then exec("emotespeed "..value) end
-        end)
-    end
-    btn(emotesPage,"PARAR EMOTE",stopEmote)
-
-    btn(
-        emotesPage,
-        "ATUALIZAR EMOTES",
-        rebuildEmotes
-    )
-
-    titleRow(
-        emotesPage,
-        "CATALOGO ROBLOX"
-    )
-
-    local query = round(obj("TextBox",emotesPage,{
-        Size = UDim2.new(1,-10,0,34),
-        BackgroundColor3 = control,
-        Text = "Jamal",
-        TextColor3 = white,
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        ClearTextOnFocus = false
-    }),7)
-
-    local results = obj("Frame",emotesPage,{
-        Size = UDim2.new(1,-10,0,0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        BackgroundTransparency = 1
+    table.sort(entries,function(a,b)return a.name:lower()<b.name:lower()end)
+    for _,item in ipairs(entries) do addEmoteCard(item) end
+    local controls=obj("Frame",emotesPage,{
+        Size=UDim2.new(1,-10,0,42),BackgroundTransparency=1
     })
-
-    stack(results,5)
-
-    local pagesFound
-    local catalogBusy = false
-
-    local function renderCatalog(items)
+    local stop=btn(controls,"PARAR",stopEmote,40)
+    stop.Size=UDim2.new(.33,-4,0,40)
+    local reload=btn(controls,"ATUALIZAR",rebuildEmotes,40)
+    reload.Size=UDim2.new(.33,-4,0,40)
+    reload.Position=UDim2.new(.33,4,0,0)
+    local diagnostic=btn(controls,"RIGCHECK",function()exec("rigcheck")end,40)
+    diagnostic.Size=UDim2.new(.33,-4,0,40)
+    diagnostic.Position=UDim2.new(.66,8,0,0)
+    local query=round(obj("TextBox",emotesPage,{
+        Size=UDim2.new(1,-10,0,35),
+        BackgroundColor3=control,BorderSizePixel=0,
+        Text="Jamal",PlaceholderText="Buscar no catalogo...",
+        Font=Enum.Font.Gotham,TextSize=13,
+        TextColor3=white,PlaceholderColor3=muted,ClearTextOnFocus=false
+    }),8)
+    local pagesFound=nil
+    local busy=false
+    local function addResults(items)
         for _,info in ipairs(items) do
-            local id = tonumber(info.Id)
-            local name = tostring(info.Name or "Emote")
-
-            if id then
-                btn(
-                    results,
-                    name.." ["..id.."]",
-                    function()
-                        for equipped,ids in pairs(
-                            equippedEmotes()
-                        ) do
-                            if type(ids) == "table" then
-                                for _,ownedID in ipairs(ids) do
-                                    if tonumber(ownedID) == id then
-                                        playEmote(equipped)
-                                        return
-                                    end
-                                end
-                            end
-                        end
-
-                        -- Tenta IDs acessiveis mesmo quando nao equipados.
-                        playEmoteId(id,name)
-                    end
-                )
+            local id=tonumber(info.Id)
+            if id and not catalogIds[id] then
+                catalogIds[id]=true
+                addEmoteCard({name=tostring(info.Name or "Emote"),
+                    id=id,kind="catalog",rig=Enum.HumanoidRigType.R15})
             end
         end
     end
-
-    btn(
-        emotesPage,
-        "PESQUISAR CATALOGO",
-        function()
-            if catalogBusy then return end
-
-            catalogBusy = true
-            clear(results)
-            pagesFound = nil
-
-            task.spawn(function()
-                local ok,p = pcall(function()
-                    local options = CatalogSearchParams.new()
-                    options.SearchKeyword = query.Text
-                    options.AssetTypes = {
-                        Enum.AvatarAssetType.EmoteAnimation
-                    }
-                    options.Limit = 30
-
-                    return Avatar:SearchCatalogAsync(options)
-                end)
-
-                if ok and p then
-                    pagesFound = p
-
-                    local ok2,items = pcall(function()
-                        return p:GetCurrentPage()
-                    end)
-
-                    if ok2 then
-                        renderCatalog(items)
-                        notify("Catalogo carregado")
-                    else
-                        notify("Falha ao ler catalogo")
-                    end
-                else
-                    notify("Busca indisponivel neste jogo")
-                end
-
-                catalogBusy = false
+    local searchBtn=btn(emotesPage,"PESQUISAR EMOTES DO CATALOGO",nil,39)
+    bind(searchBtn.MouseButton1Click,function()
+        if busy then return end
+        busy=true
+        searchBtn.Text="PESQUISANDO..."
+        task.spawn(function()
+            local ok,result=pcall(function()
+                local opts=CatalogSearchParams.new()
+                opts.SearchKeyword=query.Text
+                opts.AssetTypes={Enum.AvatarAssetType.EmoteAnimation}
+                opts.Limit=30
+                return Avatar:SearchCatalogAsync(opts)
             end)
-        end
-    )
-
-    btn(
-        emotesPage,
-        "CARREGAR MAIS RESULTADOS",
-        function()
-            if catalogBusy or not pagesFound then
-                return
-            end
-
-            if pagesFound.IsFinished then
-                notify("Fim dos resultados")
-                return
-            end
-
-            catalogBusy = true
-
-            task.spawn(function()
-                local ok = pcall(function()
-                    pagesFound:AdvanceToNextPageAsync()
-                end)
-
-                if ok then
-                    local ok2,items = pcall(function()
-                        return pagesFound:GetCurrentPage()
-                    end)
-
-                    if ok2 then
-                        renderCatalog(items)
-                    end
+            if ok and result then
+                pagesFound=result
+                local read,items=pcall(function() return result:GetCurrentPage() end)
+                if read and type(items)=="table" then
+                    addResults(items)
+                    notify("Resultados adicionados ao fim da lista.","success")
                 else
-                    notify("Falha ao carregar mais")
+                    notify("Nao foi possivel ler o catalogo.","error")
                 end
-
-                catalogBusy = false
-            end)
-        end
-    )
+            else
+                notify("Busca do catalogo indisponivel.","error")
+            end
+            searchBtn.Text="PESQUISAR EMOTES DO CATALOGO"
+            busy=false
+        end)
+    end)
+    local more=btn(emotesPage,"MAIS RESULTADOS",nil,36)
+    bind(more.MouseButton1Click,function()
+        if busy or not pagesFound or pagesFound.IsFinished then return end
+        busy=true
+        task.spawn(function()
+            local ok=pcall(function() pagesFound:AdvanceToNextPageAsync() end)
+            if ok then
+                local read,items=pcall(function() return pagesFound:GetCurrentPage() end)
+                if read and type(items)=="table" then addResults(items) end
+            end
+            busy=false
+        end)
+    end)
+    runEmotePreviews()
 end
 
 -- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
@@ -7812,6 +7916,7 @@ closeHub = function()
     if v14.stopFreecam then pcall(v14.stopFreecam) end
     if v14.stopPlayerLight then pcall(v14.stopPlayerLight) end
     if v14.stopPlayerAlerts then pcall(v14.stopPlayerAlerts) end
+    if v14.cleanupEmotePreviews then pcall(v14.cleanupEmotePreviews) end
     if v14.cleanup then pcall(v14.cleanup) end
     if v14.introCleanup then pcall(v14.introCleanup) end
     saveV13()
@@ -8380,7 +8485,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.1 | "..#registered..
+        notify("BRAB0X PRIME V19.8.2 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
