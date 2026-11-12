@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_2_STOP",
     "BRAB0X_V19_8_STOP",
     "BRAB0X_V19_7_STOP",
     "BRAB0X_V19_6_STOP",
@@ -5813,6 +5814,8 @@ for _,c in ipairs({
     item(pages.WORLD,c,c)
 end
 
+local rebuildEmotes
+do
 -- ABA EMOTES | V19.8.2: UMA LISTA COM MINIATURAS 3D ANIMADAS
 -- Animacoes oficiais sao mostradas somente quando o Roblox libera a previa.
 local emotesPage=pages.EMOTES
@@ -6040,7 +6043,7 @@ local function runEmotePreviews()
     end)
 end
 
-local function rebuildEmotes()
+rebuildEmotes=function()
     clearEmotePreview()
     clear(emotesPage)
     preloadPreviewSource(Enum.HumanoidRigType.R15)
@@ -6151,6 +6154,8 @@ local function rebuildEmotes()
     end)
     runEmotePreviews()
 end
+
+end -- fim do escopo das previas de emotes
 
 -- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
 local aimTitle=titleRow(pages.AIM,"◎  AIM PARA NPCs DE TREINO")
@@ -7935,8 +7940,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_STOP == closeHub then
-        _G.BRAB0X_V19_8_STOP = nil
+    if _G.BRAB0X_V19_8_2_STOP == closeHub then
+        _G.BRAB0X_V19_8_2_STOP = nil
     end
 end
 
@@ -8062,7 +8067,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_STOP = closeHub
+_G.BRAB0X_V19_8_2_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8472,7 +8477,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.1] "..detail)
+            warn("[BRAB0X PRIME V19.8.2] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
