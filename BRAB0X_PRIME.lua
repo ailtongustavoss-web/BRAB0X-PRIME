@@ -1947,21 +1947,6 @@ local function originalMove(name)
     return true
 end
 
-register("rigcheck","EMOTES","Diagnosticar articulacoes R6 e R15",function()
-    local ch,h=chars()
-    if not ch or not h then return "Avatar nao carregado." end
-    local map,types,all=discoverDanceJoints(ch)
-    local roles={}
-    for key in pairs(map) do roles[#roles+1]=key end
-    table.sort(roles)
-    local message="Rig "..h.RigType.Name.." | Motor6D "..types.Motor6D..
-        " | AnimationConstraint "..types.AnimationConstraint..
-        " | Articulacoes: "..table.concat(roles,", ")
-    print("[BRAB0X RIGCHECK] "..message)
-    print("[BRAB0X RIGCHECK] Detalhes: "..table.concat(all,", "))
-    return message
-end)
-
 -- AIM DE TREINAMENTO
 -- NPCs precisam ter PracticeTarget = true
 
@@ -2130,6 +2115,22 @@ local function num(s,default,min,max)
     local n = tonumber(s)
     return math.clamp(n or default,min,max)
 end
+
+-- DIAGNOSTICO DE RIG: registrado apos a criacao da funcao register.
+register("rigcheck","EMOTES","Diagnosticar articulacoes R6 e R15",function()
+    local ch,h=chars()
+    if not ch or not h then return "Avatar nao carregado." end
+    local map,types,all=discoverDanceJoints(ch)
+    local roles={}
+    for key in pairs(map) do roles[#roles+1]=key end
+    table.sort(roles)
+    local message="Rig "..h.RigType.Name.." | Motor6D "..types.Motor6D..
+        " | AnimationConstraint "..types.AnimationConstraint..
+        " | Articulacoes: "..table.concat(roles,", ")
+    print("[BRAB0X RIGCHECK] "..message)
+    print("[BRAB0X RIGCHECK] Detalhes: "..table.concat(all,", "))
+    return message
+end)
 
 -- FLY
 
