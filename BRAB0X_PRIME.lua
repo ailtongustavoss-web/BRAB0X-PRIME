@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.5 | SKIN CHANGER POR ID + PREVIA 3D
+-- BRAB0X PRIME V19.8.6 | AIM NPC CORRIGIDO + ESTABILIZACAO VISUAL
 -- 338 comandos; catalogo completo pesquisavel e emotes locais em avatar R15.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_6_STOP",
     "BRAB0X_V19_8_5_STOP",
     "BRAB0X_V19_8_4_STOP",
     "BRAB0X_V19_8_3_STOP",
@@ -88,6 +89,7 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_8_3",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_4",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_5",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8_6",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
@@ -96,7 +98,8 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_8",
     "BRAB0X_PRIME_V19_8_3",
     "BRAB0X_PRIME_V19_8_4",
-    "BRAB0X_PRIME_V19_8_5"
+    "BRAB0X_PRIME_V19_8_5",
+    "BRAB0X_PRIME_V19_8_6"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -206,6 +209,9 @@ local S = {
     aimRadius = 150,
     aimSmooth = .16,
     aimCircle = true,
+    aimAutoNPC = true,
+    aimSteady = false,
+    aimSteadyStrength = .35,
     saved = nil,
     glow = false,
     trail = false,
@@ -440,7 +446,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8_5",
+    Name = "BRAB0X_PRIME_V19_8_6",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -510,7 +516,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8_5",
+    Name="BRAB0X_MINI_PREMIUM_V19_8_6",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -2183,51 +2189,55 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_5_AIM"
+local aimKey = "BRAB0X_V19_8_6_AIM"
 local npcCache = {}
 local nextScan = 0
+local lastAimCamera = nil
 
-local function findTarget(camera)
-    if os.clock() > nextScan then
-        npcCache = {}
-        nextScan = os.clock()+2
-
-        for _,v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Model")
-                and v:GetAttribute("PracticeTarget") == true then
-
-                npcCache[#npcCache+1] = v
-            end
-        end
-    end
-
-    local best
-    local dist = S.aimRadius
-
-    for _,model in ipairs(npcCache) do
-        if model.Parent then
-            local h = model:FindFirstChildOfClass("Humanoid")
-
-            local p = model:FindFirstChild("Head")
-                or model:FindFirstChild("HumanoidRootPart")
-
-            if h and h.Health > 0 and p then
-                local point,visible =
-                    camera:WorldToViewportPoint(p.Position)
-
-                local d = (
-                    Vector2.new(point.X,point.Y)
-                    - camera.ViewportSize/2
-                ).Magnitude
-
-                if visible and point.Z > 0 and d < dist then
-                    best = p
-                    dist = d
+-- O modo de treino considera NPCs marcados ou NPCs comuns, se AutoNPC estiver ON.
+-- Nunca inclui o personagem de outro jogador.
+local function scanTrainingNPCs()
+    npcCache = {}
+    nextScan = os.clock()+1.25
+    for _,candidate in ipairs(workspace:GetDescendants()) do
+        if candidate:IsA("Model") and candidate~=player.Character
+            and Players:GetPlayerFromCharacter(candidate)==nil then
+            local humanoid=candidate:FindFirstChildOfClass("Humanoid")
+            local target=candidate:FindFirstChild("Head")
+                or candidate:FindFirstChild("HumanoidRootPart")
+                or candidate:FindFirstChild("UpperTorso")
+            if humanoid and humanoid.Health>0 and
+                target and target:IsA("BasePart") then
+                local marked=candidate:GetAttribute("PracticeTarget")
+                if marked==true or (S.aimAutoNPC and marked~=false) then
+                    npcCache[#npcCache+1]=candidate
                 end
             end
         end
     end
+end
 
+local function findTarget(camera)
+    if os.clock() >= nextScan then scanTrainingNPCs() end
+    local best
+    local radius=S.aimRadius
+    local middle=camera.ViewportSize/2
+    for _,model in ipairs(npcCache) do
+        if model.Parent and Players:GetPlayerFromCharacter(model)==nil then
+            local h=model:FindFirstChildOfClass("Humanoid")
+            local part=model:FindFirstChild("Head")
+                or model:FindFirstChild("HumanoidRootPart")
+                or model:FindFirstChild("UpperTorso")
+            if h and h.Health>0 and part and part:IsA("BasePart") then
+                local point,visible=camera:WorldToViewportPoint(part.Position)
+                local d=(Vector2.new(point.X,point.Y)-middle).Magnitude
+                if visible and point.Z>0 and d<radius then
+                    best=part
+                    radius=d
+                end
+            end
+        end
+    end
     return best
 end
 
@@ -2235,38 +2245,37 @@ Run:BindToRenderStep(
     aimKey,
     Enum.RenderPriority.Camera.Value+1,
     function(dt)
-        if not S.aim
+        if stopped or not config.aimEnabled or not S.aim
             or UIS:GetFocusedTextBox()
-            or (
-                S.aimHold
-                and not UIS:IsMouseButtonPressed(
-                    Enum.UserInputType.MouseButton2
-                )
-            ) then
+            or (S.aimHold and not UIS:IsMouseButtonPressed(
+                Enum.UserInputType.MouseButton2)) then
+            lastAimCamera=nil
             return
         end
-
-        local camera = workspace.CurrentCamera
-        if not camera then return end
-
-        local p = findTarget(camera)
-
-        if p then
-            local desired = CFrame.lookAt(
-                camera.CFrame.Position,
-                p.Position
-            )
-
-            camera.CFrame = camera.CFrame:Lerp(
-                desired,
-                math.clamp(
-                    1-(1-S.aimSmooth)^(
-                        math.max(0,dt)*60
-                    ),
-                    0,1
-                )
-            )
+        local camera=workspace.CurrentCamera
+        if not camera or camera.CameraType==Enum.CameraType.Scriptable then
+            lastAimCamera=nil
+            return
         end
+        local target=findTarget(camera)
+        if not target then lastAimCamera=nil return end
+
+        local pos=camera.CFrame.Position
+        local desired=CFrame.lookAt(pos,target.Position)
+        local alpha=math.clamp(
+            1-(1-S.aimSmooth)^(math.max(0,dt)*60),0,1)
+        local assisted=camera.CFrame:Lerp(desired,alpha)
+
+        -- Estabilizacao visual opcional somente ao treinar com um NPC.
+        -- Nao altera armas, disparos ou logica do servidor.
+        if S.aimSteady and lastAimCamera then
+            local factor=math.clamp(1-S.aimSteadyStrength*.7,.25,1)
+            local stable=lastAimCamera.Rotation:Lerp(assisted.Rotation,factor)
+            camera.CFrame=CFrame.new(pos)*stable.Rotation
+        else
+            camera.CFrame=assisted
+        end
+        lastAimCamera=camera.CFrame
     end
 )
 
@@ -2274,6 +2283,8 @@ Run:BindToRenderStep(
 
 local resetExtras = function() end
 local function resetAll()
+    S.aimSteady=false
+    lastAimCamera=nil
     if v14.skinSeq then v14.skinSeq+=1 end
     if v14.skinRestore then v14.skinRestore() end
     if v14.skinClearPreview then v14.skinClearPreview() end
@@ -2611,6 +2622,43 @@ end,"smooth 0.2")
 
 register("aimhold","AIM","Segurar RMB on/off",function()
     S.aimHold = not S.aimHold
+end)
+
+register("aimnpcauto","AIM","Detectar NPCs comuns sem atributo especial",function(a)
+    if a=="on" then S.aimAutoNPC=true
+    elseif a=="off" then S.aimAutoNPC=false
+    else S.aimAutoNPC=not S.aimAutoNPC end
+    nextScan=0
+    return "Auto detectar NPCs: "..(S.aimAutoNPC and "ON" or "OFF")
+end,"aimnpcauto on")
+
+register("aimsteady","AIM","Estabilizar visualmente a camera no treino",function(a)
+    if a=="on" then S.aimSteady=true
+    elseif a=="off" then S.aimSteady=false
+    else S.aimSteady=not S.aimSteady end
+    lastAimCamera=nil
+    return "Estabilizacao visual: "..(S.aimSteady and "ON" or "OFF")
+end,"aimsteady on")
+
+register("aimstabilize","AIM","Forca da suavizacao visual 0 a 1",function(a)
+    S.aimSteadyStrength=num(a,.35,0,1)
+    return string.format("Estabilizacao visual: %.2f",S.aimSteadyStrength)
+end,"aimstabilize 0.35")
+
+register("aimdiagnostic","AIM","Diagnosticar AIM e NPCs disponiveis",function()
+    scanTrainingNPCs()
+    local camera=workspace.CurrentCamera
+    local part=camera and findTarget(camera)
+    local message=string.format(
+        "AIM: modulo %s | assistencia %s | RMB %s | AutoNPC %s | NPCs %d | no FOV %s",
+        config.aimEnabled and "ON" or "OFF",
+        S.aim and "ON" or "OFF",
+        S.aimHold and "OBRIGATORIO" or "LIVRE",
+        S.aimAutoNPC and "ON" or "OFF",
+        #npcCache,
+        part and part.Parent.Name or "NENHUM")
+    print("[BRAB0X AIM DIAGNOSTICO] "..message)
+    return message
 end)
 
 -- EMOTES
@@ -3498,7 +3546,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.5 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.6 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -6737,7 +6785,7 @@ end -- fim do escopo das previas de emotes
 -- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
 local aimTitle=titleRow(pages.AIM,"◎  AIM PARA NPCs DE TREINO")
 local info=txt(pages.AIM,
-    "Camera assistida somente para NPCs com atributo PracticeTarget=true.",
+    "Detecta NPCs de treino comuns; nao seleciona personagens de jogadores.",
     49,12)
 info.TextColor3=muted
 toggleControl(pages.AIM,"◎  AIM DE TREINO","Assistencia visual para NPCs",
@@ -6746,14 +6794,24 @@ toggleControl(pages.AIM,"◌  CIRCULO FOV","Exibir area de busca",
     function()return S.aimCircle end,"aimcircle on","aimcircle off")
 toggleControl(pages.AIM,"▣  SEGURAR RMB","Requer botao direito pressionado",
     function()return S.aimHold end,"aimholdmode on","aimholdmode off")
+toggleControl(pages.AIM,"◎  AUTO DETECTAR NPCs","Reconhece NPCs sem PracticeTarget",
+    function()return S.aimAutoNPC end,"aimnpcauto on","aimnpcauto off")
+toggleControl(pages.AIM,"◈  CAMERA ESTAVEL","Reduz tremidas visuais durante o treino",
+    function()return S.aimSteady end,"aimsteady on","aimsteady off")
+sliderControl(pages.AIM,"◎  ESTABILIZACAO VISUAL","Intensidade de suavizacao",0,1,.05,
+    function()return S.aimSteadyStrength end,"aimstabilize","%.2f")
 sliderControl(pages.AIM,"◎  RAIO DO AIM","Raio da area de treino",30,350,10,
     function()return S.aimRadius end,"aimfov","%.0f")
 sliderControl(pages.AIM,"≋  SUAVIDADE","Movimento suave da camera",.02,1,.02,
     function()return S.aimSmooth end,"smooth","%.2f")
 local aimExplain=txt(pages.AIM,
-    "Nao seleciona outros jogadores e nao dispara automaticamente.",
-    45,12)
+    "A assistencia so atua com NPC dentro do FOV. Se RMB estiver ON, segure o botao direito. A estabilizacao e visual, nao anti-recoil da arma.",
+    60,12)
 aimExplain.TextColor3=muted
+local aimDiagButton=btn(pages.AIM,"DIAGNOSTICAR AIM / CONTAR NPCs",function()
+    exec("aimdiagnostic")
+end,40)
+aimDiagButton.TextSize=11
 
 -- V13 / PAINEIS INTERATIVOS
 do
@@ -8279,8 +8337,9 @@ refresh = function()
         or Color3.fromRGB(179,172,187)
 
     aimTitle.Text = (
-        "◎  AIM NPC TREINO %s  |  RAIO %d  |  SMOOTH %.2f"
-    ):format(S.aim and "ON" or "OFF",S.aimRadius,S.aimSmooth)
+        "◎  AIM NPC %s  |  RAIO %d  |  SMOOTH %.2f  |  ESTAB %s"
+    ):format(S.aim and "ON" or "OFF",S.aimRadius,S.aimSmooth,
+        S.aimSteady and "ON" or "OFF")
     for _,fn in ipairs(visualUpdates) do fn() end
 
     settingLabel.Text =
@@ -8521,7 +8580,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8558,8 +8617,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_5_STOP == closeHub then
-        _G.BRAB0X_V19_8_5_STOP = nil
+    if _G.BRAB0X_V19_8_6_STOP == closeHub then
+        _G.BRAB0X_V19_8_6_STOP = nil
     end
 end
 
@@ -8685,7 +8744,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_5_STOP = closeHub
+_G.BRAB0X_V19_8_6_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8702,10 +8761,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_5",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_6",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -9079,7 +9138,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -9095,7 +9154,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.5] "..detail)
+            warn("[BRAB0X PRIME V19.8.6] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -9112,7 +9171,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.5 | "..#registered..
+        notify("BRAB0X PRIME V19.8.6 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
