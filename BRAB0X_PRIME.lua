@@ -1845,89 +1845,121 @@ local moves = {
     neonshuffle={10.5,.68,.52}
 }
 
-local function originalMove(name)
-    local style = moves[name]
-    if not style then return false end
-
-    local ch,h = chars()
-    if not ch or not h then return false end
-
-    stopFly()
-    stopEmote()
-
-    for _,m in ipairs(ch:GetDescendants()) do
-        if m:IsA("Motor6D") then
-            joints[m.Name:lower():gsub("[^%w]","")] = m
+-- V19.8.2: suporte a Motor6D e AnimationConstraint (R15 atualizado).
+local function discoverDanceJoints(character)
+    local result={}
+    local types={Motor6D=0,AnimationConstraint=0}
+    local all={}
+    local function norm(x)
+        return tostring(x or ""):lower():gsub("[^%w]","")
+    end
+    for _,joint in ipairs(character:GetDescendants()) do
+        if joint:IsA("Motor6D") or joint:IsA("AnimationConstraint") then
+            types[joint.ClassName]=(types[joint.ClassName] or 0)+1
+            local name=norm(joint.Name)
+            local partName=""
+            local ok,part=pcall(function() return joint.Part1 end)
+            if ok and part then partName=norm(part.Name) end
+            local role
+            if name=="rightshoulder" or partName=="rightupperarm" or partName=="rightarm" then
+                role="rightshoulder"
+            elseif name=="leftshoulder" or partName=="leftupperarm" or partName=="leftarm" then
+                role="leftshoulder"
+            elseif name=="righthip" or partName=="rightupperleg" or partName=="rightleg" then
+                role="righthip"
+            elseif name=="lefthip" or partName=="leftupperleg" or partName=="leftleg" then
+                role="lefthip"
+            elseif name=="waist" or partName=="uppertorso" then
+                role="waist"
+            elseif name=="neck" or partName=="head" then
+                role="neck"
+            end
+            if role and (not result[role] or joint:IsA("AnimationConstraint")) then
+                result[role]=joint
+            end
+            if #all<30 then all[#all+1]=joint.Name.." ("..joint.ClassName..")" end
         end
     end
+    return result,types,all
+end
 
-    if not joints.rightshoulder
-        or not joints.leftshoulder then
-
-        notify("Rig incompatível: use emotes autorizados")
+local function originalMove(name)
+    local style=moves[name]
+    if not style then notify("Danca desconhecida: "..tostring(name),"error") return false end
+    local character,humanoid=chars()
+    if not character or not humanoid or humanoid.Health<=0 then
+        notify("Personagem nao esta pronto.","error")
         return false
     end
-
-    S.emote = name
-
-    local t = 0
-
-    danceStep = Run.PreSimulation:Connect(function(dt)
-        if not ch.Parent or h.Health <= 0 then
+    stopFly()
+    stopEmote()
+    local mapped,types,all=discoverDanceJoints(character)
+    joints=mapped
+    if not joints.rightshoulder and not joints.leftshoulder
+        and not joints.waist and not joints.neck then
+        v14.lastEmoteError="Juntas ausentes: "..humanoid.RigType.Name..
+            " | Motor6D="..types.Motor6D.." | AnimationConstraint="..types.AnimationConstraint
+        warn("[BRAB0X RIG] "..v14.lastEmoteError..
+            " | "..table.concat(all,", "))
+        notify("Rig personalizado nao reconhecido. Use rigcheck.","error")
+        return false
+    end
+    S.emote=name
+    local t=0
+    danceStep=Run.PreSimulation:Connect(function(dt)
+        if stopped or not character.Parent or humanoid.Health<=0 then
             stopEmote()
             return
         end
-
-        t = t+math.min(dt,.05)*style[1]*v14.emoteSpeed
-
-        local a = math.sin(t)
-        local b = math.cos(t)
-
-        local poses = {
-            rightshoulder =
-                CFrame.Angles(-.5-style[2]*a,0,.15*b),
-
-            leftshoulder =
-                CFrame.Angles(-.5+style[2]*a,0,-.15*b),
-
-            righthip =
-                CFrame.Angles(style[3]*b,0,0),
-
-            lefthip =
-                CFrame.Angles(-style[3]*b,0,0),
-
-            waist =
-                CFrame.Angles(0,style[3]*a,0),
-
-            neck =
-                CFrame.Angles(.08*b,0,0)
+        t=t+math.min(dt,.05)*style[1]*v14.emoteSpeed
+        local a,b=math.sin(t),math.cos(t)
+        local poses={
+            rightshoulder=CFrame.Angles(-.5-style[2]*a,0,.15*b),
+            leftshoulder=CFrame.Angles(-.5+style[2]*a,0,-.15*b),
+            righthip=CFrame.Angles(style[3]*b,0,0),
+            lefthip=CFrame.Angles(-style[3]*b,0,0),
+            waist=CFrame.Angles(0,style[3]*a,0),
+            neck=CFrame.Angles(.08*b,0,0)
         }
-
-        -- Variacao original de ombros/quadril para as dancas modernas.
-        if name=="brazilgroove" or name=="jamalstyle"
-            or name=="shoulderpop" or name=="sidebounce"
-            or name=="neonshuffle" then
-            local accentBeat=math.sin(t*1.35)
-            poses.rightshoulder=CFrame.Angles(
-                -.5-style[2]*a,.22*accentBeat,.27*b)
-            poses.leftshoulder=CFrame.Angles(
-                -.5+style[2]*a,-.22*accentBeat,-.27*b)
-            poses.waist=CFrame.Angles(
-                .11*math.sin(t*.55),style[3]*a,.17*math.cos(t*.7))
+        if name=="brazilgroove" or name=="jamalstyle" or name=="shoulderpop"
+            or name=="sidebounce" or name=="neonshuffle" then
+            local accent=math.sin(t*1.35)
+            poses.rightshoulder=CFrame.Angles(-.5-style[2]*a,.22*accent,.27*b)
+            poses.leftshoulder=CFrame.Angles(-.5+style[2]*a,-.22*accent,-.27*b)
+            poses.waist=CFrame.Angles(.11*math.sin(t*.55),style[3]*a,
+                .17*math.cos(t*.7))
             poses.neck=CFrame.Angles(.07*b,0,.10*math.sin(t*.7))
         end
-
-        for part,cf in pairs(poses) do
-            local motor = joints[part]
-
-            if motor and motor.Parent then
-                motor.Transform = cf
+        for role,transform in pairs(poses) do
+            local joint=joints[role]
+            if joint and joint.Parent then
+                local ok,err=pcall(function()
+                    joint.Transform=transform*joint.Transform
+                end)
+                if not ok and not v14.jointWarning then
+                    v14.jointWarning=true
+                    warn("[BRAB0X RIG] Transform: "..tostring(err))
+                end
             end
         end
     end)
-
     return true
 end
+
+register("rigcheck","EMOTES","Diagnosticar articulacoes R6 e R15",function()
+    local ch,h=chars()
+    if not ch or not h then return "Avatar nao carregado." end
+    local map,types,all=discoverDanceJoints(ch)
+    local roles={}
+    for key in pairs(map) do roles[#roles+1]=key end
+    table.sort(roles)
+    local message="Rig "..h.RigType.Name.." | Motor6D "..types.Motor6D..
+        " | AnimationConstraint "..types.AnimationConstraint..
+        " | Articulacoes: "..table.concat(roles,", ")
+    print("[BRAB0X RIGCHECK] "..message)
+    print("[BRAB0X RIGCHECK] Detalhes: "..table.concat(all,", "))
+    return message
+end)
 
 -- AIM DE TREINAMENTO
 -- NPCs precisam ter PracticeTarget = true
@@ -2037,6 +2069,8 @@ Run:BindToRenderStep(
 local resetExtras = function() end
 local function resetAll()
     resetExtras()
+    if v14.stopFling then v14.stopFling() end
+    if v14.stopAntiFling then v14.stopAntiFling() end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.stopWallJump then v14.stopWallJump() end
     if v14.stopFreecam then v14.stopFreecam() end
@@ -3897,6 +3931,107 @@ do
         if v14.exitPhotoMode then v14.exitPhotoMode() end
         resetAll()
         return "Camera, efeitos e configuracoes de movimento restaurados."
+    end)
+end
+
+-- V19.8.2 / FISICA: O servidor pode negar ou corrigir interacoes.
+-- So simula movimento no proprio personagem; nao altera partes de outro usuario.
+do
+    v14.antiFling=false
+    v14.antiFlingConnection=nil
+    v14.stopAntiFling=function()
+        v14.antiFling=false
+        if v14.antiFlingConnection then
+            v14.antiFlingConnection:Disconnect()
+            v14.antiFlingConnection=nil
+        end
+    end
+    register("antifling","PLAYER","Protecao local contra velocidades anormais",function(a)
+        local enable=(a=="on") or (a~="off" and not v14.antiFling)
+        v14.stopAntiFling()
+        if enable then
+            v14.antiFling=true
+            v14.antiFlingConnection=Run.Heartbeat:Connect(function()
+                if stopped or not v14.antiFling then return end
+                local _,humanoid,root=chars()
+                if not root or not humanoid or humanoid.Health<=0 then return end
+                if v14.flingActive then return end
+                local vel=root.AssemblyLinearVelocity
+                local angular=root.AssemblyAngularVelocity
+                if vel.Magnitude>180 or angular.Magnitude>170 then
+                    root.AssemblyAngularVelocity=Vector3.zero
+                    root.AssemblyLinearVelocity=Vector3.new(
+                        math.clamp(vel.X,-38,38),
+                        math.clamp(vel.Y,-35,55),
+                        math.clamp(vel.Z,-38,38))
+                end
+            end)
+        end
+        return "Anti-Fling local: "..(enable and "ON" or "OFF")
+    end,"antifling on")
+    register("unantifling","PLAYER","Desligar Anti-Fling",function()
+        v14.stopAntiFling()
+        return "Anti-Fling: OFF"
+    end)
+    v14.flingActive=false
+    v14.flingConnection=nil
+    v14.flingRestore=nil
+    v14.stopFling=function()
+        if v14.flingConnection then
+            v14.flingConnection:Disconnect()
+            v14.flingConnection=nil
+        end
+        local _,_,root=chars()
+        if v14.flingActive and root then
+            root.AssemblyAngularVelocity=Vector3.zero
+            root.AssemblyLinearVelocity=Vector3.zero
+            if v14.flingRestore then
+                pcall(function() root.CFrame=v14.flingRestore end)
+            end
+        end
+        v14.flingActive=false
+        v14.flingRestore=nil
+    end
+    register("unfling","PLAYER","Parar Fling e restaurar posicao",function()
+        v14.stopFling()
+        return "Fling encerrado."
+    end)
+    register("fling","PLAYER","Tentar colisao giratoria contra jogador especifico",function(arg)
+        local name=tostring(arg or ""):match("^%s*(.-)%s*$"):lower()
+        if name=="" or name=="all" or name=="others" or name=="random" then
+            return "Use: fling nomeDoJogador | nao usa todos/random"
+        end
+        local target=findPlayer(name)
+        if not target or target==player then return "Jogador nao encontrado ou invalido." end
+        local _,humanoid,root=chars()
+        local otherRoot=findRoot(target)
+        if not root or not otherRoot or not humanoid or humanoid.Health<=0 then
+            return "Um dos personagens nao esta pronto."
+        end
+        if v14.flingActive then return "Fling ja ativo. Use unfling." end
+        v14.flingRestore=root.CFrame
+        v14.flingActive=true
+        local start=os.clock()
+        v14.flingConnection=Run.Heartbeat:Connect(function()
+            if stopped or not v14.flingActive or not root.Parent
+                or not otherRoot.Parent or os.clock()-start>1.25 then
+                v14.stopFling()
+                return
+            end
+            local t=os.clock()-start
+            local angle=t*28
+            local offset=Vector3.new(math.sin(angle)*1.2,.1,math.cos(angle)*1.2)
+            pcall(function()
+                root.CFrame=CFrame.new(otherRoot.Position+offset)*
+                    CFrame.Angles(0,angle*4,0)
+                root.AssemblyAngularVelocity=Vector3.new(0,680,0)
+            end)
+        end)
+        return "Tentativa de Fling em @"..target.Name..
+            ". Depende da colisao e autorizacao fisica do servidor."
+    end,"fling nomeDoJogador")
+    bind(player.CharacterRemoving,function()
+        if v14.stopFling then v14.stopFling() end
     end)
 end
 
@@ -7670,6 +7805,8 @@ end
 closeHub = function()
     if stopped then return end
 
+    if v14.stopFling then pcall(v14.stopFling) end
+    if v14.stopAntiFling then pcall(v14.stopAntiFling) end
     if v14.exitPhotoMode then pcall(v14.exitPhotoMode) end
     if v14.stopWallJump then pcall(v14.stopWallJump) end
     if v14.stopFreecam then pcall(v14.stopFreecam) end
