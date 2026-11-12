@@ -810,8 +810,8 @@ do
         SETTINGS="⚙",AIM="⊕"
     }
     local groups={
-        {title="PRINCIPAL",ids={"HOME","COMMANDS","GAMES","PLAYERS","TELEPORT","RECENT"}},
-        {title="CONTROLES",ids={"FLY","PLAYER","CAMERA","WORLD","EMOTES"}},
+        {title="PRINCIPAL",ids={"HOME","COMMANDS","GAMES","PLAYERS","TELEPORT","EMOTES"}},
+        {title="CONTROLES",ids={"FLY","PLAYER","CAMERA","WORLD"}},
         {title="FERRAMENTAS",ids={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
         {title="UTILITARIOS",ids={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","AIM"}}
     }
