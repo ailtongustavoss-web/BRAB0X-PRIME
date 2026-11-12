@@ -456,6 +456,10 @@ local function searchEmotes()
     catalogBusy=true
     catalogPages=nil
     clearResults()
+    -- Mantem um emote de referencia acessivel para comparar com os resultados.
+    shownIds[3360689775]=true
+    foundCount=1
+    addResult(3360689775,"Salute (controle oficial)")
     moreButton.Text="CONSULTANDO CATALOGO..."
     searchButton.Text="..."
     log(keyword=="" and "Buscando TODOS os emotes disponiveis..."
