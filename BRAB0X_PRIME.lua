@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.2 | EMOTES 3D, R15 FIX, ANTI-FLING
+-- BRAB0X PRIME V19.8.3 | AVATAR REAL, DANÇAS DISTINTAS, SELETOR FLING
 -- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
 -- Criado por @wendezao05153nh
 --
@@ -3998,10 +3998,14 @@ do
         v14.stopFling()
         return "Fling encerrado."
     end)
-    register("fling","PLAYER","Tentar colisao giratoria contra jogador especifico",function(arg)
+    register("flingnearest","PLAYER","Atalho para escolher o jogador mais proximo",function()
+        return byName.fling.run("nearest")
+    end)
+    register("fling","PLAYER","Escolher jogador ou usar fling sem nome (proximo)",function(arg)
         local name=tostring(arg or ""):match("^%s*(.-)%s*$"):lower()
-        if name=="" or name=="all" or name=="others" or name=="random" then
-            return "Use: fling nomeDoJogador | nao usa todos/random"
+        if name=="" then name="nearest" end
+        if name=="all" or name=="others" or name=="random" then
+            return "Use: fling (mais proximo) ou aba Jogadores > FLING"
         end
         local target=findPlayer(name)
         if not target or target==player then return "Jogador nao encontrado ou invalido." end
@@ -5848,18 +5852,55 @@ local function preloadPreviewSource(rigType)
     if previewRequested[key] then return end
     previewRequested[key]=true
     task.spawn(function()
-        local description=Instance.new("HumanoidDescription")
-        local ok,result=pcall(function()
-            return Players:CreateHumanoidModelFromDescriptionAsync(description,rigType)
-        end)
-        description:Destroy()
-        if ok and result then
-            result.Archivable=true
-            result.Parent=nil
-            previewSources[key]=result
+        -- O boneco da previa usa o avatar atual em vez de um rig vazio.
+        local source=player.Character
+        local humanoid=source and source:FindFirstChildOfClass("Humanoid")
+        local model
+        if source and humanoid and humanoid.RigType==rigType then
+            local previous=source.Archivable
+            local ok,result=pcall(function()
+                source.Archivable=true
+                return source:Clone()
+            end)
+            source.Archivable=previous
+            if ok and result then model=result end
+        end
+        if not model then
+            local description
+            if humanoid then
+                local ok,result=pcall(function()
+                    return humanoid:GetAppliedDescription()
+                end)
+                if ok and result then description=result end
+            end
+            if not description and player.UserId>0 then
+                local ok,result=pcall(function()
+                    return Players:GetHumanoidDescriptionFromUserIdAsync(player.UserId)
+                end)
+                if ok and result then description=result end
+            end
+            if description then
+                local ok,result=pcall(function()
+                    return Players:CreateHumanoidModelFromDescriptionAsync(
+                        description,rigType)
+                end)
+                description:Destroy()
+                if ok and result then model=result end
+            end
+        end
+        if not model and player.UserId>0 then
+            local ok,result=pcall(function()
+                return Players:CreateHumanoidModelFromUserIdAsync(player.UserId)
+            end)
+            if ok and result then model=result end
+        end
+        if model then
+            model.Archivable=true
+            model.Parent=nil
+            previewSources[key]=model
         else
-            warn("[BRAB0X PREVIEW] Boneco "..key..": "..tostring(result))
-            -- A lista continua utilizavel mesmo se a criacao do rig falhar.
+            warn("[BRAB0X PREVIEW] Falha ao criar avatar de @"
+                ..player.Name.." para "..key)
         end
     end)
 end
@@ -5935,7 +5976,7 @@ local function initializePreview(item)
     clone:PivotTo(CFrame.new(0,0,0))
     local camera=Instance.new("Camera")
     camera.FieldOfView=40
-    camera.CFrame=CFrame.lookAt(Vector3.new(0,2.2,8),Vector3.new(0,1,0))
+    camera.CFrame=CFrame.lookAt(Vector3.new(0,2.0,-7.4),Vector3.new(0,1.1,0))
     camera.Parent=item.view
     item.view.CurrentCamera=camera
     item.camera=camera
@@ -6253,7 +6294,7 @@ updatePlayerManager=function()
             or user.DisplayName:lower():find(query,1,true) then
             total=total+1
             local row=round(obj("Frame",playersHolder,{
-                Size=UDim2.new(1,-8,0,105),
+                Size=UDim2.new(1,-8,0,145),
                 BackgroundColor3=Color3.fromRGB(27,22,30),
                 BorderSizePixel=0
             }),11)
@@ -6283,6 +6324,13 @@ updatePlayerManager=function()
                 {"GOTO",function()exec("goto "..user.Name)end},
                 {"ESPECTAR",function()exec(extraState.lastSpectated==user and "unspectate" or ("spectate "..user.Name))end},
                 {"DISTANCIA",function()exec("distance "..user.Name)end},
+                {"FLING",function()
+                    if user==player then
+                        notify("Escolha outro jogador no Player Manager.","info")
+                    else
+                        exec("fling "..user.Name)
+                    end
+                end},
                 {"COPIAR NOME",function()
                     if type(setclipboard)=="function" then
                         local ok=pcall(setclipboard,user.Name)
@@ -6293,10 +6341,20 @@ updatePlayerManager=function()
                     notify("Nome no campo inferior: Ctrl+A / Ctrl+C")
                 end}
             }
+            -- Acoes em duas linhas para manter os botoes dentro do painel.
+            local actionsHolder=obj("Frame",row,{
+                Position=UDim2.fromOffset(106,68),
+                Size=UDim2.new(1,-114,0,68),
+                BackgroundTransparency=1
+            })
+            obj("UIGridLayout",actionsHolder,{
+                CellSize=UDim2.new(1/3,-6,0,30),
+                CellPadding=UDim2.fromOffset(4,4),
+                SortOrder=Enum.SortOrder.LayoutOrder
+            })
             for i,entry in ipairs(labels) do
-                local b=btn(row,entry[1],entry[2],30)
-                b.Position=UDim2.new(0,106,0,66)+UDim2.fromOffset((i-1)*145,0)
-                b.Size=UDim2.fromOffset(137,29)
+                local b=btn(actionsHolder,entry[1],entry[2],30)
+                b.LayoutOrder=i
                 b.TextSize=10
             end
         end
