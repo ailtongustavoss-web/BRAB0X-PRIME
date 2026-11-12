@@ -1846,6 +1846,135 @@ local moves = {
     neonshuffle={10.5,.68,.52}
 }
 
+-- Coreografias com poses diferentes: a miniatura e a danca usam o mesmo motor.
+local function buildDancePoses(name,t,style)
+    style=style or moves.groove
+    local a,b=math.sin(t),math.cos(t)
+    local s=math.sin(t*.5)
+    local double=math.sin(t*2)
+    local fast=math.cos(t*2.2)
+    local poses={
+        rightshoulder=CFrame.Angles(-.5-style[2]*a,0,.15*b),
+        leftshoulder=CFrame.Angles(-.5+style[2]*a,0,-.15*b),
+        righthip=CFrame.Angles(style[3]*b,0,0),
+        lefthip=CFrame.Angles(-style[3]*b,0,0),
+        waist=CFrame.Angles(0,style[3]*a,0),
+        neck=CFrame.Angles(.08*b,0,0)
+    }
+    if name=="samba" then
+        poses.rightshoulder=CFrame.Angles(-1.05,.35*a,.52*b)
+        poses.leftshoulder=CFrame.Angles(-.85,-.4*a,-.55*b)
+        poses.righthip=CFrame.Angles(.55*a,.13*b,0)
+        poses.lefthip=CFrame.Angles(-.55*a,-.13*b,0)
+        poses.waist=CFrame.Angles(.1*b,.6*a,.28*double)
+    elseif name=="robot" then
+        local snap=math.floor(t*1.5)/1.5
+        local k=math.sin(snap*2)
+        poses.rightshoulder=CFrame.Angles(-1.4+.7*k,0,.75)
+        poses.leftshoulder=CFrame.Angles(-.65-.5*k,0,-.75)
+        poses.righthip=CFrame.Angles(.24*math.sign(k),0,0)
+        poses.lefthip=CFrame.Angles(-.24*math.sign(k),0,0)
+        poses.waist=CFrame.Angles(0,.42*math.sign(k),0)
+        poses.neck=CFrame.Angles(.08,math.sign(k)*.2,0)
+    elseif name=="disco" then
+        local right=math.sin(t*.7)>=0
+        poses.rightshoulder=CFrame.Angles(right and -2.45 or -.15,0,.22*b)
+        poses.leftshoulder=CFrame.Angles(right and -.12 or -2.45,0,-.22*b)
+        poses.righthip=CFrame.Angles(.35*a,0,0)
+        poses.lefthip=CFrame.Angles(-.35*a,0,0)
+        poses.waist=CFrame.Angles(.04,.35*a,.25*b)
+        poses.neck=CFrame.Angles(0,.2*a,.1*b)
+    elseif name=="shuffle" then
+        poses.rightshoulder=CFrame.Angles(-.4-.5*double,0,.15*a)
+        poses.leftshoulder=CFrame.Angles(-.4+.5*double,0,-.15*a)
+        poses.righthip=CFrame.new(0,0,.12*double)*CFrame.Angles(.9*a,0,0)
+        poses.lefthip=CFrame.new(0,0,-.12*double)*CFrame.Angles(-.9*a,0,0)
+        poses.waist=CFrame.Angles(.16*math.abs(a),.18*b,0)
+    elseif name=="bounce" then
+        local up=math.abs(double)
+        poses.rightshoulder=CFrame.Angles(-.3-up*.9,0,.35*a)
+        poses.leftshoulder=CFrame.Angles(-.3-up*.9,0,-.35*a)
+        poses.righthip=CFrame.Angles(.45*up,0,0)
+        poses.lefthip=CFrame.Angles(.45*up,0,0)
+        poses.waist=CFrame.new(0,-.11*up,0)*CFrame.Angles(.12*up,0,0)
+    elseif name=="wave" then
+        poses.rightshoulder=CFrame.Angles(-1.5,.55*b,.7*a)
+        poses.leftshoulder=CFrame.Angles(-.15,0,-.06*b)
+        poses.righthip=CFrame.Angles(.15*a,0,0)
+        poses.lefthip=CFrame.Angles(-.15*a,0,0)
+        poses.waist=CFrame.Angles(0,.1*a,.13*b)
+    elseif name=="party" then
+        poses.rightshoulder=CFrame.Angles(-2.1+.25*double,.15*a,.25*b)
+        poses.leftshoulder=CFrame.Angles(-2.1-.25*double,-.15*a,-.25*b)
+        poses.righthip=CFrame.Angles(.35*a,0,0)
+        poses.lefthip=CFrame.Angles(-.35*a,0,0)
+        poses.waist=CFrame.new(0,.10*math.abs(double),0)*CFrame.Angles(0,.25*a,0)
+    elseif name=="moonwalk" then
+        poses.rightshoulder=CFrame.Angles(-.25-.15*a,0,.05)
+        poses.leftshoulder=CFrame.Angles(-.25+.15*a,0,-.05)
+        poses.righthip=CFrame.new(0,0,.22*a)*CFrame.Angles(.22*b,0,0)
+        poses.lefthip=CFrame.new(0,0,-.22*a)*CFrame.Angles(-.22*b,0,0)
+        poses.waist=CFrame.Angles(-.22,.15*s,0)
+    elseif name=="sway" then
+        poses.rightshoulder=CFrame.Angles(-.25,0,.35*a)
+        poses.leftshoulder=CFrame.Angles(-.25,0,.35*a)
+        poses.righthip=CFrame.Angles(.12*b,0,0)
+        poses.lefthip=CFrame.Angles(-.12*b,0,0)
+        poses.waist=CFrame.Angles(0,.2*a,.48*s)
+        poses.neck=CFrame.Angles(.03,.1*s,-.16*s)
+    elseif name=="jive" then
+        poses.rightshoulder=CFrame.Angles(-.85-.6*a,.15*b,.45*b)
+        poses.leftshoulder=CFrame.Angles(-.85+.6*a,-.15*b,-.45*b)
+        poses.righthip=CFrame.Angles(.85*double,0,0)
+        poses.lefthip=CFrame.Angles(-.85*double,0,0)
+        poses.waist=CFrame.Angles(.18*a,.2*b,.16*double)
+    elseif name=="zombie" then
+        poses.rightshoulder=CFrame.Angles(-1.65,.1*a,.1)
+        poses.leftshoulder=CFrame.Angles(-1.65,-.1*a,-.1)
+        poses.righthip=CFrame.Angles(.24*a,0,0)
+        poses.lefthip=CFrame.Angles(-.24*a,0,0)
+        poses.waist=CFrame.Angles(-.24,.09*b,.05*a)
+        poses.neck=CFrame.Angles(.18,.1*s,0)
+    elseif name=="brazilgroove" then
+        poses.rightshoulder=CFrame.Angles(-1.1-.44*a,.4*b,.32*double)
+        poses.leftshoulder=CFrame.Angles(-.55+.52*a,-.35*b,-.4*double)
+        poses.righthip=CFrame.Angles(.5*a,.16*b,0)
+        poses.lefthip=CFrame.Angles(-.5*a,-.16*b,0)
+        poses.waist=CFrame.Angles(.1*double,.6*a,.22*b)
+        poses.neck=CFrame.Angles(.08*b,.18*a,0)
+    elseif name=="jamalstyle" then
+        local beat=math.abs(double)
+        poses.rightshoulder=CFrame.Angles(-.65-1.15*beat,.36*a,.24*b)
+        poses.leftshoulder=CFrame.Angles(-1.1+.55*double,-.33*a,-.18*b)
+        poses.righthip=CFrame.Angles(.55*double,.15*a,0)
+        poses.lefthip=CFrame.Angles(-.42*double,-.15*a,0)
+        poses.waist=CFrame.new(0,-.07*beat,0)*CFrame.Angles(.18*b,.45*double,.22*a)
+        poses.neck=CFrame.Angles(.16*a,-.1*b,.13*double)
+    elseif name=="shoulderpop" then
+        local pop=math.max(0,fast)
+        poses.rightshoulder=CFrame.Angles(-.45-pop*.95,0,.2)
+        poses.leftshoulder=CFrame.Angles(-.45-math.max(0,-fast)*.95,0,-.2)
+        poses.righthip=CFrame.Angles(.12*a,0,0)
+        poses.lefthip=CFrame.Angles(-.12*a,0,0)
+        poses.waist=CFrame.Angles(.08*b,.2*a,.08*b)
+        poses.neck=CFrame.Angles(.04,0,.14*fast)
+    elseif name=="sidebounce" then
+        poses.rightshoulder=CFrame.Angles(-.45-.5*a,0,.55*b)
+        poses.leftshoulder=CFrame.Angles(-.45-.5*b,0,-.55*a)
+        poses.righthip=CFrame.Angles(.42*math.abs(a),0,.12*b)
+        poses.lefthip=CFrame.Angles(.42*math.abs(b),0,-.12*a)
+        poses.waist=CFrame.new(.14*a,-.07*math.abs(double),0)*
+            CFrame.Angles(.1*b,.16*a,.38*a)
+    elseif name=="neonshuffle" then
+        poses.rightshoulder=CFrame.Angles(-1.15+.55*double,.15*a,.18*b)
+        poses.leftshoulder=CFrame.Angles(-1.15-.55*double,-.15*a,-.18*b)
+        poses.righthip=CFrame.new(0,0,.13*double)*CFrame.Angles(1.05*a,0,0)
+        poses.lefthip=CFrame.new(0,0,-.13*double)*CFrame.Angles(-1.05*a,0,0)
+        poses.waist=CFrame.Angles(.17*math.abs(a),.36*b,.1*double)
+    end
+    return poses
+end
+
 -- V19.8.2: suporte a Motor6D e AnimationConstraint (R15 atualizado).
 local function discoverDanceJoints(character)
     local result={}
@@ -1913,24 +2042,7 @@ local function originalMove(name)
             return
         end
         t=t+math.min(dt,.05)*style[1]*v14.emoteSpeed
-        local a,b=math.sin(t),math.cos(t)
-        local poses={
-            rightshoulder=CFrame.Angles(-.5-style[2]*a,0,.15*b),
-            leftshoulder=CFrame.Angles(-.5+style[2]*a,0,-.15*b),
-            righthip=CFrame.Angles(style[3]*b,0,0),
-            lefthip=CFrame.Angles(-style[3]*b,0,0),
-            waist=CFrame.Angles(0,style[3]*a,0),
-            neck=CFrame.Angles(.08*b,0,0)
-        }
-        if name=="brazilgroove" or name=="jamalstyle" or name=="shoulderpop"
-            or name=="sidebounce" or name=="neonshuffle" then
-            local accent=math.sin(t*1.35)
-            poses.rightshoulder=CFrame.Angles(-.5-style[2]*a,.22*accent,.27*b)
-            poses.leftshoulder=CFrame.Angles(-.5+style[2]*a,-.22*accent,-.27*b)
-            poses.waist=CFrame.Angles(.11*math.sin(t*.55),style[3]*a,
-                .17*math.cos(t*.7))
-            poses.neck=CFrame.Angles(.07*b,0,.10*math.sin(t*.7))
-        end
+        local poses=buildDancePoses(name,t,style)
         for role,transform in pairs(poses) do
             local joint=joints[role]
             if joint and joint.Parent then
@@ -6018,16 +6130,7 @@ local function stepEmotePreview(item,dt)
     if item.kind=="own" and item.joints then
         local style=moves[item.style] or moves.groove
         item.time=item.time+math.min(dt,.08)*style[1]*v14.emoteSpeed
-        local a=math.sin(item.time)
-        local b=math.cos(item.time)
-        local pose={
-            rightshoulder=CFrame.Angles(-.6-style[2]*a,0,.25*b),
-            leftshoulder=CFrame.Angles(-.6+style[2]*a,0,-.25*b),
-            righthip=CFrame.Angles(style[3]*b,0,0),
-            lefthip=CFrame.Angles(-style[3]*b,0,0),
-            waist=CFrame.Angles(0,style[3]*a,0),
-            neck=CFrame.Angles(.08*b,0,0)
-        }
+        local pose=buildDancePoses(item.style,item.time,style)
         for name,cf in pairs(pose) do
             local joint=item.joints[name]
             if joint and joint.Parent then
