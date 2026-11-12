@@ -1601,8 +1601,17 @@ v14.emoteSpeed=math.clamp(tonumber(v14.emoteSpeed) or 1,.2,3)
 v14.officialEmoteTracks={}
 v14.directEmoteSession=nil
 v14.lastEmoteError=nil
+v14.restoreCatalogEmote=nil
 
 local function stopEmote()
+    -- Restaura a lista de emotes anterior se uma busca do catalogo
+    -- a alterou temporariamente no HumanoidDescription local.
+    local restore=v14.restoreCatalogEmote
+    v14.restoreCatalogEmote=nil
+    if restore then
+        local ok,err=pcall(restore)
+        if not ok then warn("[BRAB0X EMOTES RESTORE] "..tostring(err)) end
+    end
     if danceStep then
         danceStep:Disconnect()
         danceStep = nil
@@ -1652,67 +1661,157 @@ local function equippedEmotes()
         and emotes or {}
 end
 
--- Testa Animations acessiveis por ID, sem contornar permissoes do Roblox.
+-- V19.8.4: o ID do catalogo e do EMOTE, nao o AnimationId interno.
+-- Utiliza SetEmotes/SetEquippedEmotes no HumanoidDescription do
+-- LocalPlayer, como no teste V5 validado pelo jogador.
 local function playEmoteId(rawId,label)
     local id=tonumber(rawId)
     if not id or id<1 or id~=math.floor(id) or id>=1e16 then
-        notify("ID invalido. Exemplo: emoteid 3360689775","error")
+        notify("ID de emote invalido. Use: emoteid 3360689775","error")
         return false
     end
-    local _,h=chars()
-    if not h or h.Health<=0 then notify("Avatar indisponivel","error") return false end
-    local animator=h:FindFirstChildOfClass("Animator")
-    if not animator then notify("Animator indisponivel","error") return false end
+    local character,humanoid=chars()
+    if not humanoid or humanoid.Health<=0 then
+        notify("Personagem indisponivel.","error")
+        return false
+    end
+    if humanoid.RigType~=Enum.HumanoidRigType.R15 then
+        notify("Emotes do catalogo exigem avatar R15 neste teste.","error")
+        return false
+    end
+    local description=humanoid:FindFirstChildOfClass("HumanoidDescription")
+    local animator=humanoid:FindFirstChildOfClass("Animator")
+    if not description or not animator then
+        v14.lastEmoteError="HumanoidDescription ou Animator nao encontrado no avatar."
+        notify(v14.lastEmoteError,"error")
+        return false
+    end
+    local okEmotes,emotes=pcall(function() return description:GetEmotes() end)
+    local okEquipped,equipped=pcall(function()
+        return description:GetEquippedEmotes()
+    end)
+    if not okEmotes or not okEquipped
+        or type(emotes)~="table" or type(equipped)~="table" then
+        v14.lastEmoteError="Nao foi possivel ler a lista local de emotes."
+        notify(v14.lastEmoteError,"error")
+        return false
+    end
+    -- Faz copias dos dados originais, sem alterar a conta ou dados do servidor.
+    local originalEmotes={}
+    local replacementEmotes={}
+    for name,ids in pairs(emotes) do
+        if type(ids)=="table" then
+            local original={}
+            local replacement={}
+            for i,value in ipairs(ids) do
+                original[i]=value
+                replacement[i]=value
+            end
+            originalEmotes[name]=original
+            replacementEmotes[name]=replacement
+        end
+    end
+    local originalEquipped={}
+    for i,entry in ipairs(equipped) do
+        if type(entry)=="table" then
+            local item={}
+            for k,v in pairs(entry) do item[k]=v end
+            originalEquipped[i]=item
+        else
+            originalEquipped[i]=entry
+        end
+    end
     stopFly()
     stopEmote()
-    h.Sit=false
-    h.PlatformStand=false
-    local a=Instance.new("Animation")
-    a.AnimationId="rbxassetid://"..string.format("%.0f",id)
-    local loaded,track=pcall(function() return animator:LoadAnimation(a) end)
-    a:Destroy()
-    if not loaded or not track then
-        v14.lastEmoteError="Falha ao carregar asset "..tostring(id)..": "..tostring(track)
-        warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
-        notify("Animacao inacessivel ou formato incompatível.","error")
-        return false
-    end
+    local display=tostring(label or ("Emote "..tostring(id)))
+    local tempName="BRAB0X_CATALOG_"..string.format("%.0f",id)
+    replacementEmotes[tempName]={id}
+    local restored=false
+    local newTracks={}
     local token={}
-    local display=tostring(label or ("ID "..string.format("%.0f",id)))
-    v14.directEmoteSession=token
-    animTrack=track
-    S.emote=display
-    local played,reason=pcall(function()
-        track.Priority=Enum.AnimationPriority.Action
-        track:Play(.12,1,v14.emoteSpeed)
+    local function restore()
+        if restored then return end
+        restored=true
+        for _,track in ipairs(newTracks) do
+            pcall(function() track:Stop(.13) end)
+        end
+        if description.Parent and player.Character==character then
+            local okA,errA=pcall(function()
+                description:SetEmotes(originalEmotes)
+            end)
+            local okB,errB=pcall(function()
+                description:SetEquippedEmotes(originalEquipped)
+            end)
+            if not okA or not okB then
+                warn("[BRAB0X EMOTES] Falha ao restaurar emotes: "..
+                    tostring((not okA and errA) or errB))
+            end
+        end
+    end
+    local setOk,setErr=pcall(function()
+        description:SetEmotes(replacementEmotes)
+        description:SetEquippedEmotes({tempName})
     end)
-    if not played then
-        v14.lastEmoteError="Falha ao reproduzir "..tostring(id)..": "..tostring(reason)
+    if not setOk then
+        pcall(restore)
+        v14.lastEmoteError="SetEmotes falhou: "..tostring(setErr)
         warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
-        stopEmote()
-        notify("Erro ao reproduzir este ID.","error")
+        notify("Emote nao pode ser configurado nesta experiencia.","error")
         return false
     end
-    notify("Testando "..display.." | ID "..string.format("%.0f",id),"info")
+    v14.restoreCatalogEmote=restore
+    v14.directEmoteSession=token
+    S.emote=display
+    notify("Tentando emote original: "..display,"info")
     task.spawn(function()
-        local start=os.clock()
-        local ready=false
-        while os.clock()-start<2.5 do
-            if stopped or v14.directEmoteSession~=token then return end
-            local ok,len=pcall(function() return track.Length end)
-            if ok and len>0 then ready=true break end
-            task.wait(.12)
+        local previous={}
+        for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+            previous[track]=true
         end
-        if stopped or v14.directEmoteSession~=token then return end
-        if ready then
+        local ok,played=pcall(function()
+            return humanoid:PlayEmoteAsync(tempName)
+        end)
+        if not ok or played~=true then
+            local fallbackOk,fallback=pcall(function()
+                return humanoid:PlayEmote(tempName)
+            end)
+            if fallbackOk and fallback==true then
+                ok=true
+                played=true
+            else
+                v14.lastEmoteError="Emote "..display..
+                    " rejeitado: "..tostring((not ok and played) or fallback)
+                warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
+            end
+        end
+        if stopped or v14.directEmoteSession~=token then
+            pcall(restore)
+            return
+        end
+        task.wait(.35)
+        if stopped or v14.directEmoteSession~=token then
+            pcall(restore)
+            return
+        end
+        for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+            if not previous[track] and track.IsPlaying then
+                newTracks[#newTracks+1]=track
+                pcall(function() track:AdjustSpeed(v14.emoteSpeed) end)
+            end
+        end
+        if ok and played==true then
             v14.lastEmoteError=nil
-            notify("Animacao carregada: "..display,"success")
+            notify("Emote aceito: "..display..
+                " | "..#newTracks.." tracks novas","success")
         else
-            v14.lastEmoteError="O asset "..tostring(id)..
-                " nao disponibilizou animacao nesta experiencia."
-            warn("[BRAB0X EMOTES] "..v14.lastEmoteError)
+            notify("Esse emote nao foi reproduzido. Use emoteerror.","error")
+        end
+        -- Os emotes sao configurados apenas durante o teste/reproducao.
+        task.wait(3)
+        if not stopped and v14.directEmoteSession==token then
             stopEmote()
-            notify("Este ID nao pode ser reproduzido aqui. Veja F9.","error")
+        else
+            pcall(restore)
         end
     end)
     return true
@@ -6108,6 +6207,13 @@ local function initializePreview(item)
     if not animator and humanoid then
         animator=Instance.new("Animator",humanoid)
     end
+    if item.kind=="catalog" then
+        -- Item do catalogo e um emote, nao um AnimationId de preview.
+        -- Exibe o avatar real estatico e executa no jogador ao clicar USAR.
+        item.status.Text="EXECUTA NO SEU AVATAR"
+        item.status.TextColor3=muted
+        return
+    end
     if not item.id or not animator then
         item.status.Text="PREVIA NAO DISPONIVEL"
         return
@@ -6242,60 +6348,109 @@ rebuildEmotes=function()
     local query=round(obj("TextBox",emotesPage,{
         Size=UDim2.new(1,-10,0,35),
         BackgroundColor3=control,BorderSizePixel=0,
-        Text="Jamal",PlaceholderText="Buscar no catalogo...",
+        Text="",PlaceholderText="Qualquer emote (vazio = todos)...",
         Font=Enum.Font.Gotham,TextSize=13,
         TextColor3=white,PlaceholderColor3=muted,ClearTextOnFocus=false
     }),8)
     local pagesFound=nil
     local busy=false
+    local searchSerial=0
+    local currentQuery=""
+    local function clearCatalog()
+        -- Mantem os emotes ja equipados e as dancas proprias na mesma lista.
+        for i=#emoteCards,1,-1 do
+            local item=emoteCards[i]
+            if item.kind=="catalog" then
+                dropPreview(item)
+                if item.row and item.row.Parent then item.row:Destroy() end
+                table.remove(emoteCards,i)
+            end
+        end
+        catalogIds={}
+    end
     local function addResults(items)
+        local added=0
         for _,info in ipairs(items) do
             local id=tonumber(info.Id)
             if id and not catalogIds[id] then
                 catalogIds[id]=true
-                addEmoteCard({name=tostring(info.Name or "Emote"),
+                addEmoteCard({name=tostring(info.Name or ("Emote "..id)),
                     id=id,kind="catalog",rig=Enum.HumanoidRigType.R15})
+                added+=1
             end
         end
+        return added
     end
-    local searchBtn=btn(emotesPage,"PESQUISAR EMOTES DO CATALOGO",nil,39)
-    bind(searchBtn.MouseButton1Click,function()
+    local searchBtn=btn(emotesPage,"BUSCAR EMOTES (VAZIO = TODOS)",nil,39)
+    local function searchCatalog()
         if busy then return end
         busy=true
+        searchSerial+=1
+        local serial=searchSerial
+        currentQuery=query.Text:gsub("^%s+",""):gsub("%s+$","")
+        pagesFound=nil
+        clearCatalog()
         searchBtn.Text="PESQUISANDO..."
         task.spawn(function()
             local ok,result=pcall(function()
                 local opts=CatalogSearchParams.new()
-                opts.SearchKeyword=query.Text
+                opts.SearchKeyword=currentQuery
                 opts.AssetTypes={Enum.AvatarAssetType.EmoteAnimation}
                 opts.Limit=30
                 return Avatar:SearchCatalogAsync(opts)
             end)
-            if ok and result then
-                pagesFound=result
-                local read,items=pcall(function() return result:GetCurrentPage() end)
-                if read and type(items)=="table" then
-                    addResults(items)
-                    notify("Resultados adicionados ao fim da lista.","success")
+            if not stopped and serial==searchSerial then
+                if ok and result then
+                    pagesFound=result
+                    local read,items=pcall(function()
+                        return result:GetCurrentPage()
+                    end)
+                    if read and type(items)=="table" then
+                        notify(addResults(items)..
+                            " emotes encontrados. Use MAIS RESULTADOS.","success")
+                    else
+                        notify("Falha ao ler o catalogo.","error")
+                    end
                 else
-                    notify("Nao foi possivel ler o catalogo.","error")
+                    notify("Busca indisponivel. Experimente digitar um nome.","error")
+                    warn("[BRAB0X EMOTE SEARCH] "..tostring(result))
                 end
-            else
-                notify("Busca do catalogo indisponivel.","error")
+                searchBtn.Text="BUSCAR EMOTES (VAZIO = TODOS)"
             end
-            searchBtn.Text="PESQUISAR EMOTES DO CATALOGO"
             busy=false
         end)
+    end
+    bind(searchBtn.MouseButton1Click,searchCatalog)
+    bind(query.FocusLost,function(enter)
+        if enter then searchCatalog() end
     end)
     local more=btn(emotesPage,"MAIS RESULTADOS",nil,36)
     bind(more.MouseButton1Click,function()
-        if busy or not pagesFound or pagesFound.IsFinished then return end
+        if busy or not pagesFound then return end
+        if pagesFound.IsFinished then
+            notify("Todos os resultados desta busca ja foram exibidos.","info")
+            return
+        end
         busy=true
+        local currentPage=pagesFound
         task.spawn(function()
-            local ok=pcall(function() pagesFound:AdvanceToNextPageAsync() end)
-            if ok then
-                local read,items=pcall(function() return pagesFound:GetCurrentPage() end)
-                if read and type(items)=="table" then addResults(items) end
+            local ok,err=pcall(function()
+                currentPage:AdvanceToNextPageAsync()
+            end)
+            if not stopped and pagesFound==currentPage then
+                if ok then
+                    local read,items=pcall(function()
+                        return currentPage:GetCurrentPage()
+                    end)
+                    if read and type(items)=="table" then
+                        notify("Mais "..addResults(items).." emotes adicionados.","success")
+                    else
+                        notify("Nao foi possivel carregar esta pagina.","error")
+                    end
+                else
+                    notify("Falha ao avancar resultados.","error")
+                    warn("[BRAB0X EMOTE SEARCH] "..tostring(err))
+                end
             end
             busy=false
         end)
