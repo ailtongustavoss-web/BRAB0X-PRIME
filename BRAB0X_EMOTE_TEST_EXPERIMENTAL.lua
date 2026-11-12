@@ -1,4 +1,4 @@
--- BRAB0X PRIME - TESTE DE EMOTES NO LOCALPLAYER V5 (VERSAO VISIVEL)
+-- BRAB0X PRIME - TESTE DE EMOTES V6 | BUSCA EM TODO O CATALOGO
 -- Nao modifica o hub principal nem altera o avatar no servidor.
 -- Busca emotes de catalogo e tenta a API oficial no boneco de previa.
 -- Resultados no painel e no console F9.
@@ -8,7 +8,7 @@ local AvatarEditorService = game:GetService("AvatarEditorService")
 local player = Players.LocalPlayer
 if not player then return end
 
-local BUILD_ID="BRAB0X_EMOTE_V5_SEM_APPLYDESCRIPTION"
+local BUILD_ID="BRAB0X_EMOTE_V6_BUSCA_GERAL"
 if type(_G.BRAB0X_EMOTE_TEST_STOP) == "function" then
     pcall(_G.BRAB0X_EMOTE_TEST_STOP)
 end
@@ -17,13 +17,14 @@ local playerGui=player:WaitForChild("PlayerGui")
 -- Limpa paineis antigos, inclusive se o executor isolar _G entre scripts.
 for _,existing in ipairs(playerGui:GetChildren()) do
     if existing.Name=="BRAB0X_EMOTE_TEST_ISOLADO"
-        or existing.Name=="BRAB0X_EMOTE_TEST_V5" then
+        or existing.Name=="BRAB0X_EMOTE_TEST_V5"
+        or existing.Name=="BRAB0X_EMOTE_TEST_V6" then
         existing:Destroy()
     end
 end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "BRAB0X_EMOTE_TEST_V5"
+gui.Name = "BRAB0X_EMOTE_TEST_V6"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999
@@ -32,7 +33,7 @@ gui.Parent = playerGui
 local root = Instance.new("Frame")
 root.AnchorPoint = Vector2.new(1, .5)
 root.Position = UDim2.new(1, -14, .5, 0)
-root.Size = UDim2.fromOffset(340, 565)
+root.Size = UDim2.fromOffset(354, 623)
 root.BackgroundColor3 = Color3.fromRGB(17, 16, 22)
 root.BorderSizePixel = 0
 root.Parent = gui
@@ -52,7 +53,7 @@ local function label(parent, content, height)
     return item
 end
 
-local title = label(root, "BRAB0X | EMOTES V5", 32)
+local title = label(root, "BRAB0X | TODOS OS EMOTES V6", 32)
 title.Position = UDim2.fromOffset(10, 7)
 title.Font = Enum.Font.GothamBold
 
@@ -85,18 +86,18 @@ avatarHint.Font = Enum.Font.GothamBold
 avatarHint.TextSize = 14
 avatarHint.TextWrapped = true
 avatarHint.TextColor3 = Color3.fromRGB(255, 228, 235)
-avatarHint.Text = "TESTE V5\nA DANCA VAI ACONTECER\nNO SEU PERSONAGEM"
+avatarHint.Text = "TESTE V6\nBUSQUE QUALQUER EMOTE\nDANCA NO SEU AVATAR"
 avatarHint.Parent = viewport
 
-local status = label(root, "TESTE V5 | Sem ApplyDescriptionAsync\nEscolha Salute ou Jamal abaixo.", 128)
+local status = label(root, "V6: pesquisa em todo o catalogo.\nEscolha uma danca abaixo.", 112)
 status.Position = UDim2.fromOffset(12, 246)
 status.TextYAlignment = Enum.TextYAlignment.Top
 status.TextSize = 11
 status.TextColor3 = Color3.fromRGB(224, 211, 215)
 
 local scroll = Instance.new("ScrollingFrame")
-scroll.Position = UDim2.fromOffset(11, 380)
-scroll.Size = UDim2.new(1, -22, 0, 173)
+scroll.Position = UDim2.fromOffset(11, 411)
+scroll.Size = UDim2.new(1, -22, 0, 162)
 scroll.CanvasSize = UDim2.new()
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.BackgroundColor3 = Color3.fromRGB(27, 23, 32)
@@ -112,7 +113,7 @@ local currentWorld
 local busy = false
 local closed = false
 local activeRestore = nil
-local testMessages = {"VERSAO V5 | SEM ApplyDescriptionAsync | "..BUILD_ID}
+local testMessages = {"VERSAO V6 | BUSCA GERAL | "..BUILD_ID}
 
 local function log(msg)
     if closed then return end
@@ -124,7 +125,7 @@ local function log(msg)
 end
 
 local function beginTest()
-    testMessages = {"VERSAO V5 | SEM ApplyDescriptionAsync"}
+    testMessages = {"VERSAO V6 | EMOTES DO CATALOGO"}
     status.Text = testMessages[1]
 end
 
@@ -184,7 +185,7 @@ local function testId(id,name)
     if busy or closed then return end
     busy=true
     beginTest()
-    log("TESTE LOCAL V5: "..name.." | ID "..tostring(id))
+    log("TESTE LOCAL V6: "..name.." | ID "..tostring(id))
     log("A danca sera testada no SEU personagem, nao no boneco da janela.")
 
     task.spawn(function()
@@ -361,6 +362,57 @@ local function testId(id,name)
     end)
 end
 
+local function makeButton(text,parent)
+    local button=Instance.new("TextButton")
+    button.BackgroundColor3=Color3.fromRGB(84,25,42)
+    button.BorderSizePixel=0
+    button.TextColor3=Color3.fromRGB(255,238,242)
+    button.Font=Enum.Font.GothamBold
+    button.TextSize=11
+    button.Text=text
+    button.Parent=parent
+    Instance.new("UICorner",button).CornerRadius=UDim.new(0,6)
+    return button
+end
+
+local searchInput=Instance.new("TextBox")
+searchInput.Name="PesquisarQualquerEmote"
+searchInput.Position=UDim2.fromOffset(11,365)
+searchInput.Size=UDim2.new(1,-119,0,37)
+searchInput.BackgroundColor3=Color3.fromRGB(38,31,43)
+searchInput.BorderSizePixel=0
+searchInput.Text=""
+searchInput.PlaceholderText="Todos os emotes • ou digite nome"
+searchInput.PlaceholderColor3=Color3.fromRGB(180,160,171)
+searchInput.TextColor3=Color3.new(1,1,1)
+searchInput.ClearTextOnFocus=false
+searchInput.Font=Enum.Font.Gotham
+searchInput.TextSize=12
+searchInput.Parent=root
+Instance.new("UICorner",searchInput).CornerRadius=UDim.new(0,6)
+
+local searchButton=makeButton("PESQUISAR",root)
+searchButton.Position=UDim2.new(1,-101,0,365)
+searchButton.Size=UDim2.fromOffset(90,37)
+
+local moreButton=makeButton("CARREGAR MAIS RESULTADOS",root)
+moreButton.Position=UDim2.fromOffset(11,580)
+moreButton.Size=UDim2.new(1,-22,0,32)
+
+local catalogPages
+local catalogBusy=false
+local catalogSearchToken=0
+local shownIds={}
+local foundCount=0
+
+local function clearResults()
+    for _,child in ipairs(scroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    shownIds={}
+    foundCount=0
+end
+
 local function addResult(id, name)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, -8, 0, 31)
@@ -375,35 +427,101 @@ local function addResult(id, name)
     b.MouseButton1Click:Connect(function() testId(id, name) end)
 end
 
-task.spawn(function()
-    local ok, pages = pcall(function()
-        local params = CatalogSearchParams.new()
-        params.SearchKeyword = "Jamal"
-        params.AssetTypes = {Enum.AvatarAssetType.EmoteAnimation}
-        params.Limit = 30
-        return AvatarEditorService:SearchCatalogAsync(params)
-    end)
-    if not ok or not pages then
-        log("Busca do catalogo bloqueada: " .. tostring(pages))
-        -- Controle para testar um emote de exemplo da documentacao Roblox.
-        addResult(3360689775, "Salute (controle)")
-        return
-    end
-    local okay, results = pcall(function() return pages:GetCurrentPage() end)
-    if not okay or type(results) ~= "table" then
-        log("Nao consegui ler resultados: " .. tostring(results))
-        return
-    end
-    local count = 0
-    for _,item in ipairs(results) do
-        local id = tonumber(item.Id)
-        if id then
-            count += 1
-            addResult(id, tostring(item.Name or "Emote"))
+local function appendPage(items)
+    local appended=0
+    for _,item in ipairs(items) do
+        local id=tonumber(item.Id)
+        if id and not shownIds[id] then
+            shownIds[id]=true
+            appended+=1
+            foundCount+=1
+            addResult(id,tostring(item.Name or ("Emote "..id)))
         end
     end
-    addResult(3360689775, "Salute (controle oficial)")
-    log(tostring(count) .. " Jamals encontrados.")
-    log("Teste SALUTE primeiro; o teste usa o avatar dentro do jogo.")
-    log("A lista anterior de emotes sera restaurada apos cada teste.")
+    moreButton.Text=catalogPages and not catalogPages.IsFinished
+        and ("CARREGAR MAIS RESULTADOS ("..foundCount..")")
+        or ("FIM DOS RESULTADOS ("..foundCount..")")
+    moreButton.Active=catalogPages and not catalogPages.IsFinished or false
+    moreButton.AutoButtonColor=moreButton.Active
+    moreButton.BackgroundColor3=moreButton.Active
+        and Color3.fromRGB(84,25,42) or Color3.fromRGB(50,38,47)
+    return appended
+end
+
+local function searchEmotes()
+    if catalogBusy or closed then return end
+    catalogSearchToken+=1
+    local token=catalogSearchToken
+    local keyword=searchInput.Text:gsub("^%s+",""):gsub("%s+$","")
+    catalogBusy=true
+    catalogPages=nil
+    clearResults()
+    moreButton.Text="CONSULTANDO CATALOGO..."
+    searchButton.Text="..."
+    log(keyword=="" and "Buscando TODOS os emotes disponiveis..."
+        or "Buscando emotes: "..keyword)
+    task.spawn(function()
+        local ok,pages=pcall(function()
+            local params=CatalogSearchParams.new()
+            params.SearchKeyword=keyword
+            params.AssetTypes={Enum.AvatarAssetType.EmoteAnimation}
+            params.Limit=30
+            return AvatarEditorService:SearchCatalogAsync(params)
+        end)
+        if closed or token~=catalogSearchToken then
+            catalogBusy=false
+            return
+        end
+        if not ok or not pages then
+            log("Erro ao pesquisar o catalogo: "..shortError(pages))
+            log("Se a busca vazia for bloqueada, digite parte do nome do emote.")
+            moreButton.Text="BUSCA INDISPONIVEL"
+        else
+            catalogPages=pages
+            local read,results=pcall(function()
+                return pages:GetCurrentPage()
+            end)
+            if read and type(results)=="table" then
+                local quantity=appendPage(results)
+                log("Exibindo "..quantity.." emotes. Use CARREGAR MAIS.")
+            else
+                log("Nao foi possivel ler a pagina: "..shortError(results))
+            end
+        end
+        searchButton.Text="PESQUISAR"
+        catalogBusy=false
+    end)
+end
+
+searchButton.MouseButton1Click:Connect(searchEmotes)
+searchInput.FocusLost:Connect(function(enter)
+    if enter then searchEmotes() end
 end)
+moreButton.MouseButton1Click:Connect(function()
+    if catalogBusy or not catalogPages or catalogPages.IsFinished then return end
+    catalogBusy=true
+    moreButton.Text="CARREGANDO..."
+    local pages=catalogPages
+    task.spawn(function()
+        local ok,err=pcall(function()
+            pages:AdvanceToNextPageAsync()
+        end)
+        if not closed then
+            if ok and pages==catalogPages then
+                local read,items=pcall(function()return pages:GetCurrentPage()end)
+                if read and type(items)=="table" then
+                    log("Mais "..appendPage(items).." emotes carregados.")
+                else
+                    log("Falha na pagina: "..shortError(items))
+                end
+            elseif not ok then
+                log("Falha ao avancar pagina: "..shortError(err))
+            end
+        end
+        catalogBusy=false
+    end)
+end)
+
+-- Salute continua como controle, mas nao limita a busca.
+addResult(3360689775,"Salute (controle oficial)")
+task.defer(searchEmotes)
