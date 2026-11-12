@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.4 | AVATAR REAL, DANÇAS DISTINTAS, SELETOR FLING
+-- BRAB0X PRIME V19.8.5 | SKIN CHANGER POR ID + PREVIA 3D
 -- 338 comandos; catalogo completo pesquisavel e emotes locais em avatar R15.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_5_STOP",
     "BRAB0X_V19_8_4_STOP",
     "BRAB0X_V19_8_3_STOP",
     "BRAB0X_V19_8_2_STOP",
@@ -86,6 +87,7 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_8",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_3",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_4",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8_5",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
@@ -93,7 +95,8 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_7",
     "BRAB0X_PRIME_V19_8",
     "BRAB0X_PRIME_V19_8_3",
-    "BRAB0X_PRIME_V19_8_4"
+    "BRAB0X_PRIME_V19_8_4",
+    "BRAB0X_PRIME_V19_8_5"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -437,7 +440,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8_4",
+    Name = "BRAB0X_PRIME_V19_8_5",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -507,7 +510,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8_4",
+    Name="BRAB0X_MINI_PREMIUM_V19_8_5",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -2271,6 +2274,9 @@ Run:BindToRenderStep(
 
 local resetExtras = function() end
 local function resetAll()
+    if v14.skinSeq then v14.skinSeq+=1 end
+    if v14.skinRestore then v14.skinRestore() end
+    if v14.skinClearPreview then v14.skinClearPreview() end
     resetExtras()
     if v14.stopFling then v14.stopFling() end
     if v14.stopAntiFling then v14.stopAntiFling() end
@@ -3492,7 +3498,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.4 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.5 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -4502,6 +4508,9 @@ do
     v14.musicVolume=.35
     v14.cleanup=function()
         v14.stopCinema()
+        if v14.skinSeq then v14.skinSeq+=1 end
+        if v14.skinRestore then v14.skinRestore() end
+        if v14.skinClearPreview then v14.skinClearPreview() end
         v14.avatarRestore()
         v14.musicStop()
         if v14.wheelFrame and v14.wheelFrame.Parent then v14.wheelFrame:Destroy() end
@@ -4539,6 +4548,252 @@ do
     register("restoreavatar","PLAYER","Restaurar visual local",function()
         return v14.avatarApply("restore")
     end)
+
+    -- V19.8.5: Skin Changer local por UserId e OutfitId.
+    -- Nao usa ApplyDescriptionAsync, pois pode ser bloqueado no cliente.
+    v14.skinSeq=0
+    v14.skinState=nil
+    v14.skinName="Original"
+    v14.skinClearPreview=function()
+        if v14.skinPreviewFrame then v14.skinPreviewFrame.CurrentCamera=nil end
+        if v14.skinWorld then v14.skinWorld:Destroy() v14.skinWorld=nil end
+        if v14.skinCamera then v14.skinCamera:Destroy() v14.skinCamera=nil end
+    end
+    v14.skinRestore=function()
+        local st=v14.skinState
+        if not st then return false end
+        v14.skinState=nil
+        for _,instance in ipairs(st.added) do
+            if instance.Parent then pcall(function()instance:Destroy()end) end
+        end
+        if st.character.Parent then
+            for _,instance in ipairs(st.original) do
+                if instance.Parent==st.stash then
+                    pcall(function()instance.Parent=st.character end)
+                end
+            end
+            for part,original in pairs(st.colors) do
+                if part.Parent then pcall(function()part.Color=original end) end
+            end
+            for part,alpha in pairs(st.alpha) do
+                if part.Parent then
+                    pcall(function()part.LocalTransparencyModifier=alpha end)
+                end
+            end
+            for face,alpha in pairs(st.faces) do
+                if face.Parent then pcall(function()face.Transparency=alpha end) end
+            end
+        end
+        if st.stash.Parent then st.stash:Destroy() end
+        v14.skinName="Original"
+        if v14.skinStatus then v14.skinStatus.Text="SKIN: ORIGINAL" end
+        return true
+    end
+    v14.skinPreview=function(template)
+        local frame=v14.skinPreviewFrame
+        if not frame or not frame.Parent then return end
+        v14.skinClearPreview()
+        local world=Instance.new("WorldModel")
+        world.Name="BRAB0X_SKIN_PREVIEW"
+        world.Parent=frame
+        local copy=template:Clone()
+        for _,part in ipairs(copy:GetDescendants()) do
+            if part:IsA("LuaSourceContainer") then part:Destroy()
+            elseif part:IsA("BasePart") then
+                part.CanCollide=false
+                part.CanTouch=false
+            end
+        end
+        copy.Parent=world
+        copy:PivotTo(CFrame.new())
+        local root=copy:FindFirstChild("HumanoidRootPart")
+        if root then root.Anchored=true end
+        local cf,size=copy:GetBoundingBox()
+        local camera=Instance.new("Camera")
+        camera.FieldOfView=38
+        camera.CFrame=CFrame.lookAt(
+            cf.Position+Vector3.new(0,size.Y*.06,-math.max(7,size.Y*1.8)),
+            cf.Position)
+        camera.Parent=frame
+        frame.CurrentCamera=camera
+        v14.skinWorld=world
+        v14.skinCamera=camera
+    end
+    local function applyLocalSkin(model,label)
+        local character,humanoid=chars()
+        if not character or not humanoid or humanoid.Health<=0 then
+            error("Seu personagem nao esta pronto.")
+        end
+        v14.skinRestore()
+        if v14.avatarRestore then v14.avatarRestore() end
+        local st={
+            character=character,original={},added={},
+            colors={},alpha={},faces={}
+        }
+        st.stash=Instance.new("Folder")
+        st.stash.Name="BRAB0X_SKIN_ORIGINAL"
+        st.stash.Parent=character
+        v14.skinState=st
+        local cosmetic={
+            Shirt=true,Pants=true,ShirtGraphic=true,
+            BodyColors=true,CharacterMesh=true
+        }
+        for _,obj in ipairs(character:GetChildren()) do
+            if cosmetic[obj.ClassName] then
+                st.original[#st.original+1]=obj
+                obj.Parent=st.stash
+            elseif obj:IsA("Accessory") then
+                for _,part in ipairs(obj:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        st.alpha[part]=part.LocalTransparencyModifier
+                        part.LocalTransparencyModifier=1
+                    end
+                end
+            end
+        end
+        for _,obj in ipairs(model:GetChildren()) do
+            if cosmetic[obj.ClassName] then
+                local clone=obj:Clone()
+                clone.Parent=character
+                st.added[#st.added+1]=clone
+            end
+        end
+        local head=character:FindFirstChild("Head")
+        local sourceHead=model:FindFirstChild("Head")
+        if head and sourceHead then
+            for _,d in ipairs(head:GetChildren()) do
+                if d:IsA("Decal") then
+                    st.faces[d]=d.Transparency
+                    d.Transparency=1
+                end
+            end
+            for _,d in ipairs(sourceHead:GetChildren()) do
+                if d:IsA("Decal") then
+                    local clone=d:Clone()
+                    clone.Parent=head
+                    st.added[#st.added+1]=clone
+                end
+            end
+        end
+        for _,part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name~="HumanoidRootPart" then
+                local from=model:FindFirstChild(part.Name)
+                if from and from:IsA("BasePart") then
+                    st.colors[part]=part.Color
+                    part.Color=from.Color
+                end
+            end
+        end
+        local imported=0
+        for _,acc in ipairs(model:GetChildren()) do
+            if acc:IsA("Accessory") and imported<24 then
+                local clone=acc:Clone()
+                local ok=pcall(function()humanoid:AddAccessory(clone)end)
+                if not ok or not clone.Parent then clone.Parent=character end
+                local handle=clone:FindFirstChild("Handle")
+                if handle and handle:IsA("BasePart") then
+                    handle.CanCollide=false
+                    handle.CanTouch=false
+                    if not handle:FindFirstChild("AccessoryWeld") then
+                        for _,att in ipairs(handle:GetChildren()) do
+                            if att:IsA("Attachment") then
+                                local dest=character:FindFirstChild(att.Name,true)
+                                if dest and dest:IsA("Attachment") and
+                                    not dest:IsDescendantOf(clone)
+                                    and dest.Parent:IsA("BasePart") then
+                                    local weld=Instance.new("Weld")
+                                    weld.Name="AccessoryWeld"
+                                    weld.Part0=handle
+                                    weld.Part1=dest.Parent
+                                    weld.C0=att.CFrame
+                                    weld.C1=dest.CFrame
+                                    weld.Parent=handle
+                                    handle.CFrame=dest.Parent.CFrame*
+                                        dest.CFrame*att.CFrame:Inverse()
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                st.added[#st.added+1]=clone
+                imported+=1
+            end
+        end
+        v14.skinName=label
+        if v14.skinStatus then v14.skinStatus.Text="SKIN: "..label end
+        return imported
+    end
+    v14.skinLoad=function(value,kind,preview)
+        local raw=tostring(value or ""):match("^%s*(%d+)%s*$")
+        local id=raw and tonumber(raw)
+        if not id or id<1 or id>=1e16 or id~=math.floor(id) then
+            notify("Informe um ID valido. Ex: skinid 1","error")
+            return false
+        end
+        v14.skinSeq+=1
+        local seq=v14.skinSeq
+        notify("Carregando skin #"..raw.."...","info")
+        task.spawn(function()
+            local ok,model=pcall(function()
+                if kind=="outfit" then
+                    local desc=Players:GetHumanoidDescriptionFromOutfitIdAsync(id)
+                    local _,h=chars()
+                    local rig=h and h.RigType or Enum.HumanoidRigType.R15
+                    local created=Players:CreateHumanoidModelFromDescriptionAsync(desc,rig)
+                    desc:Destroy()
+                    return created
+                end
+                return Players:CreateHumanoidModelFromUserIdAsync(id)
+            end)
+            if stopped or seq~=v14.skinSeq then
+                if ok and typeof(model)=="Instance" then model:Destroy() end
+                return
+            end
+            if not ok or not model or not model:IsA("Model") then
+                notify("Skin nao encontrada; confira o ID e as permissoes.","error")
+                warn("[BRAB0X SKIN] "..tostring(model))
+                return
+            end
+            local label=(kind=="outfit" and "Outfit " or "User ")..raw
+            local a,err=pcall(v14.skinPreview,model)
+            if not a then warn("[BRAB0X SKIN PREVIEW] "..tostring(err)) end
+            if preview then
+                notify("Previa carregada: "..label,"success")
+            else
+                local applied,count=pcall(applyLocalSkin,model,label)
+                if applied then
+                    notify("Skin local "..label.." aplicada ("..count.." acessorios).","success")
+                else
+                    v14.skinRestore()
+                    notify("Falha ao aplicar a skin; veja console F9.","error")
+                    warn("[BRAB0X SKIN] "..tostring(count))
+                end
+            end
+            model:Destroy()
+        end)
+        return false
+    end
+    register("skinid","PLAYER","Copiar skin local pelo UserId",function(a)
+        return v14.skinLoad(a,"user",false)
+    end,"skinid 1")
+    register("skinpreview","PLAYER","Visualizar skin 3D pelo UserId",function(a)
+        return v14.skinLoad(a,"user",true)
+    end,"skinpreview 1")
+    register("skinoutfit","PLAYER","Copiar skin local pelo OutfitId",function(a)
+        return v14.skinLoad(a,"outfit",false)
+    end,"skinoutfit 123456")
+    register("skinreset","PLAYER","Restaurar a skin original",function()
+        v14.skinSeq+=1
+        local changed=v14.skinRestore()
+        v14.skinClearPreview()
+        if v14.avatarRestore then v14.avatarRestore() end
+        return changed and "Skin restaurada." or "Skin ja esta original."
+    end)
+    register("skinstatus","PLAYER","Mostrar skin selecionada",function()
+        return "Skin atual: "..v14.skinName
+    end)
+
     register("music","SETTINGS","Reproduzir audio autorizado por ID",function(a)
         return v14.musicPlay(a)
     end,"music 123456789")
@@ -7236,6 +7491,30 @@ do
             {"RASTRO",function()exec(S.trail and "untrail" or "trail")end}
         })
         note(pages.AVATAR,"Efeitos sao locais e podem nao aparecer para outros jogadores.",39)
+        ui.section(pages.AVATAR,"SKIN CHANGER • ID DO ROBLOX")
+        note(pages.AVATAR,"ID de usuario ou OutfitId. Alteracoes apenas locais.",37)
+        local skinInput=ui.box(pages.AVATAR,"ID numerico da skin",40)
+        local preview=obj("ViewportFrame",pages.AVATAR,{
+            Size=UDim2.new(1,-8,0,178),
+            BackgroundColor3=Color3.fromRGB(19,18,24),
+            BorderSizePixel=0,
+            Ambient=Color3.fromRGB(205,205,205),
+            LightColor=Color3.fromRGB(255,255,255),
+            LightDirection=Vector3.new(-1,-1,-1)
+        })
+        round(preview,9)
+        v14.skinPreviewFrame=preview
+        controls(pages.AVATAR,{
+            {"PREVIA",function()v14.skinLoad(skinInput.Text,"user",true)end},
+            {"APLICAR USER ID",function()v14.skinLoad(skinInput.Text,"user",false)end}
+        })
+        controls(pages.AVATAR,{
+            {"APLICAR OUTFIT ID",function()v14.skinLoad(skinInput.Text,"outfit",false)end},
+            {"RESTAURAR",function()exec("skinreset")end}
+        })
+        v14.skinStatus=ui.section(pages.AVATAR,"SKIN: ORIGINAL")
+        note(pages.AVATAR,
+            "Roupas e acessorios sao locais; corpos especiais podem ser incompatíveis.",44)
 
         -- Audio: ID fornecido pelo usuario, sem buscar musica protegida.
         ui.title(pages.AUDIO,"AUDIO E MUSICA",
@@ -8242,7 +8521,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_4")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8279,8 +8558,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_4_STOP == closeHub then
-        _G.BRAB0X_V19_8_4_STOP = nil
+    if _G.BRAB0X_V19_8_5_STOP == closeHub then
+        _G.BRAB0X_V19_8_5_STOP = nil
     end
 end
 
@@ -8406,7 +8685,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_4_STOP = closeHub
+_G.BRAB0X_V19_8_5_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8423,10 +8702,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_4")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_4",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_5",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -8800,7 +9079,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_4")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_5")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8816,7 +9095,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.4] "..detail)
+            warn("[BRAB0X PRIME V19.8.5] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -8833,7 +9112,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.4 | "..#registered..
+        notify("BRAB0X PRIME V19.8.5 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
