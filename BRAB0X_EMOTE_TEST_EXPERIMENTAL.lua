@@ -1,4 +1,4 @@
--- BRAB0X PRIME - TESTE ISOLADO DE EMOTES ORIGINAIS
+-- BRAB0X PRIME - TESTE ISOLADO DE EMOTES ORIGINAIS V2 (DIAGNOSTICO VISIVEL)
 -- Nao modifica o hub principal nem altera o avatar no servidor.
 -- Busca emotes de catalogo e tenta a API oficial no boneco de previa.
 -- Resultados no painel e no console F9.
@@ -22,7 +22,7 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local root = Instance.new("Frame")
 root.AnchorPoint = Vector2.new(1, .5)
 root.Position = UDim2.new(1, -14, .5, 0)
-root.Size = UDim2.fromOffset(310, 460)
+root.Size = UDim2.fromOffset(340, 565)
 root.BackgroundColor3 = Color3.fromRGB(17, 16, 22)
 root.BorderSizePixel = 0
 root.Parent = gui
@@ -58,19 +58,22 @@ Instance.new("UICorner", close).CornerRadius = UDim.new(0, 6)
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Preview3D"
 viewport.Position = UDim2.fromOffset(11, 46)
-viewport.Size = UDim2.new(1, -22, 0, 215)
+viewport.Size = UDim2.new(1, -22, 0, 190)
 viewport.BackgroundColor3 = Color3.fromRGB(30, 28, 36)
 viewport.LightColor = Color3.fromRGB(255, 255, 255)
 viewport.Ambient = Color3.fromRGB(200, 200, 200)
 viewport.Parent = root
 Instance.new("UICorner", viewport).CornerRadius = UDim.new(0, 8)
 
-local status = label(root, "Buscando emotes Jamal no catalogo...", 39)
-status.Position = UDim2.fromOffset(12, 267)
+local status = label(root, "Buscando emotes Jamal no catalogo...", 128)
+status.Position = UDim2.fromOffset(12, 246)
+status.TextYAlignment = Enum.TextYAlignment.Top
+status.TextSize = 11
+status.TextColor3 = Color3.fromRGB(224, 211, 215)
 
 local scroll = Instance.new("ScrollingFrame")
-scroll.Position = UDim2.fromOffset(11, 306)
-scroll.Size = UDim2.new(1, -22, 0, 143)
+scroll.Position = UDim2.fromOffset(11, 380)
+scroll.Size = UDim2.new(1, -22, 0, 173)
 scroll.CanvasSize = UDim2.new()
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.BackgroundColor3 = Color3.fromRGB(27, 23, 32)
@@ -85,12 +88,47 @@ stack.Parent = scroll
 local currentWorld
 local busy = false
 local closed = false
+local testMessages = {}
 
 local function log(msg)
     if closed then return end
-    print("[BRAB0X EMOTE TEST] " .. tostring(msg))
-    status.Text = tostring(msg)
+    local message = tostring(msg)
+    print("[BRAB0X EMOTE TEST] " .. message)
+    testMessages[#testMessages + 1] = message
+    while #testMessages > 7 do table.remove(testMessages, 1) end
+    status.Text = table.concat(testMessages, "\n")
 end
+
+local function beginTest()
+    testMessages = {}
+    status.Text = ""
+end
+
+local function shortError(value)
+    local message = tostring(value)
+    message = message:gsub("^.*:%d+:%s*", "")
+    return message:sub(1, 220)
+end
+
+local copy = Instance.new("TextButton")
+copy.Text = "COPIAR LOG"
+copy.Size = UDim2.fromOffset(79, 24)
+copy.Position = UDim2.new(1, -119, 0, 10)
+copy.BackgroundColor3 = Color3.fromRGB(68, 24, 40)
+copy.TextColor3 = Color3.fromRGB(255, 235, 239)
+copy.Font = Enum.Font.Gotham
+copy.TextSize = 10
+copy.Parent = root
+Instance.new("UICorner", copy).CornerRadius = UDim.new(0, 5)
+copy.MouseButton1Click:Connect(function()
+    local message = table.concat(testMessages, "\n")
+    if type(setclipboard) == "function" then
+        local ok = pcall(setclipboard, message)
+        if ok then log("Log copiado.") return end
+    end
+    print("[BRAB0X EMOTE TEST] Copie estas linhas: " .. message)
+    log("Nao foi possivel copiar; veja o painel ou F9.")
+end)
 
 local function clearPreview()
     if currentWorld then
@@ -118,8 +156,9 @@ close.MouseButton1Click:Connect(stop)
 local function testId(id, name)
     if busy or closed then return end
     busy = true
+    beginTest()
     clearPreview()
-    log("Testando " .. name .. " (ID " .. tostring(id) .. ")...")
+    log("TESTE: " .. name .. " | ID " .. tostring(id))
 
     task.spawn(function()
         local emoteName = "BRAB0X_TEST_JAMAL"
@@ -133,6 +172,8 @@ local function testId(id, name)
         end
 
         local okSetup, setupErr = pcall(function()
+            -- O numero do catalogo representa um EMOTE, nao
+            -- necessariamente o AnimationId interno.
             desc:AddEmote(emoteName, id)
             desc:SetEquippedEmotes({emoteName})
         end)
@@ -143,17 +184,23 @@ local function testId(id, name)
             return
         end
 
+        local configured, registered = pcall(function()
+            local e = desc:GetEmotes()
+            return e[emoteName]
+        end)
+        log("Descricao: "..(configured and type(registered)=="table"
+            and "emote registrado" or "emote NAO registrado"))
         local okModel, model = pcall(function()
             return Players:CreateHumanoidModelFromDescriptionAsync(
                 desc, Enum.HumanoidRigType.R15)
         end)
-        desc:Destroy()
         if not okModel or not model then
+            desc:Destroy()
             log("Falha ao criar a previa: " .. tostring(model))
             busy = false
             return
         end
-        if closed then model:Destroy() busy = false return end
+        if closed then model:Destroy() desc:Destroy() busy = false return end
 
         local world = Instance.new("WorldModel")
         world.Parent = viewport
@@ -177,39 +224,98 @@ local function testId(id, name)
         viewport.CurrentCamera = camera
 
         local humanoid = model:FindFirstChildOfClass("Humanoid")
-        local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-        if not humanoid or not animator then
-            log("Avatar de previa nao tem Humanoid/Animator")
+        if not humanoid then
+            desc:Destroy()
+            log("Erro: o modelo nao tem Humanoid.")
             busy = false
             return
+        end
+
+        local appliedOk, appliedDesc = pcall(function()
+            return humanoid:GetAppliedDescription()
+        end)
+        local appliedName
+        if appliedOk and appliedDesc then
+            local ok, owned = pcall(function() return appliedDesc:GetEmotes() end)
+            if ok and type(owned) == "table" then
+                appliedName = owned[emoteName]
+            end
+            appliedDesc:Destroy()
+        end
+
+        log("Avatar R15: "..(appliedName and "emote aplicado" or "emote nao aplicado"))
+        if not appliedName then
+            local okApply, applyErr = pcall(function()
+                humanoid:ApplyDescriptionAsync(desc)
+            end)
+            log(okApply and "Descricao aplicada novamente." or
+                "ApplyDescription: "..shortError(applyErr))
+        end
+        desc:Destroy()
+
+        local animator = humanoid:FindFirstChildOfClass("Animator")
+        if not animator then
+            animator = Instance.new("Animator")
+            animator.Parent = humanoid
+            log("Animator criado na previa.")
         end
 
         local playedOk, playedResult = pcall(function()
             return humanoid:PlayEmoteAsync(emoteName)
         end)
-        if playedOk and playedResult == true then
-            log("PlayEmoteAsync retornou TRUE! Observe se o boneco realmente danca.")
+        if playedOk then
+            log("PlayEmoteAsync retornou "..tostring(playedResult))
         else
-            log("PlayEmoteAsync falhou: " .. tostring(playedResult))
+            log("PlayEmoteAsync ERRO: "..shortError(playedResult))
         end
 
-        task.wait(.6)
-        if closed or currentWorld ~= world then busy = false return end
-        local tracks = animator:GetPlayingAnimationTracks()
-        local valid = false
-        for _,track in ipairs(tracks) do
-            if track.IsPlaying and track.Length > 0 then valid = true end
+        local fallbackOk, fallbackValue = false, nil
+        if not playedOk or playedResult ~= true then
+            fallbackOk, fallbackValue = pcall(function()
+                return humanoid:PlayEmote(emoteName)
+            end)
+            if fallbackOk then
+                log("PlayEmote retornou "..tostring(fallbackValue))
+            else
+                log("PlayEmote ERRO: "..shortError(fallbackValue))
+            end
         end
-        print("[BRAB0X EMOTE TEST] Emote: "..name..
-            " | API="..tostring(playedResult)..
-            " | tracks="..#tracks..
-            " | animacaoCarregada="..tostring(valid))
-        if playedOk and playedResult == true and valid then
-            log("PREVIA CARREGADA: " .. name .. " | teste visual no boneco")
-        elseif playedOk and playedResult == true then
-            log("API aceitou, mas animacao nao confirmou carregamento.")
+
+        local trackCount, loadedCount = 0, 0
+        -- Algumas animacoes demoram para transmitir dados ao WorldModel.
+        for _, delay in ipairs({.45, .9, 1.2}) do
+            task.wait(delay)
+            if closed or currentWorld ~= world then
+                busy = false
+                return
+            end
+            local ok, tracks = pcall(function()
+                return animator:GetPlayingAnimationTracks()
+            end)
+            trackCount, loadedCount = 0, 0
+            if ok and type(tracks) == "table" then
+                trackCount = #tracks
+                for _, track in ipairs(tracks) do
+                    local infoOk, valid = pcall(function()
+                        return track.IsPlaying and track.Length > 0
+                    end)
+                    if infoOk and valid then loadedCount += 1 end
+                end
+            end
+            if loadedCount > 0 then break end
+        end
+
+        log("Tracks: "..trackCount.." | carregadas: "..loadedCount)
+        if loadedCount > 0 and
+            ((playedOk and playedResult == true) or
+             (fallbackOk and fallbackValue == true)) then
+            log("RESULTADO: animacao carregada na previa!")
+        elseif not playedOk and not fallbackOk then
+            log("RESULTADO: APIs rejeitadas. Veja a mensagem acima.")
+        elseif loadedCount == 0 then
+            log("RESULTADO: nenhuma animacao carregou neste jogo.")
         else
-            log("Este ID nao tocou na previa. Veja o motivo no F9.")
+            log("RESULTADO: API nao confirmou o emote.")
         end
         busy = false
     end)
@@ -256,6 +362,8 @@ task.spawn(function()
             addResult(id, tostring(item.Name or "Emote"))
         end
     end
-    addResult(3360689775, "Salute (controle)")
-    log(tostring(count) .. " resultados Jamal. Clique em um para testar; F9 mostra detalhes.")
+    addResult(3360689775, "Salute (controle oficial)")
+    log(tostring(count) .. " Jamals encontrados.")
+    log("Teste SALUTE para comparar; clique em Jamal depois.")
+    log("O painel agora mostra os erros detalhados.")
 end)
