@@ -1,6 +1,6 @@
 
 -- BRAB0X PRIME V19.8.3 | AVATAR REAL, DANÇAS DISTINTAS, SELETOR FLING
--- NOVO: 68 comandos, Spectate reversivel (Alt+S), lista compacta, filtros e paginas.
+-- 338 comandos preservados; emotes com avatar real, coreografias distintas e Player Manager.
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_3_STOP",
     "BRAB0X_V19_8_2_STOP",
     "BRAB0X_V19_8_STOP",
     "BRAB0X_V19_7_STOP",
@@ -82,12 +83,14 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_6",
     "BRAB0X_INTRO_FULLSCREEN_V19_7",
     "BRAB0X_INTRO_FULLSCREEN_V19_8",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8_3",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
     "BRAB0X_PRIME_V19_6",
     "BRAB0X_PRIME_V19_7",
-    "BRAB0X_PRIME_V19_8"
+    "BRAB0X_PRIME_V19_8",
+    "BRAB0X_PRIME_V19_8_3"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -431,7 +434,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8",
+    Name = "BRAB0X_PRIME_V19_8_3",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -501,7 +504,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8",
+    Name="BRAB0X_MINI_PREMIUM_V19_8_3",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -3387,7 +3390,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.2 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.3 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -6300,6 +6303,20 @@ rebuildEmotes=function()
     runEmotePreviews()
 end
 
+-- Atualiza miniaturas quando o personagem renasce/troca de roupas.
+bind(player.CharacterAdded,function()
+    for _,source in pairs(previewSources) do
+        if source and source.Parent==nil then source:Destroy() end
+    end
+    previewSources={}
+    previewRequested={}
+    task.delay(2,function()
+        if not stopped and emotesPage.Parent and rebuildEmotes then
+            rebuildEmotes()
+        end
+    end)
+end)
+
 end -- fim do escopo das previas de emotes
 
 -- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
@@ -8065,7 +8082,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_3")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8102,8 +8119,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_2_STOP == closeHub then
-        _G.BRAB0X_V19_8_2_STOP = nil
+    if _G.BRAB0X_V19_8_3_STOP == closeHub then
+        _G.BRAB0X_V19_8_3_STOP = nil
     end
 end
 
@@ -8229,7 +8246,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_2_STOP = closeHub
+_G.BRAB0X_V19_8_3_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8246,10 +8263,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_3")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_3",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -8623,7 +8640,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_3")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8639,7 +8656,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.2] "..detail)
+            warn("[BRAB0X PRIME V19.8.3] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -8656,7 +8673,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.2 | "..#registered..
+        notify("BRAB0X PRIME V19.8.3 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
