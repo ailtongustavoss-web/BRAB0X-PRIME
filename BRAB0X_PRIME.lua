@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.6 | AIM NPC CORRIGIDO + ESTABILIZACAO VISUAL
+-- BRAB0X PRIME V19.8.7 | AIM JOGADORES + NPCs
 -- 338 comandos; catalogo completo pesquisavel e emotes locais em avatar R15.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_7_STOP",
     "BRAB0X_V19_8_6_STOP",
     "BRAB0X_V19_8_5_STOP",
     "BRAB0X_V19_8_4_STOP",
@@ -90,6 +91,7 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_8_4",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_5",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_6",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8_7",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
@@ -99,7 +101,8 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_8_3",
     "BRAB0X_PRIME_V19_8_4",
     "BRAB0X_PRIME_V19_8_5",
-    "BRAB0X_PRIME_V19_8_6"
+    "BRAB0X_PRIME_V19_8_6",
+    "BRAB0X_PRIME_V19_8_7"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -210,6 +213,9 @@ local S = {
     aimSmooth = .16,
     aimCircle = true,
     aimAutoNPC = true,
+    aimTargetMode = "both",
+    aimTeamCheck = true,
+    aimVisibleOnly = true,
     aimSteady = false,
     aimSteadyStrength = .35,
     saved = nil,
@@ -446,7 +452,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8_6",
+    Name = "BRAB0X_PRIME_V19_8_7",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -516,7 +522,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8_6",
+    Name="BRAB0X_MINI_PREMIUM_V19_8_7",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -2189,16 +2195,17 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_8_6_AIM"
+local aimKey = "BRAB0X_V19_8_7_AIM"
 local npcCache = {}
 local nextScan = 0
 local lastAimCamera = nil
 
--- O modo de treino considera NPCs marcados ou NPCs comuns, se AutoNPC estiver ON.
--- Nunca inclui o personagem de outro jogador.
+-- AIM V19.8.7: modos jogadores / NPCs / ambos.
+-- Assistencia apenas de camera, sem disparos automaticos.
 local function scanTrainingNPCs()
     npcCache = {}
     nextScan = os.clock()+1.25
+    if S.aimTargetMode=="players" then return end
     for _,candidate in ipairs(workspace:GetDescendants()) do
         if candidate:IsA("Model") and candidate~=player.Character
             and Players:GetPlayerFromCharacter(candidate)==nil then
@@ -2206,8 +2213,8 @@ local function scanTrainingNPCs()
             local target=candidate:FindFirstChild("Head")
                 or candidate:FindFirstChild("HumanoidRootPart")
                 or candidate:FindFirstChild("UpperTorso")
-            if humanoid and humanoid.Health>0 and
-                target and target:IsA("BasePart") then
+            if humanoid and humanoid.Health>0
+                and target and target:IsA("BasePart") then
                 local marked=candidate:GetAttribute("PracticeTarget")
                 if marked==true or (S.aimAutoNPC and marked~=false) then
                     npcCache[#npcCache+1]=candidate
@@ -2217,28 +2224,65 @@ local function scanTrainingNPCs()
     end
 end
 
+local function canSeeTarget(camera,part,model)
+    if not S.aimVisibleOnly then return true end
+    local origin=camera.CFrame.Position
+    local difference=part.Position-origin
+    if difference.Magnitude<.01 then return true end
+    local params=RaycastParams.new()
+    params.FilterType=Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances=player.Character
+        and {player.Character,camera} or {camera}
+    params.IgnoreWater=true
+    local hit=workspace:Raycast(origin,difference,params)
+    return hit==nil or hit.Instance:IsDescendantOf(model)
+end
+
 local function findTarget(camera)
-    if os.clock() >= nextScan then scanTrainingNPCs() end
-    local best
+    if os.clock()>=nextScan then scanTrainingNPCs() end
+    local best,chosenName=nil,nil
     local radius=S.aimRadius
     local middle=camera.ViewportSize/2
-    for _,model in ipairs(npcCache) do
-        if model.Parent and Players:GetPlayerFromCharacter(model)==nil then
-            local h=model:FindFirstChildOfClass("Humanoid")
-            local part=model:FindFirstChild("Head")
-                or model:FindFirstChild("HumanoidRootPart")
-                or model:FindFirstChild("UpperTorso")
-            if h and h.Health>0 and part and part:IsA("BasePart") then
-                local point,visible=camera:WorldToViewportPoint(part.Position)
-                local d=(Vector2.new(point.X,point.Y)-middle).Magnitude
-                if visible and point.Z>0 and d<radius then
-                    best=part
-                    radius=d
+
+    local function consider(model,human,label)
+        if not model or not model.Parent or model==player.Character then return end
+        if not human or human.Health<=0 then return end
+        local part=model:FindFirstChild("Head")
+            or model:FindFirstChild("HumanoidRootPart")
+            or model:FindFirstChild("UpperTorso")
+        if not part or not part:IsA("BasePart") then return end
+        local point,onScreen=camera:WorldToViewportPoint(part.Position)
+        if not onScreen or point.Z<=0 then return end
+        local distance=(Vector2.new(point.X,point.Y)-middle).Magnitude
+        if distance>=radius or not canSeeTarget(camera,part,model) then return end
+        radius=distance
+        best=part
+        chosenName=label
+    end
+
+    if S.aimTargetMode=="players" or S.aimTargetMode=="both" then
+        for _,other in ipairs(Players:GetPlayers()) do
+            if other~=player then
+                local teammate=S.aimTeamCheck
+                    and not player.Neutral and not other.Neutral
+                    and player.Team~=nil and player.Team==other.Team
+                if not teammate then
+                    local char=other.Character
+                    local humanoid=char and char:FindFirstChildOfClass("Humanoid")
+                    consider(char,humanoid,other.DisplayName)
                 end
             end
         end
     end
-    return best
+    if S.aimTargetMode=="npcs" or S.aimTargetMode=="both" then
+        for _,model in ipairs(npcCache) do
+            if model.Parent
+                and Players:GetPlayerFromCharacter(model)==nil then
+                consider(model,model:FindFirstChildOfClass("Humanoid"),model.Name)
+            end
+        end
+    end
+    return best,chosenName
 end
 
 Run:BindToRenderStep(
@@ -2257,17 +2301,13 @@ Run:BindToRenderStep(
             lastAimCamera=nil
             return
         end
-        local target=findTarget(camera)
-        if not target then lastAimCamera=nil return end
-
+        local part=findTarget(camera)
+        if not part then lastAimCamera=nil return end
         local pos=camera.CFrame.Position
-        local desired=CFrame.lookAt(pos,target.Position)
+        local desired=CFrame.lookAt(pos,part.Position)
         local alpha=math.clamp(
             1-(1-S.aimSmooth)^(math.max(0,dt)*60),0,1)
         local assisted=camera.CFrame:Lerp(desired,alpha)
-
-        -- Estabilizacao visual opcional somente ao treinar com um NPC.
-        -- Nao altera armas, disparos ou logica do servidor.
         if S.aimSteady and lastAimCamera then
             local factor=math.clamp(1-S.aimSteadyStrength*.7,.25,1)
             local stable=lastAimCamera.Rotation:Lerp(assisted.Rotation,factor)
@@ -2607,9 +2647,14 @@ end)
 
 -- AIM DE TREINO
 
-register("aim","AIM","Aim NPC treino ON/OFF",function(a)
+register("aim","AIM","Aim em jogadores e NPCs ON/OFF",function(a)
     S.aim = a == "on"
         or (a ~= "off" and not S.aim)
+    if S.aim and not config.aimEnabled then
+        config.aimEnabled=true
+        if refreshCommandList then refreshCommandList() end
+    end
+    return "AIM "..(S.aim and "ON" or "OFF").." | alvos: "..S.aimTargetMode
 end,"aim on")
 
 register("aimfov","AIM","Area do Aim",function(a)
@@ -2623,6 +2668,38 @@ end,"smooth 0.2")
 register("aimhold","AIM","Segurar RMB on/off",function()
     S.aimHold = not S.aimHold
 end)
+
+register("aimtarget","AIM","Selecionar alvos: players, npcs ou both",function(a)
+    local mode=tostring(a or ""):lower():gsub("^%s+",""):gsub("%s+$","")
+    if mode=="jogadores" or mode=="player" or mode=="pvp" then
+        mode="players"
+    elseif mode=="npc" then
+        mode="npcs"
+    elseif mode=="ambos" or mode=="all" or mode=="todos" then
+        mode="both"
+    end
+    if mode~="players" and mode~="npcs" and mode~="both" then
+        return "Use: aimtarget players | npcs | both"
+    end
+    S.aimTargetMode=mode
+    nextScan=0
+    lastAimCamera=nil
+    return "Alvos do Aim: "..mode
+end,"aimtarget both")
+
+register("aimteamcheck","AIM","Ignorar jogadores do mesmo time",function(a)
+    if a=="on" then S.aimTeamCheck=true
+    elseif a=="off" then S.aimTeamCheck=false
+    else S.aimTeamCheck=not S.aimTeamCheck end
+    return "Ignorar mesmo time: "..(S.aimTeamCheck and "ON" or "OFF")
+end,"aimteamcheck on")
+
+register("aimvisible","AIM","Selecionar somente alvos visiveis",function(a)
+    if a=="on" then S.aimVisibleOnly=true
+    elseif a=="off" then S.aimVisibleOnly=false
+    else S.aimVisibleOnly=not S.aimVisibleOnly end
+    return "Alvos visiveis: "..(S.aimVisibleOnly and "ON" or "OFF")
+end,"aimvisible on")
 
 register("aimnpcauto","AIM","Detectar NPCs comuns sem atributo especial",function(a)
     if a=="on" then S.aimAutoNPC=true
@@ -2645,18 +2722,20 @@ register("aimstabilize","AIM","Forca da suavizacao visual 0 a 1",function(a)
     return string.format("Estabilizacao visual: %.2f",S.aimSteadyStrength)
 end,"aimstabilize 0.35")
 
-register("aimdiagnostic","AIM","Diagnosticar AIM e NPCs disponiveis",function()
+register("aimdiagnostic","AIM","Diagnosticar Aim, jogadores e NPCs",function()
     scanTrainingNPCs()
     local camera=workspace.CurrentCamera
-    local part=camera and findTarget(camera)
+    local part,targetName=camera and findTarget(camera)
+    local otherPlayers=math.max(0,#Players:GetPlayers()-1)
     local message=string.format(
-        "AIM: modulo %s | assistencia %s | RMB %s | AutoNPC %s | NPCs %d | no FOV %s",
+        "AIM: modulo %s | aim %s | modo %s | RMB %s | jogadores %d | NPCs %d | FOV %s | alvo %s",
         config.aimEnabled and "ON" or "OFF",
         S.aim and "ON" or "OFF",
-        S.aimHold and "OBRIGATORIO" or "LIVRE",
-        S.aimAutoNPC and "ON" or "OFF",
-        #npcCache,
-        part and part.Parent.Name or "NENHUM")
+        S.aimTargetMode,
+        S.aimHold and "SEGURAR" or "LIVRE",
+        otherPlayers,#npcCache,
+        S.aimRadius,
+        targetName or (part and part.Name or "NENHUM"))
     print("[BRAB0X AIM DIAGNOSTICO] "..message)
     return message
 end)
@@ -3546,7 +3625,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.6 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.7 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -6782,13 +6861,31 @@ end)
 
 end -- fim do escopo das previas de emotes
 
--- AIM DE TREINO / SEPARADO DOS DEMAIS COMANDOS
-local aimTitle=titleRow(pages.AIM,"◎  AIM PARA NPCs DE TREINO")
+-- AIM PARA JOGADORES E NPCs / MODO SELECIONAVEL
+local aimTitle=titleRow(pages.AIM,"◎  AIM PARA JOGADORES E NPCs")
 local info=txt(pages.AIM,
-    "Detecta NPCs de treino comuns; nao seleciona personagens de jogadores.",
+    "Escolha Jogadores, NPCs ou Ambos. A mira segue o alvo mais proximo do centro.",
     49,12)
 info.TextColor3=muted
-toggleControl(pages.AIM,"◎  AIM DE TREINO","Assistencia visual para NPCs",
+local aimModeLabel=txt(pages.AIM,"MODO DE ALVOS: AMBOS",24,12,true)
+aimModeLabel.TextColor3=white
+v14.aimModeLabel=aimModeLabel
+local aimModeBar=obj("Frame",pages.AIM,{
+    Size=UDim2.new(1,-8,0,40),BackgroundTransparency=1
+})
+for i,mode in ipairs({
+    {"JOGADORES","players"},{"NPCs","npcs"},{"AMBOS","both"}
+}) do
+    local option=mode
+    local button=btn(aimModeBar,option[1],function()
+        exec("aimtarget "..option[2])
+        aimModeLabel.Text="MODO DE ALVOS: "..option[1]
+    end,38)
+    button.Position=UDim2.new((i-1)/3,3,0,0)
+    button.Size=UDim2.new(1/3,-7,0,38)
+    button.TextSize=11
+end
+toggleControl(pages.AIM,"◎  AIM ON/OFF","Assistencia de camera para jogadores e NPCs",
     function()return S.aim end,"aim on","aim off")
 toggleControl(pages.AIM,"◌  CIRCULO FOV","Exibir area de busca",
     function()return S.aimCircle end,"aimcircle on","aimcircle off")
@@ -6796,6 +6893,10 @@ toggleControl(pages.AIM,"▣  SEGURAR RMB","Requer botao direito pressionado",
     function()return S.aimHold end,"aimholdmode on","aimholdmode off")
 toggleControl(pages.AIM,"◎  AUTO DETECTAR NPCs","Reconhece NPCs sem PracticeTarget",
     function()return S.aimAutoNPC end,"aimnpcauto on","aimnpcauto off")
+toggleControl(pages.AIM,"◎  IGNORAR MESMO TIME","Evita selecionar aliados",
+    function()return S.aimTeamCheck end,"aimteamcheck on","aimteamcheck off")
+toggleControl(pages.AIM,"◎  ALVOS VISIVEIS","Ignora alvos atras de obstaculos",
+    function()return S.aimVisibleOnly end,"aimvisible on","aimvisible off")
 toggleControl(pages.AIM,"◈  CAMERA ESTAVEL","Reduz tremidas visuais durante o treino",
     function()return S.aimSteady end,"aimsteady on","aimsteady off")
 sliderControl(pages.AIM,"◎  ESTABILIZACAO VISUAL","Intensidade de suavizacao",0,1,.05,
@@ -6805,10 +6906,10 @@ sliderControl(pages.AIM,"◎  RAIO DO AIM","Raio da area de treino",30,350,10,
 sliderControl(pages.AIM,"≋  SUAVIDADE","Movimento suave da camera",.02,1,.02,
     function()return S.aimSmooth end,"smooth","%.2f")
 local aimExplain=txt(pages.AIM,
-    "A assistencia so atua com NPC dentro do FOV. Se RMB estiver ON, segure o botao direito. A estabilizacao e visual, nao anti-recoil da arma.",
+    "Aim funciona com jogadores e NPCs dentro do FOV. Se RMB estiver ON, segure o botao direito. Nao dispara automaticamente.",
     60,12)
 aimExplain.TextColor3=muted
-local aimDiagButton=btn(pages.AIM,"DIAGNOSTICAR AIM / CONTAR NPCs",function()
+local aimDiagButton=btn(pages.AIM,"DIAGNOSTICAR AIM / ALVOS",function()
     exec("aimdiagnostic")
 end,40)
 aimDiagButton.TextSize=11
@@ -8337,9 +8438,12 @@ refresh = function()
         or Color3.fromRGB(179,172,187)
 
     aimTitle.Text = (
-        "◎  AIM NPC %s  |  RAIO %d  |  SMOOTH %.2f  |  ESTAB %s"
-    ):format(S.aim and "ON" or "OFF",S.aimRadius,S.aimSmooth,
-        S.aimSteady and "ON" or "OFF")
+        "◎  AIM %s  |  ALVOS %s  |  RAIO %d  |  ESTAB %s"
+    ):format(S.aim and "ON" or "OFF",S.aimTargetMode:upper(),
+        S.aimRadius,S.aimSteady and "ON" or "OFF")
+    if v14.aimModeLabel and v14.aimModeLabel.Parent then
+        v14.aimModeLabel.Text="MODO DE ALVOS: "..S.aimTargetMode:upper()
+    end
     for _,fn in ipairs(visualUpdates) do fn() end
 
     settingLabel.Text =
@@ -8580,7 +8684,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8617,8 +8721,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_6_STOP == closeHub then
-        _G.BRAB0X_V19_8_6_STOP = nil
+    if _G.BRAB0X_V19_8_7_STOP == closeHub then
+        _G.BRAB0X_V19_8_7_STOP = nil
     end
 end
 
@@ -8744,7 +8848,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_6_STOP = closeHub
+_G.BRAB0X_V19_8_7_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8761,10 +8865,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_6",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_7",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -9138,7 +9242,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_6")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -9154,7 +9258,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.6] "..detail)
+            warn("[BRAB0X PRIME V19.8.7] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -9171,7 +9275,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.6 | "..#registered..
+        notify("BRAB0X PRIME V19.8.7 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
