@@ -85,7 +85,7 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
     "BRAB0X_PRIME_V19_6",
-    "BRAB0X_PRIME_V19_8",
+    "BRAB0X_PRIME_V19_7",
     "BRAB0X_PRIME_V19_8"
 }) do
     local leftover=pg:FindFirstChild(oldName)
