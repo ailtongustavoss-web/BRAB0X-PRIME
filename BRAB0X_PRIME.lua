@@ -1,5 +1,5 @@
 
--- BRAB0X PRIME V19.8.7 | AIM JOGADORES + NPCs
+-- BRAB0X PRIME V19.8.8 | AIM MAGNETICO AUTOMATICO NO FOV
 -- 338 comandos; catalogo completo pesquisavel e emotes locais em avatar R15.
 -- Criado por @wendezao05153nh
 --
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V19_8_8_STOP",
     "BRAB0X_V19_8_7_STOP",
     "BRAB0X_V19_8_6_STOP",
     "BRAB0X_V19_8_5_STOP",
@@ -92,6 +93,7 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_8_5",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_6",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_7",
+    "BRAB0X_INTRO_FULLSCREEN_V19_8_8",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
@@ -102,7 +104,8 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_8_4",
     "BRAB0X_PRIME_V19_8_5",
     "BRAB0X_PRIME_V19_8_6",
-    "BRAB0X_PRIME_V19_8_7"
+    "BRAB0X_PRIME_V19_8_7",
+    "BRAB0X_PRIME_V19_8_8"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -208,12 +211,14 @@ local S = {
     vertical = 0,
     noclip = false,
     aim = false,
-    aimHold = true,
+    aimHold = false,
     aimRadius = 150,
-    aimSmooth = .16,
+    aimSmooth = .30,
     aimCircle = true,
     aimAutoNPC = true,
-    aimTargetMode = "both",
+    aimTargetMode = "players",
+    aimMagnet = true,
+    aimMagnetStrength = .75,
     aimTeamCheck = true,
     aimVisibleOnly = true,
     aimSteady = false,
@@ -452,7 +457,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8_7",
+    Name = "BRAB0X_PRIME_V19_8_8",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -522,7 +527,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8_7",
+    Name="BRAB0X_MINI_PREMIUM_V19_8_8",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -2195,7 +2200,7 @@ local aimStroke = obj("UIStroke",aimCircle,{
     Thickness = 1.5
 })
 
-local aimKey = "BRAB0X_V19_8_7_AIM"
+local aimKey = "BRAB0X_V19_8_8_AIM"
 local npcCache = {}
 local nextScan = 0
 local lastAimCamera = nil
@@ -2282,7 +2287,7 @@ local function findTarget(camera)
             end
         end
     end
-    return best,chosenName
+    return best,chosenName,best and radius or nil
 end
 
 Run:BindToRenderStep(
@@ -2301,12 +2306,21 @@ Run:BindToRenderStep(
             lastAimCamera=nil
             return
         end
-        local part=findTarget(camera)
+        local part,_,pixelDistance=findTarget(camera)
         if not part then lastAimCamera=nil return end
         local pos=camera.CFrame.Position
         local desired=CFrame.lookAt(pos,part.Position)
-        local alpha=math.clamp(
+        local baseAlpha=math.clamp(
             1-(1-S.aimSmooth)^(math.max(0,dt)*60),0,1)
+        -- Modo magnetico: puxa mais forte quando a cabeca chega perto
+        -- do centro do FOV. Nao exige clique nem escolha manual de alvo.
+        local alpha=baseAlpha
+        if S.aimMagnet and pixelDistance then
+            local proximity=1-math.clamp(
+                pixelDistance/math.max(S.aimRadius,1),0,1)
+            local boost=1+S.aimMagnetStrength*(.45+proximity*1.2)
+            alpha=math.clamp(baseAlpha*boost,0,.85)
+        end
         local assisted=camera.CFrame:Lerp(desired,alpha)
         if S.aimSteady and lastAimCamera then
             local factor=math.clamp(1-S.aimSteadyStrength*.7,.25,1)
@@ -2667,7 +2681,21 @@ end,"smooth 0.2")
 
 register("aimhold","AIM","Segurar RMB on/off",function()
     S.aimHold = not S.aimHold
+    return "Segurar RMB: "..(S.aimHold and "SIM" or "NAO")
 end)
+
+register("aimmagnet","AIM","Mira magnetica automatica ao entrar no FOV",function(a)
+    if a=="on" then S.aimMagnet=true
+    elseif a=="off" then S.aimMagnet=false
+    else S.aimMagnet=not S.aimMagnet end
+    lastAimCamera=nil
+    return "Mira magnetica: "..(S.aimMagnet and "ON" or "OFF")
+end,"aimmagnet on")
+
+register("aimmagnetpower","AIM","Forca da atracao automatica no FOV",function(a)
+    S.aimMagnetStrength=num(a,.75,0,1)
+    return string.format("Forca da mira magnetica: %.2f",S.aimMagnetStrength)
+end,"aimmagnetpower 0.75")
 
 register("aimtarget","AIM","Selecionar alvos: players, npcs ou both",function(a)
     local mode=tostring(a or ""):lower():gsub("^%s+",""):gsub("%s+$","")
@@ -2728,14 +2756,15 @@ register("aimdiagnostic","AIM","Diagnosticar Aim, jogadores e NPCs",function()
     local part,targetName=camera and findTarget(camera)
     local otherPlayers=math.max(0,#Players:GetPlayers()-1)
     local message=string.format(
-        "AIM: modulo %s | aim %s | modo %s | RMB %s | jogadores %d | NPCs %d | FOV %s | alvo %s",
+        "AIM: modulo %s | aim %s | modo %s | RMB %s | jogadores %d | NPCs %d | FOV %s | alvo %s | magnet %s",
         config.aimEnabled and "ON" or "OFF",
         S.aim and "ON" or "OFF",
         S.aimTargetMode,
         S.aimHold and "SEGURAR" or "LIVRE",
         otherPlayers,#npcCache,
         S.aimRadius,
-        targetName or (part and part.Name or "NENHUM"))
+        targetName or (part and part.Name or "NENHUM"),
+        S.aimMagnet and "ON" or "OFF")
     print("[BRAB0X AIM DIAGNOSTICO] "..message)
     return message
 end)
@@ -3625,7 +3654,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.7 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V19.8.8 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -6867,7 +6896,7 @@ local info=txt(pages.AIM,
     "Escolha Jogadores, NPCs ou Ambos. A mira segue o alvo mais proximo do centro.",
     49,12)
 info.TextColor3=muted
-local aimModeLabel=txt(pages.AIM,"MODO DE ALVOS: AMBOS",24,12,true)
+local aimModeLabel=txt(pages.AIM,"MODO DE ALVOS: JOGADORES",24,12,true)
 aimModeLabel.TextColor3=white
 v14.aimModeLabel=aimModeLabel
 local aimModeBar=obj("Frame",pages.AIM,{
@@ -6887,6 +6916,10 @@ for i,mode in ipairs({
 end
 toggleControl(pages.AIM,"◎  AIM ON/OFF","Assistencia de camera para jogadores e NPCs",
     function()return S.aim end,"aim on","aim off")
+toggleControl(pages.AIM,"◉  MIRA MAGNETICA","Puxa automaticamente ao aproximar o FOV da cabeca",
+    function()return S.aimMagnet end,"aimmagnet on","aimmagnet off")
+sliderControl(pages.AIM,"◎  FORCA MAGNETICA","Intensidade da atracao automatica",0,1,.05,
+    function()return S.aimMagnetStrength end,"aimmagnetpower","%.2f")
 toggleControl(pages.AIM,"◌  CIRCULO FOV","Exibir area de busca",
     function()return S.aimCircle end,"aimcircle on","aimcircle off")
 toggleControl(pages.AIM,"▣  SEGURAR RMB","Requer botao direito pressionado",
@@ -6906,7 +6939,7 @@ sliderControl(pages.AIM,"◎  RAIO DO AIM","Raio da area de treino",30,350,10,
 sliderControl(pages.AIM,"≋  SUAVIDADE","Movimento suave da camera",.02,1,.02,
     function()return S.aimSmooth end,"smooth","%.2f")
 local aimExplain=txt(pages.AIM,
-    "Aim funciona com jogadores e NPCs dentro do FOV. Se RMB estiver ON, segure o botao direito. Nao dispara automaticamente.",
+    "Com Aim ON, a cabeca mais proxima do centro dentro do FOV atrai a camera automaticamente. RMB vem desligado. Nao dispara.",
     60,12)
 aimExplain.TextColor3=muted
 local aimDiagButton=btn(pages.AIM,"DIAGNOSTICAR AIM / ALVOS",function()
@@ -8684,7 +8717,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -8721,8 +8754,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_7_STOP == closeHub then
-        _G.BRAB0X_V19_8_7_STOP = nil
+    if _G.BRAB0X_V19_8_8_STOP == closeHub then
+        _G.BRAB0X_V19_8_8_STOP = nil
     end
 end
 
@@ -8848,7 +8881,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_7_STOP = closeHub
+_G.BRAB0X_V19_8_8_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -8865,10 +8898,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_7",
+    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_8",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -9242,7 +9275,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_7")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -9258,7 +9291,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.7] "..detail)
+            warn("[BRAB0X PRIME V19.8.8] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -9275,7 +9308,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.7 | "..#registered..
+        notify("BRAB0X PRIME V19.8.8 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
