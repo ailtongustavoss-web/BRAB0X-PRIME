@@ -1,0 +1,16 @@
+{
+  "version": "20.0.0",
+  "release_date": "2026-11-13",
+  "changelog": [
+    "Aim V2: fixacao de alvo e indicador no FOV",
+    "Skin Changer V2: previa giratoria, cinco slots e contagem de acessorios",
+    "Emotes V2: filtros, pesquisa local e fila de ate 12",
+    "Menu minimizado V2: animacoes suaves e banner arrastavel",
+    "Desempenho: modo leve para previas 3D",
+    "Diagnostico: historico de falhas e verificacoes de modulos",
+    "Perfis: salvar e carregar configuracoes completas do Aim",
+    "Camera V2: zoom suave, presets e movimento cinematografico",
+    "Atualizacoes: verificacao de nova versao por manifesto, sem executar codigo remoto"
+  ],
+  "script_url": "https://github.com/ailtongustavoss-web/BRAB0X-PRIME/blob/main/BRAB0X_PRIME.lua"
+}
