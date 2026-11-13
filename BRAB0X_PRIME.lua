@@ -2796,6 +2796,40 @@ end)
 
 -- EMOTES
 
+register("performancemode","SETTINGS","Modo leve: reduzir previas 3D e CPU",function(a)
+    if a=="on" then v14.liteMode=true
+    elseif a=="off" then v14.liteMode=false
+    else v14.liteMode=not v14.liteMode end
+    v13Data.liteMode=v14.liteMode
+    saveV13()
+    if v14.liteMode and v14.cleanupEmotePreviews then
+        v14.cleanupEmotePreviews()
+    elseif not v14.liteMode and v14.refreshEmotes then
+        v14.refreshEmotes()
+    end
+    return "Modo leve: "..(v14.liteMode and "ON" or "OFF")
+end,"performancemode on")
+
+register("emotequeueadd","EMOTES","Adicionar emote a fila por nome ou ID",function(a)
+    local name=tostring(a or ""):gsub("^%s+",""):gsub("%s+$","")
+    if name=="" then return "Use: emotequeueadd wave ou emotequeueadd 12345" end
+    local id=tonumber(name)
+    return v14.queueEmote({
+        kind=id and "catalog" or "classic",id=id,name=name
+    }) and "Emote adicionado a fila." or false
+end,"emotequeueadd wave")
+register("emotequeueplay","EMOTES","Reproduzir a fila de emotes",function()
+    return v14.playEmoteQueue()
+end)
+register("emotequeueclear","EMOTES","Parar e limpar fila de emotes",function()
+    v14.stopEmoteQueue()
+    return "Fila limpa."
+end)
+register("emotequeueinfo","EMOTES","Mostrar itens na fila",function()
+    local names={}
+    for _,item in ipairs(v14.emoteQueue) do names[#names+1]=item.name end
+    return #names==0 and "Fila vazia." or table.concat(names," > ")
+end)
 register("emotes","EMOTES","Abrir lista de emotes",function()
     show("EMOTES")
 end)
@@ -6620,6 +6654,68 @@ do
 -- ABA EMOTES | V19.8.2: UMA LISTA COM MINIATURAS 3D ANIMADAS
 -- Animacoes oficiais sao mostradas somente quando o Roblox libera a previa.
 local emotesPage=pages.EMOTES
+v14.emoteQueue={}
+v14.emoteQueueSerial=0
+v14.emoteFilter="all"
+v14.emoteLocalSearch=""
+v14.queueEmote=function(data)
+    if #v14.emoteQueue>=12 then
+        notify("Fila de emotes cheia (limite de 12).","error")
+        return false
+    end
+    local item={
+        kind=data.kind or "classic",
+        id=data.id,style=data.style,name=tostring(data.name or "emote")
+    }
+    v14.emoteQueue[#v14.emoteQueue+1]=item
+    notify("Adicionado a fila: "..item.name,"success")
+    if v14.emoteQueueStatus then
+        v14.emoteQueueStatus.Text="FILA: "..#v14.emoteQueue.."/12 EMOTES"
+    end
+    return true
+end
+v14.playEmoteQueue=function()
+    if #v14.emoteQueue==0 then return "A fila esta vazia." end
+    v14.emoteQueueSerial+=1
+    local ticket=v14.emoteQueueSerial
+    local items={}
+    for _,item in ipairs(v14.emoteQueue) do items[#items+1]=item end
+    task.spawn(function()
+        for _,item in ipairs(items) do
+            if stopped or ticket~=v14.emoteQueueSerial then break end
+            local ok,err=pcall(function()
+                if item.kind=="own" then originalMove(item.style or item.name)
+                elseif item.kind=="catalog" and item.id then
+                    playEmoteId(item.id,item.name)
+                else playEmote(item.name) end
+            end)
+            if not ok then
+                if v14.v17 and v14.v17.reportError then
+                    v14.v17.reportError("emotequeue",tostring(err))
+                end
+            end
+            local elapsed=0
+            while elapsed<5 and ticket==v14.emoteQueueSerial and not stopped do
+                elapsed+=task.wait(.25)
+            end
+        end
+        if ticket==v14.emoteQueueSerial then
+            v14.emoteQueue={}
+            if v14.emoteQueueStatus then
+                v14.emoteQueueStatus.Text="FILA: 0/12 EMOTES"
+            end
+        end
+    end)
+    return "Fila iniciada com "..#items.." emotes."
+end
+v14.stopEmoteQueue=function()
+    v14.emoteQueueSerial+=1
+    v14.emoteQueue={}
+    stopEmote()
+    if v14.emoteQueueStatus then
+        v14.emoteQueueStatus.Text="FILA: 0/12 EMOTES"
+    end
+end
 local emoteCards={}
 local previewSources={}
 local previewRequested={}
@@ -6740,13 +6836,35 @@ local function addEmoteCard(data)
         if data.kind=="own" then originalMove(data.style)
         elseif data.kind=="catalog" and data.id then playEmoteId(data.id,data.name)
         else playEmote(data.name) end
-    end,35)
-    run.Size=UDim2.fromOffset(93,35)
-    run.Position=UDim2.new(1,-101,0,8)
+    end,34)
+    run.Size=UDim2.fromOffset(93,34)
+    run.Position=UDim2.new(1,-101,0,5)
+    local queue=btn(row,"+ FILA",function()
+        v14.queueEmote(data)
+    end,33)
+    queue.Size=UDim2.fromOffset(93,33)
+    queue.Position=UDim2.new(1,-101,0,49)
     item.row=row
     item.view=vp
     item.status=status
     emoteCards[#emoteCards+1]=item
+    if v14.filterEmoteCards then v14.filterEmoteCards() end
+end
+
+v14.filterEmoteCards=function()
+    local category=v14.emoteFilter
+    local textValue=tostring(v14.emoteLocalSearch or ""):lower()
+    for _,card in ipairs(emoteCards) do
+        if card.row and card.row.Parent then
+            local matches=category=="all" or
+                (category=="own" and card.kind=="own") or
+                (category=="catalog" and card.kind=="catalog") or
+                (category=="avatar" and
+                    (card.kind=="equipped" or card.kind=="classic"))
+            local found=textValue=="" or card.name:lower():find(textValue,1,true)~=nil
+            card.row.Visible=matches and found
+        end
+    end
 end
 
 local function initializePreview(item)
@@ -6849,7 +6967,7 @@ local function runEmotePreviews()
             return
         end
         elapsed=elapsed+dt
-        if elapsed<.07 then return end
+        if elapsed<(v14.liteMode and .25 or .11) then return end
         local step=elapsed
         elapsed=0
         local top=emotesPage.AbsolutePosition.Y
@@ -6861,7 +6979,8 @@ local function runEmotePreviews()
                 and row and row.Parent
                 and row.AbsolutePosition.Y<bottom+15
                 and row.AbsolutePosition.Y+row.AbsoluteSize.Y>top-15
-            if visible and active<5 then
+            if v14.liteMode then visible=false end
+            if visible and active<3 then
                 active=active+1
                 if not item.active and previewSources[
                     item.rig==Enum.HumanoidRigType.R6 and "R6" or "R15"] then
@@ -6880,10 +6999,13 @@ local function runEmotePreviews()
 end
 
 rebuildEmotes=function()
+    v14.refreshEmotes=rebuildEmotes
     clearEmotePreview()
     clear(emotesPage)
-    preloadPreviewSource(Enum.HumanoidRigType.R15)
-    preloadPreviewSource(Enum.HumanoidRigType.R6)
+    if not v14.liteMode then
+        preloadPreviewSource(Enum.HumanoidRigType.R15)
+        preloadPreviewSource(Enum.HumanoidRigType.R6)
+    end
     titleRow(emotesPage,"EMOTES • TODAS AS DANCAS JUNTAS")
     local notice=txt(emotesPage,
         "Bonecos 3D: animacoes oficiais so aparecem quando o asset e acessivel.",
@@ -6916,6 +7038,49 @@ rebuildEmotes=function()
     end
     table.sort(entries,function(a,b)return a.name:lower()<b.name:lower()end)
     for _,item in ipairs(entries) do addEmoteCard(item) end
+    local categories=obj("Frame",emotesPage,{
+        Size=UDim2.new(1,-10,0,40),BackgroundTransparency=1
+    })
+    for i,option in ipairs({
+        {"TODOS","all"},{"BRAB0X","own"},
+        {"AVATAR","avatar"},{"CATALOGO","catalog"}
+    }) do
+        local category=option
+        local button=btn(categories,category[1],function()
+            v14.emoteFilter=category[2]
+            v14.filterEmoteCards()
+        end,38)
+        button.Position=UDim2.new((i-1)/4,2,0,0)
+        button.Size=UDim2.new(.25,-5,0,38)
+        button.TextSize=10
+    end
+    local nameFilter=round(obj("TextBox",emotesPage,{
+        Size=UDim2.new(1,-10,0,35),
+        BackgroundColor3=control,BorderSizePixel=0,
+        Text=v14.emoteLocalSearch,
+        PlaceholderText="FILTRAR EMOTES JA CARREGADOS...",
+        Font=Enum.Font.Gotham,TextSize=12,
+        TextColor3=white,PlaceholderColor3=muted,
+        ClearTextOnFocus=false
+    }),8)
+    bind(nameFilter:GetPropertyChangedSignal("Text"),function()
+        v14.emoteLocalSearch=nameFilter.Text
+        v14.filterEmoteCards()
+    end)
+    v14.emoteQueueStatus=titleRow(emotesPage,"FILA: "..
+        #v14.emoteQueue.."/12 EMOTES")
+    local queueBar=obj("Frame",emotesPage,{
+        Size=UDim2.new(1,-10,0,38),BackgroundTransparency=1
+    })
+    local play=btn(queueBar,"TOCAR FILA",function()
+        exec("emotequeueplay")
+    end,36)
+    play.Size=UDim2.new(.5,-4,0,36)
+    local stopQueue=btn(queueBar,"PARAR/LIMPAR",function()
+        exec("emotequeueclear")
+    end,36)
+    stopQueue.Position=UDim2.new(.5,4,0,0)
+    stopQueue.Size=UDim2.new(.5,-4,0,36)
     local controls=obj("Frame",emotesPage,{
         Size=UDim2.new(1,-10,0,42),BackgroundTransparency=1
     })
@@ -7038,6 +7203,7 @@ rebuildEmotes=function()
         end)
     end)
     runEmotePreviews()
+    v14.filterEmoteCards()
     -- Uma primeira pagina de emotes gerais aparece automaticamente.
     task.defer(searchCatalog)
 end
@@ -7425,6 +7591,10 @@ end)
 
 -- DESEMPENHO: informacoes de sessao e grafico amostrado.
 heading(pages.PERFORMANCE,"▥  PERFORMANCE","FPS, ping, memoria e ajustes visuais locais")
+local perfLite=btn(pages.PERFORMANCE,"MODO LEVE • PREVIAS 3D REDUZIDAS",function()
+    exec("performancemode "..(v14.liteMode and "off" or "on"))
+end,38)
+perfLite.TextSize=11
 local performanceDetails=txt(pages.PERFORMANCE,"FPS: --    PING: --    MEMORIA: --",50,17,true)
 performanceDetails.TextColor3=accent
 actionRow(pages.PERFORMANCE,{
@@ -8939,6 +9109,7 @@ closeHub = function()
     if v14.stopFreecam then pcall(v14.stopFreecam) end
     if v14.stopPlayerLight then pcall(v14.stopPlayerLight) end
     if v14.stopPlayerAlerts then pcall(v14.stopPlayerAlerts) end
+    if v14.stopEmoteQueue then pcall(v14.stopEmoteQueue) end
     if v14.cleanupEmotePreviews then pcall(v14.cleanupEmotePreviews) end
     if v14.cleanup then pcall(v14.cleanup) end
     if v14.introCleanup then pcall(v14.introCleanup) end
