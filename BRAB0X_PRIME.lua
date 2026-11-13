@@ -5063,6 +5063,9 @@ do
             if not ok or not model or not model:IsA("Model") then
                 notify("Skin nao encontrada; confira o ID e as permissoes.","error")
                 warn("[BRAB0X SKIN] "..tostring(model))
+                if v14.v17 and v14.v17.reportError then
+                    v14.v17.reportError("skinload",tostring(model))
+                end
                 return
             end
             local label=(kind=="outfit" and "Outfit " or "User ")..raw
@@ -5080,6 +5083,9 @@ do
                     v14.skinRestore()
                     notify("Falha ao aplicar a skin; veja console F9.","error")
                     warn("[BRAB0X SKIN] "..tostring(count))
+                    if v14.v17 and v14.v17.reportError then
+                        v14.v17.reportError("skinapply",tostring(count))
+                    end
                 end
             end
             model:Destroy()
@@ -5547,7 +5553,7 @@ do
         visual={"fov 85","crosshair on"},
         claro={"day","fullbright"},
         noite={"night","unfullbright"},
-        leve={"lowgfx","fps on"},
+        leve={"lowgfx","performancemode on","fps on"},
         restaurar={"resetgfx","resetfov","crosshair off"},
         exploracao={"fov 90","fps on"}
     }
@@ -9781,8 +9787,16 @@ do
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
             warn("[BRAB0X PRIME V20.0.0] "..detail)
+            if v14.v17 and v14.v17.reportError then
+                v14.v17.reportError("iniciar_"..label,tostring(err))
+            end
         end
     end
+    task.delay(5,function()
+        if not stopped and v14.checkUpdates then
+            v14.checkUpdates(true)
+        end
+    end)
     bootStep("Emotes",rebuildEmotes)
     bootStep("Idioma",relabel)
     if v14.install then bootStep("Modulos",v14.install) end
