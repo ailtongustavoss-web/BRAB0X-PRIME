@@ -539,10 +539,10 @@ close.Position = UDim2.new(1,-40,0,19)
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V20_0_0",
-    Size=UDim2.fromOffset(282,66),
+    Size=UDim2.fromOffset(130,130),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
-    BackgroundColor3=Color3.fromRGB(8,9,13),
+    BackgroundColor3=Color3.fromRGB(9,7,12),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
@@ -550,7 +550,7 @@ local reopen=round(obj("TextButton",gui,{
     ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),20)
+}),18)
 local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
     Color=Color3.fromRGB(255,60,93),
@@ -601,8 +601,8 @@ obj("UIGradient",miniAccent,{
 })
 local miniIcon=round(obj("Frame",reopen,{
     Name="BRAB0X_LOGO",
-    Position=UDim2.fromOffset(9,8),
-    Size=UDim2.fromOffset(50,50),
+    Position=UDim2.fromOffset(34,34),
+    Size=UDim2.fromOffset(62,62),
     BackgroundColor3=Color3.fromRGB(16,10,18),
     BorderSizePixel=0,
     ZIndex=112
@@ -628,6 +628,7 @@ miniLetter.TextColor3=Color3.fromRGB(255,255,255)
 miniLetter.ZIndex=113
 
 local miniTitle=txt(reopen,"BRAB0X",24,20,true)
+miniTitle.Visible=false
 miniTitle.Position=UDim2.fromOffset(72,6)
 miniTitle.Size=UDim2.fromOffset(153,25)
 miniTitle.Font=Enum.Font.GothamBlack
@@ -635,12 +636,14 @@ miniTitle.TextWrapped=false
 miniTitle.TextColor3=Color3.fromRGB(252,250,253)
 miniTitle.ZIndex=114
 local miniPrime=txt(reopen,"P R I M E",15,11,true)
+miniPrime.Visible=false
 miniPrime.Position=UDim2.fromOffset(73,28)
 miniPrime.Size=UDim2.fromOffset(140,15)
 miniPrime.TextWrapped=false
 miniPrime.TextColor3=Color3.fromRGB(255,76,109)
 miniPrime.ZIndex=114
 local miniSubtitle=txt(reopen,"PAINEL DE JOGO  •  ABRIR",16,10,true)
+miniSubtitle.Visible=false
 miniSubtitle.Position=UDim2.fromOffset(73,46)
 miniSubtitle.Size=UDim2.fromOffset(163,16)
 miniSubtitle.TextWrapped=false
@@ -649,24 +652,97 @@ miniSubtitle.ZIndex=114
 
 local miniArrowPanel=round(obj("Frame",reopen,{
     Name="REOPEN_ARROW",
-    Position=UDim2.fromOffset(238,15),
-    Size=UDim2.fromOffset(33,36),
-    BackgroundColor3=Color3.fromRGB(185,27,65),
+    Position=UDim2.fromOffset(98,98),
+    Size=UDim2.fromOffset(26,26),
+    BackgroundColor3=Color3.fromRGB(121,17,48),
     BorderSizePixel=0,
     ZIndex=113
-}),12)
+}),9)
+miniArrowPanel.ZIndex=116
 obj("UIGradient",miniArrowPanel,{
     Rotation=45,
     Color=ColorSequence.new(
         Color3.fromRGB(238,42,83),
         Color3.fromRGB(125,16,50))
 })
-local miniArrow=txt(miniArrowPanel,">",32,24,true)
+local miniArrow=txt(miniArrowPanel,">",26,19,true)
 miniArrow.Position=UDim2.fromOffset(0,0)
 miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
 miniArrow.TextColor3=Color3.fromRGB(255,220,225)
-miniArrow.ZIndex=114
+miniArrow.ZIndex=117
+
+-- Foto compacta escolhida pelo usuario, carregada sem bloquear a interface.
+-- Nao adicionamos locals no escopo principal; mantemos o estado no v14.
+v14.miniImage=round(obj("ImageLabel",reopen,{
+    Name="BRAB0X_ICON_FOTO",
+    Size=UDim2.fromScale(1,1),
+    Position=UDim2.fromOffset(0,0),
+    BackgroundTransparency=1,
+    BorderSizePixel=0,
+    Image="",
+    ScaleType=Enum.ScaleType.Fit,
+    Visible=false,
+    ZIndex=114
+}),17)
+miniAccent.Visible=false
+if reopen:FindFirstChild("BRAB0X_SIDE_LIGHT") then
+    reopen.BRAB0X_SIDE_LIGHT.Visible=false
+end
+if reopen:FindFirstChild("BRAB0X_BOTTOM_LINE") then
+    reopen.BRAB0X_BOTTOM_LINE.Visible=false
+end
+task.spawn(function()
+    local ok,err=pcall(function()
+        local loadAsset=getcustomasset or getsynasset
+        if type(loadAsset)~="function" or type(writefile)~="function" then
+            error("Funcao para carregar imagem local indisponivel")
+        end
+        local encoded=game:HttpGet(
+            "https://raw.githubusercontent.com/ailtongustavoss-web/"..
+            "BRAB0X-PRIME/brabox-pro-teste-20261113/"..
+            "assets/BRAB0X_ICON_BASE64.txt"
+        )
+        if type(encoded)~="string" or #encoded~=4092 then
+            error("Arquivo de imagem ausente ou incompleto")
+        end
+        local alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        local output={}
+        local buffer,bits=0,0
+        for i=1,#encoded do
+            local c=encoded:sub(i,i)
+            if c=="=" then break end
+            local value=alphabet:find(c,1,true)
+            if value then
+                buffer=buffer*64+(value-1)
+                bits=bits+6
+                if bits>=8 then
+                    bits=bits-8
+                    output[#output+1]=string.char(math.floor(buffer/(2^bits))%256)
+                    buffer=buffer%(2^bits)
+                end
+            end
+        end
+        local data=table.concat(output)
+        if data:sub(1,3)~="\255\216\255" or #data<2000 then
+            error("Conteudo JPEG invalido")
+        end
+        local filename="BRAB0X_PRIME_ICON_QUADRADO.jpg"
+        writefile(filename,data)
+        local assetId=loadAsset(filename)
+        if type(assetId)~="string" or assetId=="" then
+            error("O carregador de imagem nao retornou um asset")
+        end
+        if not stopped and v14.miniImage and v14.miniImage.Parent then
+            v14.miniImage.Image=assetId
+            v14.miniImage.Visible=true
+            miniIcon.Visible=false
+        end
+    end)
+    if not ok then
+        warn("[BRAB0X PRIME] Icone de imagem indisponivel; usando B: "..tostring(err))
+    end
+end)
 
 -- Posicao gravada anteriormente continua compativel.
 local miniSaved=v13Data.miniPosition
@@ -9365,10 +9441,10 @@ local function clampMiniPosition()
     end
     -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/282,(view.Y-20)/66
+        1,(view.X-20)/130,(view.Y-20)/130
     ),.35,1)
-    local w=282*miniUIScale.Scale
-    local h=66*miniUIScale.Scale
+    local w=130*miniUIScale.Scale
+    local h=130*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
