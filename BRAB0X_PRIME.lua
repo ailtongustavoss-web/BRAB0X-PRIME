@@ -514,7 +514,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V20.0  |  9 MELHORIAS + COMANDOS   /   BY @wendezao05153nh",
+    "CENTRAL DE CONTROLE  •  CRIADO POR @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -542,7 +542,7 @@ local reopen=round(obj("TextButton",gui,{
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
-    BackgroundColor3=Color3.fromRGB(19,15,21),
+    BackgroundColor3=Color3.fromRGB(11,11,16),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
@@ -550,26 +550,26 @@ local reopen=round(obj("TextButton",gui,{
     ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),14)
+}),18)
 local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
-    Color=Color3.fromRGB(236,51,85),
-    Thickness=1.45,
-    Transparency=.24,
+    Color=Color3.fromRGB(255,65,91),
+    Thickness=1.55,
+    Transparency=.18,
     ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 })
 obj("UIGradient",reopen,{
     Rotation=0,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(42,15,28)),
-        ColorSequenceKeypoint.new(.33,Color3.fromRGB(23,19,27)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(15,17,23))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(43,9,19)),
+        ColorSequenceKeypoint.new(.35,Color3.fromRGB(20,14,21)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(9,12,18))
     })
 })
 -- Somente uma barra superior discreta, sem listras atraves do texto.
 local miniAccent=obj("Frame",reopen,{
-    Position=UDim2.fromOffset(64,0),
-    Size=UDim2.fromOffset(132,2),
+    Position=UDim2.fromOffset(65,0),
+    Size=UDim2.fromOffset(149,2),
     BackgroundColor3=Color3.fromRGB(241,45,78),
     BackgroundTransparency=.24,
     BorderSizePixel=0,
@@ -586,20 +586,20 @@ local miniIcon=round(obj("Frame",reopen,{
     Name="BRAB0X_LOGO",
     Position=UDim2.fromOffset(8,8),
     Size=UDim2.fromOffset(49,49),
-    BackgroundColor3=Color3.fromRGB(63,18,36),
+    BackgroundColor3=Color3.fromRGB(24,10,18),
     BorderSizePixel=0,
     ZIndex=112
 }),11)
 local miniIconStroke=obj("UIStroke",miniIcon,{
-    Color=Color3.fromRGB(244,58,92),
-    Thickness=1,
-    Transparency=.32
+    Color=Color3.fromRGB(255,69,101),
+    Thickness=1.65,
+    Transparency=.08
 })
 obj("UIGradient",miniIcon,{
     Rotation=60,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(105,23,51)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(42,12,29))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(79,17,36)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(16,12,21))
     })
 })
 local miniLetter=txt(miniIcon,"B",43,32,true)
@@ -610,20 +610,20 @@ miniLetter.Font=Enum.Font.GothamBlack
 miniLetter.TextColor3=Color3.fromRGB(255,255,255)
 miniLetter.ZIndex=113
 
-local miniTitle=txt(reopen,"BRAB0X",23,18,true)
+local miniTitle=txt(reopen,"BRAB0X",23,19,true)
 miniTitle.Position=UDim2.fromOffset(69,7)
 miniTitle.Size=UDim2.fromOffset(157,24)
 miniTitle.Font=Enum.Font.GothamBlack
 miniTitle.TextWrapped=false
 miniTitle.TextColor3=Color3.fromRGB(252,250,253)
 miniTitle.ZIndex=114
-local miniPrime=txt(reopen,"P R I M E",15,10,true)
+local miniPrime=txt(reopen,"P R I M E",15,11,true)
 miniPrime.Position=UDim2.fromOffset(70,28)
 miniPrime.Size=UDim2.fromOffset(136,15)
 miniPrime.TextWrapped=false
 miniPrime.TextColor3=Color3.fromRGB(255,76,109)
 miniPrime.ZIndex=114
-local miniSubtitle=txt(reopen,"V20.0 • CLIQUE PARA ABRIR",16,10,true)
+local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",16,10,true)
 miniSubtitle.Position=UDim2.fromOffset(70,46)
 miniSubtitle.Size=UDim2.fromOffset(162,16)
 miniSubtitle.TextWrapped=false
@@ -634,7 +634,7 @@ local miniArrowPanel=round(obj("Frame",reopen,{
     Name="REOPEN_ARROW",
     Position=UDim2.fromOffset(238,15),
     Size=UDim2.fromOffset(32,36),
-    BackgroundColor3=Color3.fromRGB(98,26,48),
+    BackgroundColor3=Color3.fromRGB(136,24,57),
     BorderSizePixel=0,
     ZIndex=113
 }),9)
@@ -664,7 +664,7 @@ bind(reopen.MouseEnter,function()
         Transparency=.08
     }):Play()
     Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(160,36,65)
+        BackgroundColor3=Color3.fromRGB(223,42,83)
     }):Play()
 end)
 bind(reopen.MouseLeave,function()
@@ -676,7 +676,7 @@ bind(reopen.MouseLeave,function()
         Transparency=.32
     }):Play()
     Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(98,26,48)
+        BackgroundColor3=Color3.fromRGB(136,24,57)
     }):Play()
 end)
 
@@ -3722,8 +3722,8 @@ end,"distance nearest")
 register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
-register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V20.0.0 | Criador: @wendezao05153nh")
+register("version","SETTINGS","Informacoes do BRAB0X PRIME",function()
+    notify("BRAB0X PRIME | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -5645,7 +5645,7 @@ do
         local ok,result=pcall(function()return HttpService:JSONDecode(raw)end)
         if not ok or type(result)~="table"
             or result.version~="BRAB0X-USER-BACKUP-V17" then
-            notify("Backup invalido. Aceita formato BRAB0X-V17.","error")
+            notify("Backup invalido. Utilize um backup compativel do BRAB0X.","error")
             return false
         end
         local added={notes=0,macros=0}
@@ -5868,7 +5868,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V20.0.0: "..#registered.." comandos."
+        return "BRAB0X PRIME: "..#registered.." comandos."
     end)
 end
 
@@ -5941,7 +5941,7 @@ end
 -- ATUALIZACOES V20.0.0: somente JSON de versao, sem executar Lua remoto.
 v14.version="20.0.0"
 v14.latestVersion="20.0.0"
-v14.updateStatus="V20.0.0 INSTALADA • AINDA NAO VERIFICADA"
+v14.updateStatus="SISTEMA INSTALADO • VERIFICACAO PENDENTE"
 v14.updateChangelog={
     "Aim V2: estabilidade do alvo e indicador no FOV",
     "Skin Changer V2: preview giratorio, 5 slots e acessorios",
@@ -5976,10 +5976,10 @@ v14.checkUpdates=function(silent)
                     v14.remoteChangelog=data.changelog
                 end
                 if number>versionValue(v14.version) then
-                    v14.updateStatus="NOVA VERSAO DISPONIVEL: V"..ver
+                    v14.updateStatus="NOVA ATUALIZACAO DISPONIVEL"
                     notify(v14.updateStatus,"info")
                 else
-                    v14.updateStatus="V"..v14.version.." ATUALIZADA"
+                    v14.updateStatus="SISTEMA ATUALIZADO"
                     if not silent then notify(v14.updateStatus,"success") end
                 end
             end
@@ -6014,7 +6014,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V20.0",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -6534,66 +6534,80 @@ do
     end
 end
 
--- HOME / BANNER INTEGRADO COM DESENHO NATIVO (SEM ASSET EXTERNO)
+-- HOME / BANNER PRIME: DESIGN CLEAN PRETO E VERMELHO, SEM VERSOES VISIVEIS
 do
 local hero = round(obj("Frame",pages.HOME,{
     Size = UDim2.new(1,-9,0,202),
-    BackgroundColor3 = Color3.fromRGB(29,6,15),
+    BackgroundColor3 = Color3.fromRGB(13,12,18),
     ClipsDescendants = true,
     BorderSizePixel = 0
-}),15)
+}),24)
 obj("UIGradient",hero,{
-    Rotation = 8,
+    Rotation = 0,
     Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(12,3,8)),
-        ColorSequenceKeypoint.new(.40,Color3.fromRGB(90,9,24)),
-        ColorSequenceKeypoint.new(.74,Color3.fromRGB(26,3,10)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(7,4,9))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(34,9,19)),
+        ColorSequenceKeypoint.new(.28,Color3.fromRGB(18,12,21)),
+        ColorSequenceKeypoint.new(.75,Color3.fromRGB(11,13,20)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(33,8,17))
     })
 })
-obj("UIStroke",hero,{Color=accent,Transparency=.15,Thickness=1.5})
-for i=1,7 do
+obj("UIStroke",hero,{Color=Color3.fromRGB(236,49,82),Transparency=.12,Thickness=1.6})
+-- Acabamentos neon discretos: sem exagero de luzes.
+round(obj("Frame",hero,{
+    Position=UDim2.fromOffset(0,35),
+    Size=UDim2.fromOffset(4,132),
+    BackgroundColor3=Color3.fromRGB(245,50,86),
+    BorderSizePixel=0
+}),2)
+for i=1,3 do
     local beam = obj("Frame",hero,{
-        Size = UDim2.fromOffset(5+i*4,330),
-        Position = UDim2.new(1,-i*48,-.3,-32),
-        Rotation = 30,
-        BackgroundColor3 = i%2==0 and accent or Color3.fromRGB(132,12,32),
-        BackgroundTransparency = .77,
+        Size = UDim2.fromOffset(2,215),
+        Position = UDim2.new(1,-i*50,-.1,-24),
+        Rotation = 26,
+        BackgroundColor3 = Color3.fromRGB(202,26,61),
+        BackgroundTransparency = .91,
         BorderSizePixel = 0
     })
 end
--- Emblema feito com componentes Roblox: nao depende de glifo Unicode.
+-- Emblema circular mantido inteiramente por componentes nativos.
 local emblem=round(obj("Frame",hero,{
-    Position=UDim2.new(1,-154,0,22),
-    Size=UDim2.fromOffset(92,106),
-    BackgroundColor3=Color3.fromRGB(37,7,20),
-    BackgroundTransparency=.15,BorderSizePixel=0
-}),17)
-obj("UIStroke",emblem,{Color=accent,Thickness=3,Transparency=.05})
-local emblemLetter=txt(emblem,"B",91,70,true)
-emblemLetter.Position=UDim2.fromOffset(3,4)
-emblemLetter.Size=UDim2.new(1,-6,1,-8)
-emblemLetter.TextColor3=accent
+    Position=UDim2.new(1,-123,0,48),
+    Size=UDim2.fromOffset(87,87),
+    BackgroundColor3=Color3.fromRGB(22,9,19),
+    BorderSizePixel=0
+}),44)
+obj("UIStroke",emblem,{Color=Color3.fromRGB(255,64,99),Thickness=2,Transparency=.03})
+obj("UIGradient",emblem,{
+    Rotation=45,
+    Color=ColorSequence.new(Color3.fromRGB(62,12,31),Color3.fromRGB(12,12,19))
+})
+local emblemLetter=txt(emblem,"B",87,56,true)
+emblemLetter.Position=UDim2.fromOffset(0,0)
+emblemLetter.Size=UDim2.fromScale(1,1)
+emblemLetter.Font=Enum.Font.GothamBlack
+emblemLetter.TextColor3=Color3.fromRGB(255,249,252)
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V20.0 / ESTAVEL",22,12,true)
-bannerSmall.Position = UDim2.fromOffset(27,24)
-bannerSmall.Size = UDim2.fromOffset(425,22)
-bannerSmall.TextColor3 = accent
+local bannerSmall = txt(hero,"CENTRAL DE CONTROLE  /  ACESSO PREMIUM",22,12,true)
+bannerSmall.Position = UDim2.fromOffset(28,23)
+bannerSmall.Size = UDim2.new(1,-176,0,22)
+bannerSmall.TextColor3 = Color3.fromRGB(255,80,112)
 local bannerBrand = txt(hero,"BRAB0X PRIME",59,36,true)
-bannerBrand.Position = UDim2.fromOffset(26,59)
-bannerBrand.Size = UDim2.new(1,-60,0,60)
-local bannerSub = txt(hero,"RED NEON CONTROL CENTER",28,16,true)
-bannerSub.Position = UDim2.fromOffset(29,120)
-bannerSub.Size = UDim2.new(1,-60,0,28)
-bannerSub.TextColor3 = accent
-local bannerDesc = txt(hero,"VOO  •  JOGADOR  •  CAMERA  •  MUNDO  •  EMOTES",24,11,true)
-bannerDesc.Position = UDim2.fromOffset(29,157)
-bannerDesc.Size = UDim2.new(1,-58,0,24)
+bannerBrand.Position = UDim2.fromOffset(27,55)
+bannerBrand.Size = UDim2.new(1,-151,0,59)
+bannerBrand.Font=Enum.Font.GothamBlack
+bannerBrand.TextWrapped=false
+local bannerSub = txt(hero,"RED NEON • CONTROL CENTER",26,16,true)
+bannerSub.Position = UDim2.fromOffset(29,116)
+bannerSub.Size = UDim2.new(1,-160,0,26)
+bannerSub.TextColor3 = Color3.fromRGB(255,78,110)
+local bannerDesc = txt(hero,"MOVIMENTO  •  CAMERA  •  VISUAL  •  EMOTES",23,11,true)
+bannerDesc.Position = UDim2.fromOffset(29,151)
+bannerDesc.Size = UDim2.new(1,-62,0,23)
 bannerDesc.TextColor3 = white
-local creatorBanner = txt(hero,"✦  CRIADO POR @wendezao05153nh",18,11,true)
-creatorBanner.Position = UDim2.fromOffset(29,180)
-creatorBanner.Size = UDim2.new(1,-56,0,18)
-creatorBanner.TextColor3 = accent
+local creatorBanner = txt(hero,"CRIADO POR  @wendezao05153nh",19,11,true)
+creatorBanner.Position = UDim2.fromOffset(29,175)
+creatorBanner.Size = UDim2.new(1,-58,0,19)
+creatorBanner.TextColor3 = Color3.fromRGB(255,108,135)
 
 live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
 titleRow(pages.HOME,"PAINEL DE ACOES RAPIDAS  /  ESCOLHA SUA FUNCAO")
@@ -8591,7 +8605,7 @@ do
             ui.title(pages.BACKUP,"▣  BACKUP DE PREFERENCIAS",
                 "Exporte e importe notas e macros seguras")
             info(pages.BACKUP,
-                "Backup em JSON V17. Ele nao contem senhas, executores, codigo remoto nem dados do servidor.",57)
+                "Backup em JSON. Nao inclui senhas, executores, codigo remoto nem dados do servidor.",57)
             ui.section(pages.BACKUP,"EXPORTAR")
             local exportField=ui.box(pages.BACKUP,"Clique em GERAR JSON para exportar",127,true)
             exportField.ClearTextOnFocus=false
@@ -8602,7 +8616,7 @@ do
                 {"COPIAR JSON",function()copyText(exportField.Text)end}
             })
             ui.section(pages.BACKUP,"IMPORTAR")
-            local importField=ui.box(pages.BACKUP,"Cole aqui o backup BRAB0X-V17...",130,true)
+            local importField=ui.box(pages.BACKUP,"Cole aqui o backup do BRAB0X...",130,true)
             importField.ClearTextOnFocus=false
             local pendingImport=false
             bind(importField:GetPropertyChangedSignal("Text"),function()
@@ -8647,7 +8661,7 @@ do
             m.pages.DIAGNOSTICS=function()
                 clear(details)
                 local d=m.diagnostic()
-                diagnosticsInfo.Text=("VERSAO %s  •  PLACE ID %s"):format(d.version,d.placeId)
+                diagnosticsInfo.Text=("BRAB0X PRIME  •  PLACE ID %s"):format(d.placeId)
                 local rows={
                     "GUI: "..(d.gui and "OK" or "FALHA")..
                         "  |  CAMERA: "..(d.camera and "OK" or "INDISPONIVEL"),
@@ -8657,7 +8671,7 @@ do
                         " / "..(d.fileWrite and "GRAVACAO" or "N/A"),
                     "CLIPBOARD: "..(d.clipboard and "DISPONIVEL" or "MANUAL"),
                     "COMANDOS: "..d.totalCommands.."  |  WAYPOINTS: "..d.waypoints,
-                    "VERSAO: "..tostring(v14.updateStatus),
+                    "ATUALIZACOES: "..tostring(v14.updateStatus),
                     "AIM: "..(S.aim and "ON" or "OFF").." | ALVOS "..S.aimTargetMode..
                         " | FOV "..S.aimRadius..
                         " | MAGNET "..(S.aimMagnet and "ON" or "OFF"),
@@ -8701,7 +8715,7 @@ do
 
             -- Guia e presets pre-definidos, sem execucao de codigo externo.
             ui.title(pages.GUIDE,"GUIA COMPLETO DO BRAB0X",
-                "Recursos essenciais, atalhos e exemplos para a versao V17")
+                "Recursos essenciais, atalhos e exemplos dos comandos")
             local tips={
                 {"MENU","RightShift abre/fecha. Use a busca na barra lateral e os grupos recolhiveis."},
                 {"COMANDOS","Ctrl+K procura na lista de comandos. 'tab games' abre uma aba."},
@@ -8771,7 +8785,7 @@ local checkVersionButton=btn(pages.SETTINGS,"VERIFICAR NOVA VERSAO NO GITHUB",fu
 end,40)
 v14.updateLabel=txt(pages.SETTINGS,v14.updateStatus,33,12,true)
 v14.updateLabel.TextColor3=muted
-local whatsNewButton=btn(pages.SETTINGS,"VER NOVIDADES V20.0.0",function()
+local whatsNewButton=btn(pages.SETTINGS,"VER NOVIDADES",function()
     exec("whatsnew")
 end,37)
 titleRow(pages.SETTINGS,"✦  NOTIFICACOES")
@@ -8948,7 +8962,7 @@ refresh = function()
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
     -- O banner minimizado mostra o estado do voo sem poluir a tela.
-    miniSubtitle.Text = S.fly and "● FLY ATIVO • ABRIR" or "V20.0 • CLIQUE PARA ABRIR"
+    miniSubtitle.Text = S.fly and "● FLY ATIVO • ABRIR" or "CLIQUE PARA ABRIR"
     miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,112,134)
         or Color3.fromRGB(179,172,187)
     if v14.perfLiteButton then
@@ -9822,7 +9836,7 @@ do
         end
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V20.0.0 | "..#registered..
+        notify("BRAB0X PRIME | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
