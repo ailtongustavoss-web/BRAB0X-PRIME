@@ -1,6 +1,6 @@
 
--- BRAB0X PRIME V19.8.8 | AIM MAGNETICO AUTOMATICO NO FOV
--- 338 comandos; catalogo completo pesquisavel e emotes locais em avatar R15.
+-- BRAB0X PRIME V20.0.0 | AIM V2 • SKINS V2 • EMOTES V2 • INTERFACE
+-- Versao 20.0.0: skins, emotes, Aim, perfis, camera, desempenho e diagnostico.
 -- Criado por @wendezao05153nh
 --
 -- INDICE DE MANUTENCAO (SCRIPT COMPLETO, MESMO LOADSTRING):
@@ -37,6 +37,7 @@ local pg = player:WaitForChild("PlayerGui")
 -- LIMPEZA DE VERSOES ANTIGAS
 
 for _, name in ipairs({
+    "BRAB0X_V20_0_0_STOP",
     "BRAB0X_V19_8_8_STOP",
     "BRAB0X_V19_8_7_STOP",
     "BRAB0X_V19_8_6_STOP",
@@ -94,6 +95,7 @@ for _,oldName in ipairs({
     "BRAB0X_INTRO_FULLSCREEN_V19_8_6",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_7",
     "BRAB0X_INTRO_FULLSCREEN_V19_8_8",
+    "BRAB0X_INTRO_FULLSCREEN_V20_0_0",
     "BRAB0X_PRIME_V19_3",
     "BRAB0X_PRIME_V19_4",
     "BRAB0X_PRIME_V19_5",
@@ -105,7 +107,8 @@ for _,oldName in ipairs({
     "BRAB0X_PRIME_V19_8_5",
     "BRAB0X_PRIME_V19_8_6",
     "BRAB0X_PRIME_V19_8_7",
-    "BRAB0X_PRIME_V19_8_8"
+    "BRAB0X_PRIME_V19_8_8",
+    "BRAB0X_PRIME_V20_0_0"
 }) do
     local leftover=pg:FindFirstChild(oldName)
     if leftover then leftover:Destroy() end
@@ -458,7 +461,7 @@ local noticeCounter=0
 -- JANELA PRINCIPAL
 
 local gui = obj("ScreenGui",pg,{
-    Name = "BRAB0X_PRIME_V19_8_8",
+    Name = "BRAB0X_PRIME_V20_0_0",
     ResetOnSpawn = false,
     DisplayOrder = 100
 })
@@ -504,7 +507,7 @@ brand.Size = UDim2.fromOffset(390,38)
 
 local sub = txt(
     header,
-    "V19.8  |  HUB ESTAVEL + COMANDOS   /   BY @wendezao05153nh",
+    "V20.0  |  9 MELHORIAS + COMANDOS   /   BY @wendezao05153nh",
     16,10
 )
 sub.TextColor3 = muted
@@ -528,7 +531,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
-    Name="BRAB0X_MINI_PREMIUM_V19_8_8",
+    Name="BRAB0X_MINI_PREMIUM_V20_0_0",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
@@ -613,7 +616,7 @@ miniPrime.Size=UDim2.fromOffset(136,15)
 miniPrime.TextWrapped=false
 miniPrime.TextColor3=Color3.fromRGB(255,76,109)
 miniPrime.ZIndex=114
-local miniSubtitle=txt(reopen,"TOQUE PARA ABRIR",16,10,true)
+local miniSubtitle=txt(reopen,"V20.0 • CLIQUE PARA ABRIR",16,10,true)
 miniSubtitle.Position=UDim2.fromOffset(70,46)
 miniSubtitle.Size=UDim2.fromOffset(162,16)
 miniSubtitle.TextWrapped=false
@@ -3713,7 +3716,7 @@ register("notify","SETTINGS","Mensagem local de status",function(a)
     notify(tostring(a or ""))
 end,"notify Ola")
 register("version","SETTINGS","Versao do BRAB0X PRIME",function()
-    notify("BRAB0X PRIME V19.8.8 | Criador: @wendezao05153nh")
+    notify("BRAB0X PRIME V20.0.0 | Criador: @wendezao05153nh")
 end)
 register("cmdcount","SETTINGS","Quantidade de comandos",function()
     notify("Comandos registrados: "..#registered)
@@ -5475,7 +5478,7 @@ do
         install=nil,
         pages={},
         sessionErrors={},
-        guideVersion="V17",
+        guideVersion="V20.0.0",
         navigationOrder=navOrder
     }
     v14.v17=m
@@ -5568,7 +5571,7 @@ do
         local camera=workspace.CurrentCamera
         local _,hum,root=chars()
         return {
-            version="V17",
+            version="V20.0.0",
             placeId=v15PlaceId,
             players=#Players:GetPlayers(),
             gui=(gui and gui.Parent)~=nil,
@@ -5852,7 +5855,7 @@ do
         return "Camera local restaurada."
     end)
     register("commandstats","SETTINGS","Contar comandos cadastrados",function()
-        return "BRAB0X V19.8.1: "..#registered.." comandos."
+        return "BRAB0X V20.0.0: "..#registered.." comandos."
     end)
 end
 
@@ -5930,7 +5933,7 @@ local cmdHeader = round(obj("Frame",cmdPage,{
     BackgroundColor3 = Color3.fromRGB(33,10,19),BorderSizePixel=0
 }),10)
 obj("UIStroke",cmdHeader,{Color=accent,Thickness=1,Transparency=.3})
-local cmdTitle = txt(cmdHeader,"▤  COMANDOS V19.8",29,19,true)
+local cmdTitle = txt(cmdHeader,"▤  COMANDOS V20.0",29,19,true)
 cmdTitle.Position=UDim2.fromOffset(16,7)
 cmdTitle.Size=UDim2.new(1,-28,0,29)
 local cmdHint = txt(cmdHeader,"Lista compacta | filtros | busca | 9 itens por pagina",22,11)
@@ -6491,7 +6494,7 @@ emblemLetter.Position=UDim2.fromOffset(3,4)
 emblemLetter.Size=UDim2.new(1,-6,1,-8)
 emblemLetter.TextColor3=accent
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
-local bannerSmall = txt(hero,"HUB PREMIUM  |  V19.8 / ESTAVEL",22,12,true)
+local bannerSmall = txt(hero,"HUB PREMIUM  |  V20.0 / ESTAVEL",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(27,24)
 bannerSmall.Size = UDim2.fromOffset(425,22)
 bannerSmall.TextColor3 = accent
@@ -7595,6 +7598,7 @@ local perfLite=btn(pages.PERFORMANCE,"MODO LEVE • PREVIAS 3D REDUZIDAS",functi
     exec("performancemode "..(v14.liteMode and "off" or "on"))
 end,38)
 perfLite.TextSize=11
+v14.perfLiteButton=perfLite
 local performanceDetails=txt(pages.PERFORMANCE,"FPS: --    PING: --    MEMORIA: --",50,17,true)
 performanceDetails.TextColor3=accent
 actionRow(pages.PERFORMANCE,{
@@ -8167,7 +8171,12 @@ do
             local update=v14.panelRefresh and v14.panelRefresh[page]
             if update and pages[page] and pages[page].Visible then
                 local ok,err=pcall(update)
-                if not ok then warn("[BRAB0X V19.8] Falha no painel "..page..": "..tostring(err)) end
+                if not ok then
+                    warn("[BRAB0X V20] Falha no painel "..page..": "..tostring(err))
+                    if v14.v17 and v14.v17.reportError then
+                        v14.v17.reportError("painel_"..page,tostring(err))
+                    end
+                end
             end
         end
         if v14.translate then v14.translate() end
@@ -8836,9 +8845,12 @@ refresh = function()
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
     -- O banner minimizado mostra o estado do voo sem poluir a tela.
-    miniSubtitle.Text = S.fly and "● FLY ATIVO  /  ABRIR" or "TOQUE PARA ABRIR"
+    miniSubtitle.Text = S.fly and "● FLY ATIVO • ABRIR" or "V20.0 • CLIQUE PARA ABRIR"
     miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,112,134)
         or Color3.fromRGB(179,172,187)
+    if v14.perfLiteButton then
+        v14.perfLiteButton.Text="MODO LEVE: "..(v14.liteMode and "ON" or "OFF").." / PREVIAS 3D"
+    end
 
     aimTitle.Text = (
         "◎  AIM %s  |  ALVOS %s  |  RAIO %d  |  ESTAB %s"
@@ -9065,6 +9077,14 @@ bind(minimize.MouseButton1Click,function()
     main.Visible=false
     reopen.Visible=true
     clampMiniPosition()
+    if config.animations then
+        local normalScale=miniUIScale.Scale
+        miniUIScale.Scale=normalScale*.82
+        Tween:Create(miniUIScale,TweenInfo.new(.19,
+            Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+            Scale=normalScale
+        }):Play()
+    end
 end)
 bind(reopen.MouseButton1Click,function()
     -- Suprime o clique gerado pela soltura depois de arrastar.
@@ -9074,6 +9094,14 @@ bind(reopen.MouseButton1Click,function()
     end
     main.Visible=true
     reopen.Visible=false
+    if config.animations then
+        local final=main.Position
+        main.Position=final+UDim2.fromOffset(0,13)
+        Tween:Create(main,TweenInfo.new(.18,
+            Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+            Position=final
+        }):Play()
+    end
 end)
 do
     local camera=workspace.CurrentCamera
@@ -9087,7 +9115,7 @@ v14.forceShow=function()
     if stopped then return end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
-    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
+    local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
     if dangling then dangling:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -9125,8 +9153,8 @@ closeHub = function()
 
     gui:Destroy()
 
-    if _G.BRAB0X_V19_8_8_STOP == closeHub then
-        _G.BRAB0X_V19_8_8_STOP = nil
+    if _G.BRAB0X_V20_0_0_STOP == closeHub then
+        _G.BRAB0X_V20_0_0_STOP = nil
     end
 end
 
@@ -9252,7 +9280,7 @@ bind(player.CharacterRemoving,function()
     resetTransparency()
 end)
 
-_G.BRAB0X_V19_8_8_STOP = closeHub
+_G.BRAB0X_V20_0_0_STOP = closeHub
 
 -- ABERTURA CINEMATOGRAFICA BRAB0X PRIME (UI NATIVA, SEM ASSETS EXTERNOS)
 -- Isolada em funcao protegida: um erro visual nao bloqueia o hub inteiro.
@@ -9269,10 +9297,10 @@ local ember=Color3.fromRGB(255,76,89)
 local dark=Color3.fromRGB(13,3,9)
 -- Layer exclusiva da abertura: ocupa todos os pixels, ate atras da topbar.
 -- A interface principal continua usando a area segura nativa.
-local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
+local priorIntro=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
 if priorIntro then priorIntro:Destroy() end
 local introGui=obj("ScreenGui",pg,{
-    Name="BRAB0X_INTRO_FULLSCREEN_V19_8_8",
+    Name="BRAB0X_INTRO_FULLSCREEN_V20_0_0",
     ResetOnSpawn=false,
     DisplayOrder=gui.DisplayOrder+20,
     IgnoreGuiInset=true,
@@ -9646,7 +9674,7 @@ end)
 end) -- fim da construcao protegida da abertura
 if not v14.introOk then
     warn("[BRAB0X PRIME] Erro na abertura: "..tostring(v14.introError))
-    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V19_8_8")
+    local failedGui=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
     if failedGui then failedGui:Destroy() end
     main.Visible=true
     reopen.Visible=false
@@ -9662,7 +9690,7 @@ do
         if not ok then
             local detail=label..": "..tostring(err)
             bootErrors[#bootErrors+1]=detail
-            warn("[BRAB0X PRIME V19.8.8] "..detail)
+            warn("[BRAB0X PRIME V20.0.0] "..detail)
         end
     end
     bootStep("Emotes",rebuildEmotes)
@@ -9679,7 +9707,7 @@ do
         v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
-        notify("BRAB0X PRIME V19.8.8 | "..#registered..
+        notify("BRAB0X PRIME V20.0.0 | "..#registered..
             " comandos | F8 recupera menu | Alt+P busca paginas")
     end
 end
