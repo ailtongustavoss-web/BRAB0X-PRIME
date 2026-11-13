@@ -535,14 +535,14 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V20.0.2 / MINI BANNER PRIME: VISUAL REFINADO COM ANIMACAO SUAVE
+-- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V20_0_0",
-    Size=UDim2.fromOffset(316,74),
+    Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
-    BackgroundColor3=Color3.fromRGB(16,11,18),
+    BackgroundColor3=Color3.fromRGB(19,15,21),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
@@ -550,26 +550,26 @@ local reopen=round(obj("TextButton",gui,{
     ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),16)
+}),14)
 local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
-    Color=Color3.fromRGB(246,53,87),
-    Thickness=1.6,
-    Transparency=.18,
+    Color=Color3.fromRGB(236,51,85),
+    Thickness=1.45,
+    Transparency=.24,
     ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 })
 obj("UIGradient",reopen,{
     Rotation=0,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(52,13,31)),
-        ColorSequenceKeypoint.new(.30,Color3.fromRGB(27,17,26)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(12,14,20))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(42,15,28)),
+        ColorSequenceKeypoint.new(.33,Color3.fromRGB(23,19,27)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(15,17,23))
     })
 })
 -- Somente uma barra superior discreta, sem listras atraves do texto.
 local miniAccent=obj("Frame",reopen,{
-    Position=UDim2.fromOffset(68,0),
-    Size=UDim2.fromOffset(183,2),
+    Position=UDim2.fromOffset(64,0),
+    Size=UDim2.fromOffset(132,2),
     BackgroundColor3=Color3.fromRGB(241,45,78),
     BackgroundTransparency=.24,
     BorderSizePixel=0,
@@ -582,28 +582,10 @@ obj("UIGradient",miniAccent,{
         NumberSequenceKeypoint.new(1,1)
     })
 })
--- Traco lateral e detalhe inferior formam o novo acabamento sem imagens externas.
-round(obj("Frame",reopen,{
-    Name="NEON_EDGE",
-    Position=UDim2.fromOffset(0,16),
-    Size=UDim2.fromOffset(3,42),
-    BackgroundColor3=Color3.fromRGB(255,63,102),
-    BorderSizePixel=0,
-    ZIndex=111
-}),2)
-round(obj("Frame",reopen,{
-    Name="NEON_BASE",
-    Position=UDim2.fromOffset(76,71),
-    Size=UDim2.fromOffset(179,2),
-    BackgroundColor3=Color3.fromRGB(179,27,59),
-    BackgroundTransparency=.45,
-    BorderSizePixel=0,
-    ZIndex=111
-}),2)
 local miniIcon=round(obj("Frame",reopen,{
     Name="BRAB0X_LOGO",
-    Position=UDim2.fromOffset(10,10),
-    Size=UDim2.fromOffset(54,54),
+    Position=UDim2.fromOffset(8,8),
+    Size=UDim2.fromOffset(49,49),
     BackgroundColor3=Color3.fromRGB(63,18,36),
     BorderSizePixel=0,
     ZIndex=112
@@ -620,7 +602,7 @@ obj("UIGradient",miniIcon,{
         ColorSequenceKeypoint.new(1,Color3.fromRGB(42,12,29))
     })
 })
-local miniLetter=txt(miniIcon,"B",54,36,true)
+local miniLetter=txt(miniIcon,"B",43,32,true)
 miniLetter.Position=UDim2.fromOffset(0,2)
 miniLetter.Size=UDim2.fromScale(1,1)
 miniLetter.TextXAlignment=Enum.TextXAlignment.Center
@@ -628,48 +610,35 @@ miniLetter.Font=Enum.Font.GothamBlack
 miniLetter.TextColor3=Color3.fromRGB(255,255,255)
 miniLetter.ZIndex=113
 
-local miniTitle=txt(reopen,"BRAB0X",27,21,true)
-miniTitle.Position=UDim2.fromOffset(77,6)
-miniTitle.Size=UDim2.fromOffset(177,27)
+local miniTitle=txt(reopen,"BRAB0X",23,18,true)
+miniTitle.Position=UDim2.fromOffset(69,7)
+miniTitle.Size=UDim2.fromOffset(157,24)
 miniTitle.Font=Enum.Font.GothamBlack
 miniTitle.TextWrapped=false
 miniTitle.TextColor3=Color3.fromRGB(252,250,253)
 miniTitle.ZIndex=114
-local miniPrime=txt(reopen,"P R I M E",16,11,true)
-miniPrime.Position=UDim2.fromOffset(78,33)
-miniPrime.Size=UDim2.fromOffset(163,16)
+local miniPrime=txt(reopen,"P R I M E",15,10,true)
+miniPrime.Position=UDim2.fromOffset(70,28)
+miniPrime.Size=UDim2.fromOffset(136,15)
 miniPrime.TextWrapped=false
 miniPrime.TextColor3=Color3.fromRGB(255,76,109)
 miniPrime.ZIndex=114
 local miniSubtitle=txt(reopen,"V20.0 • CLIQUE PARA ABRIR",16,10,true)
-miniSubtitle.Position=UDim2.fromOffset(85,52)
-miniSubtitle.Size=UDim2.fromOffset(187,16)
+miniSubtitle.Position=UDim2.fromOffset(70,46)
+miniSubtitle.Size=UDim2.fromOffset(162,16)
 miniSubtitle.TextWrapped=false
 miniSubtitle.TextColor3=Color3.fromRGB(179,172,187)
 miniSubtitle.ZIndex=114
 
--- Indicador luminoso ao lado do texto de status.
-round(obj("Frame",reopen,{
-    Name="STATUS_DOT",
-    Position=UDim2.fromOffset(77,57),
-    Size=UDim2.fromOffset(5,5),
-    BackgroundColor3=Color3.fromRGB(248,74,113),
-    BorderSizePixel=0,
-    ZIndex=114
-}),99)
 local miniArrowPanel=round(obj("Frame",reopen,{
     Name="REOPEN_ARROW",
-    Position=UDim2.fromOffset(271,18),
-    Size=UDim2.fromOffset(33,38),
+    Position=UDim2.fromOffset(238,15),
+    Size=UDim2.fromOffset(32,36),
     BackgroundColor3=Color3.fromRGB(98,26,48),
     BorderSizePixel=0,
     ZIndex=113
 }),9)
-obj("UIGradient",miniArrowPanel,{
-    Color=ColorSequence.new(
-        Color3.fromRGB(164,35,71),Color3.fromRGB(83,18,44))
-})
-local miniArrow=txt(miniArrowPanel,">",38,24,true)
+local miniArrow=txt(miniArrowPanel,">",32,22,true)
 miniArrow.Position=UDim2.fromOffset(0,0)
 miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
@@ -5872,11 +5841,9 @@ do
     register("dancesamba","EMOTES","Danca samba",function() return originalMove("samba") end)
     register("dancestop","EMOTES","Parar dancas",stopEmote)
     register("hubmini","SETTINGS","Minimizar para banner",function()
-        if v14.minimizeAnimated then return v14.minimizeAnimated() end
         main.Visible=false;reopen.Visible=true;return false
     end)
     register("hubopen","SETTINGS","Abrir painel",function()
-        if v14.reopenAnimated then return v14.reopenAnimated() end
         main.Visible=true;reopen.Visible=false;return false
     end)
     register("hubsmall","SETTINGS","Painel pequeno",function() prefScale(.7) end)
@@ -9149,10 +9116,10 @@ local function clampMiniPosition()
     end
     -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/316,(view.Y-20)/74
+        1,(view.X-20)/282,(view.Y-20)/66
     ),.35,1)
-    local w=316*miniUIScale.Scale
-    local h=74*miniUIScale.Scale
+    local w=282*miniUIScale.Scale
+    local h=66*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
@@ -9209,124 +9176,36 @@ bind(UIS.InputEnded,function(input)
     end
     miniMoved=false
 end)
--- As funcoes de transicao ficam em v14: nao acrescentam variaveis
--- locais no escopo principal (importante para scripts Lua extensos).
-v14.stopMiniTransition=function()
-    v14.miniSerial=(v14.miniSerial or 0)+1
-    v14.miniBusy=false
-    if v14.miniPositionTween then v14.miniPositionTween:Cancel() end
-    if v14.miniScaleTween then v14.miniScaleTween:Cancel() end
-    if v14.miniPopTween then v14.miniPopTween:Cancel() end
-    if v14.miniRestorePosition then main.Position=v14.miniRestorePosition end
-    if v14.miniRestoreScale then uiScale.Scale=v14.miniRestoreScale end
-    v14.miniRestorePosition=nil
-    v14.miniRestoreScale=nil
-end
-
--- Pulso discreto apenas enquanto o mini banner estiver visivel.
-bind(reopen:GetPropertyChangedSignal("Visible"),function()
-    if v14.miniGlowTween then v14.miniGlowTween:Cancel() end
-    if v14.miniArrowTween then v14.miniArrowTween:Cancel() end
-    miniAccent.BackgroundTransparency=.24
-    miniArrow.Position=UDim2.fromOffset(0,0)
-    if not reopen.Visible or not config.animations or stopped then return end
-    v14.miniGlowTween=Tween:Create(miniAccent,
-        TweenInfo.new(1.5,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
-        {BackgroundTransparency=.78})
-    v14.miniArrowTween=Tween:Create(miniArrow,
-        TweenInfo.new(1.05,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
-        {Position=UDim2.fromOffset(3,0)})
-    v14.miniGlowTween:Play()
-    v14.miniArrowTween:Play()
-end)
-
-v14.minimizeAnimated=function()
-    if stopped or v14.miniBusy or not main.Visible then return false end
+bind(minimize.MouseButton1Click,function()
+    main.Visible=false
+    reopen.Visible=true
     clampMiniPosition()
-    v14.stopMiniTransition()
-    v14.miniBusy=true
-    local ticket=v14.miniSerial
-    local origin=main.Position
-    local normalScale=uiScale.Scale
-    v14.miniRestorePosition=origin
-    v14.miniRestoreScale=normalScale
-    if not config.animations then
-        main.Visible=false
-        reopen.Visible=true
-        v14.miniBusy=false
-        v14.miniRestorePosition=nil
-        v14.miniRestoreScale=nil
-        return false
+    if config.animations then
+        local normalScale=miniUIScale.Scale
+        miniUIScale.Scale=normalScale*.82
+        Tween:Create(miniUIScale,TweenInfo.new(.19,
+            Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+            Scale=normalScale
+        }):Play()
     end
-    local finalPosition=UDim2.new(
-        reopen.Position.X.Scale,reopen.Position.X.Offset,
-        reopen.Position.Y.Scale,reopen.Position.Y.Offset+37*miniUIScale.Scale)
-    local anim=TweenInfo.new(.32,Enum.EasingStyle.Quart,Enum.EasingDirection.In)
-    v14.miniPositionTween=Tween:Create(main,anim,{Position=finalPosition})
-    v14.miniScaleTween=Tween:Create(uiScale,anim,{Scale=math.max(.1,normalScale*.13)})
-    v14.miniPositionTween:Play()
-    v14.miniScaleTween:Play()
-    task.delay(.34,function()
-        if stopped or v14.miniSerial~=ticket or not main.Parent then return end
-        main.Visible=false
-        main.Position=origin
-        uiScale.Scale=normalScale
-        v14.miniRestorePosition=nil
-        v14.miniRestoreScale=nil
-        reopen.Visible=true
-        local resting=miniUIScale.Scale
-        miniUIScale.Scale=resting*.72
-        v14.miniPopTween=Tween:Create(miniUIScale,
-            TweenInfo.new(.29,Enum.EasingStyle.Back,Enum.EasingDirection.Out),
-            {Scale=resting})
-        v14.miniPopTween:Play()
-        v14.miniBusy=false
-    end)
-    return false
-end
-
-v14.reopenAnimated=function()
+end)
+bind(reopen.MouseButton1Click,function()
+    -- Suprime o clique gerado pela soltura depois de arrastar.
     if miniMoved or os.clock()<miniSuppressUntil then
         miniMoved=false
-        return false
+        return
     end
-    if stopped or v14.miniBusy or not reopen.Visible then return false end
-    v14.stopMiniTransition()
-    v14.miniBusy=true
-    local ticket=v14.miniSerial
-    local origin=main.Position
-    local normalScale=uiScale.Scale
-    v14.miniRestorePosition=origin
-    v14.miniRestoreScale=normalScale
-    reopen.Visible=false
     main.Visible=true
-    if not config.animations then
-        v14.miniBusy=false
-        v14.miniRestorePosition=nil
-        v14.miniRestoreScale=nil
-        return false
+    reopen.Visible=false
+    if config.animations then
+        local final=main.Position
+        main.Position=final+UDim2.fromOffset(0,13)
+        Tween:Create(main,TweenInfo.new(.18,
+            Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+            Position=final
+        }):Play()
     end
-    main.Position=UDim2.new(
-        reopen.Position.X.Scale,reopen.Position.X.Offset,
-        reopen.Position.Y.Scale,reopen.Position.Y.Offset+37*miniUIScale.Scale)
-    uiScale.Scale=math.max(.1,normalScale*.13)
-    local anim=TweenInfo.new(.43,Enum.EasingStyle.Back,Enum.EasingDirection.Out)
-    v14.miniPositionTween=Tween:Create(main,anim,{Position=origin})
-    v14.miniScaleTween=Tween:Create(uiScale,anim,{Scale=normalScale})
-    v14.miniPositionTween:Play()
-    v14.miniScaleTween:Play()
-    task.delay(.45,function()
-        if stopped or v14.miniSerial~=ticket or not main.Parent then return end
-        main.Position=origin
-        uiScale.Scale=normalScale
-        v14.miniRestorePosition=nil
-        v14.miniRestoreScale=nil
-        v14.miniBusy=false
-    end)
-    return false
-end
-bind(minimize.MouseButton1Click,v14.minimizeAnimated)
-bind(reopen.MouseButton1Click,v14.reopenAnimated)
+end)
 do
     local camera=workspace.CurrentCamera
     if camera then bind(camera:GetPropertyChangedSignal("ViewportSize"),function()
@@ -9337,7 +9216,6 @@ end
 -- Recuperacao independente da intro, util para menus fechados acidentalmente.
 v14.forceShow=function()
     if stopped then return end
-    if v14.stopMiniTransition then v14.stopMiniTransition() end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
     local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
@@ -9421,8 +9299,9 @@ bind(UIS.InputBegan,function(key,used)
         return
     elseif name=="M" and not used and
         (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
-        if main.Visible then v14.minimizeAnimated()
-        elseif reopen.Visible then v14.reopenAnimated() end
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
+        if reopen.Visible then clampMiniPosition() end
         return
     elseif name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
         or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
@@ -9431,8 +9310,8 @@ bind(UIS.InputBegan,function(key,used)
         show("COMMANDS")
         search:CaptureFocus()
     elseif name==v13Data.keybinds.MENU then
-        if main.Visible then v14.minimizeAnimated()
-        elseif reopen.Visible then v14.reopenAnimated() end
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
     elseif not used then
         if name==v13Data.keybinds.FLY then exec("toggle")
         elseif name==v13Data.keybinds.NOCLIP then
