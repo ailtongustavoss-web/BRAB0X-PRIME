@@ -4793,7 +4793,18 @@ do
     v14.skinSeq=0
     v14.skinState=nil
     v14.skinName="Original"
+    v14.skinCurrentId=nil
+    v14.skinCurrentKind="user"
+    v14.skinAccessoryCount=0
+    v14.skinSpin=false
+    v14.skinPresets=type(v13Data.skinPresets)=="table" and v13Data.skinPresets or {}
+    v13Data.skinPresets=v14.skinPresets
     v14.skinClearPreview=function()
+        if v14.skinSpinConnection then
+            v14.skinSpinConnection:Disconnect()
+            v14.skinSpinConnection=nil
+        end
+        v14.skinPreviewModel=nil
         if v14.skinPreviewFrame then v14.skinPreviewFrame.CurrentCamera=nil end
         if v14.skinWorld then v14.skinWorld:Destroy() v14.skinWorld=nil end
         if v14.skinCamera then v14.skinCamera:Destroy() v14.skinCamera=nil end
@@ -4825,6 +4836,8 @@ do
         end
         if st.stash.Parent then st.stash:Destroy() end
         v14.skinName="Original"
+        v14.skinCurrentId=nil
+        v14.skinAccessoryCount=0
         if v14.skinStatus then v14.skinStatus.Text="SKIN: ORIGINAL" end
         return true
     end
@@ -4857,6 +4870,24 @@ do
         frame.CurrentCamera=camera
         v14.skinWorld=world
         v14.skinCamera=camera
+        v14.skinPreviewModel=copy
+        v14.skinSpinConnection=Run.Heartbeat:Connect(function(dt)
+            if stopped or not copy.Parent or not frame.Parent then
+                v14.skinClearPreview()
+                return
+            end
+            if v14.skinSpin and not v14.liteMode
+                and main.Visible and pages.AVATAR.Visible then
+                copy:PivotTo(copy:GetPivot()*CFrame.Angles(0,math.min(dt,.05)*.75,0))
+            end
+        end)
+    end
+    v14.skinTurn=function(degrees)
+        local model=v14.skinPreviewModel
+        if not model or not model.Parent then return false end
+        model:PivotTo(model:GetPivot()*
+            CFrame.Angles(0,math.rad(tonumber(degrees) or 45),0))
+        return true
     end
     local function applyLocalSkin(model,label)
         local character,humanoid=chars()
@@ -4960,7 +4991,10 @@ do
             end
         end
         v14.skinName=label
-        if v14.skinStatus then v14.skinStatus.Text="SKIN: "..label end
+        v14.skinAccessoryCount=imported
+        if v14.skinStatus then
+            v14.skinStatus.Text="SKIN: "..label.." | "..imported.." ACESSORIOS"
+        end
         return imported
     end
     v14.skinLoad=function(value,kind,preview)
@@ -5002,6 +5036,8 @@ do
             else
                 local applied,count=pcall(applyLocalSkin,model,label)
                 if applied then
+                    v14.skinCurrentId=raw
+                    v14.skinCurrentKind=kind
                     notify("Skin local "..label.." aplicada ("..count.." acessorios).","success")
                 else
                     v14.skinRestore()
@@ -5033,6 +5069,54 @@ do
         return "Skin atual: "..v14.skinName
     end)
 
+    local function skinSlot(raw)
+        local n=tonumber(tostring(raw or ""):match("^%s*(%d+)%s*$"))
+        return n and n>=1 and n<=5 and n==math.floor(n) and n or nil
+    end
+    register("skinsave","PLAYER","Salvar skin atual em slot 1 a 5",function(a)
+        local slot=skinSlot(a)
+        if not slot then return "Use: skinsave 1 (slots 1 a 5)" end
+        if not v14.skinCurrentId then
+            return "Aplique uma skin com skinid ou skinoutfit antes de salvar."
+        end
+        v14.skinPresets[tostring(slot)]={
+            id=v14.skinCurrentId,kind=v14.skinCurrentKind
+        }
+        saveV13()
+        if v14.skinPresetRefresh then v14.skinPresetRefresh() end
+        return "Skin salva no slot "..slot.."."
+    end,"skinsave 1")
+    register("skinuse","PLAYER","Aplicar skin salva por slot",function(a)
+        local slot=skinSlot(a)
+        if not slot then return "Use: skinuse 1" end
+        local info=v14.skinPresets[tostring(slot)]
+        if type(info)~="table" or not info.id then
+            return "Slot "..slot.." esta vazio."
+        end
+        return v14.skinLoad(info.id,info.kind,false)
+    end,"skinuse 1")
+    register("skindelete","PLAYER","Excluir skin salva por slot",function(a)
+        local slot=skinSlot(a)
+        if not slot then return "Use: skindelete 1" end
+        v14.skinPresets[tostring(slot)]=nil
+        saveV13()
+        if v14.skinPresetRefresh then v14.skinPresetRefresh() end
+        return "Slot "..slot.." apagado."
+    end,"skindelete 1")
+    register("skinspin","PLAYER","Giro automatico da previa 3D",function(a)
+        if a=="on" then v14.skinSpin=true
+        elseif a=="off" then v14.skinSpin=false
+        else v14.skinSpin=not v14.skinSpin end
+        return "Preview 3D girando: "..(v14.skinSpin and "ON" or "OFF")
+    end,"skinspin on")
+    register("skinrotate","PLAYER","Girar previa de skin em graus",function(a)
+        return v14.skinTurn(tonumber(a) or 45)
+            and "Preview girado." or "Carregue uma previa primeiro."
+    end,"skinrotate 45")
+    register("skinaccessories","PLAYER","Quantidade de acessorios carregados",function()
+        return "Skin: "..v14.skinName..
+            " | acessorios: "..v14.skinAccessoryCount
+    end)
     register("music","SETTINGS","Reproduzir audio autorizado por ID",function(a)
         return v14.musicPlay(a)
     end,"music 123456789")
@@ -7793,6 +7877,34 @@ do
             {"RESTAURAR",function()exec("skinreset")end}
         })
         v14.skinStatus=ui.section(pages.AVATAR,"SKIN: ORIGINAL")
+        ui.section(pages.AVATAR,"PREVIA 3D GIRATORIA")
+        controls(pages.AVATAR,{
+            {"< GIRAR",function()exec("skinrotate -45")end},
+            {"AUTO GIRO",function()exec("skinspin "..(v14.skinSpin and "off" or "on"))end},
+            {"GIRAR >",function()exec("skinrotate 45")end}
+        })
+        ui.section(pages.AVATAR,"SKINS SALVAS • 5 SLOTS")
+        local saveSlot=ui.box(pages.AVATAR,"Numero do slot (1 a 5)",35)
+        controls(pages.AVATAR,{
+            {"SALVAR SKIN",function()exec("skinsave "..saveSlot.Text)end},
+            {"APAGAR SLOT",function()exec("skindelete "..saveSlot.Text)end}
+        })
+        local presetButtons={}
+        v14.skinPresetRefresh=function()
+            for slot,button in pairs(presetButtons) do
+                local info=v14.skinPresets[tostring(slot)]
+                button.Text="SLOT "..slot.." • "..(info and
+                    (tostring(info.kind or "user").." #"..tostring(info.id)) or
+                    "VAZIO").."  /  APLICAR"
+            end
+        end
+        for i=1,5 do
+            local slot=i
+            presetButtons[i]=btn(pages.AVATAR,"SLOT "..i.." • VAZIO",function()
+                exec("skinuse "..slot)
+            end,36)
+        end
+        v14.skinPresetRefresh()
         note(pages.AVATAR,
             "Roupas e acessorios sao locais; corpos especiais podem ser incompatíveis.",44)
 
