@@ -466,6 +466,8 @@ v13Data.stats.totalSessions=v13Data.stats.totalSessions+1
 v14.stats=v13Data.stats
 v14.macros=v13Data.macros
 local noticeCounter=0
+-- Acoes compartilhadas pelo botao, atalhos e comandos do hub.
+local minimizeHubAnimated,reopenHubAnimated
 
 -- JANELA PRINCIPAL
 
@@ -5861,10 +5863,14 @@ do
     register("dancesamba","EMOTES","Danca samba",function() return originalMove("samba") end)
     register("dancestop","EMOTES","Parar dancas",stopEmote)
     register("hubmini","SETTINGS","Minimizar para banner",function()
-        main.Visible=false;reopen.Visible=true;return false
+        if minimizeHubAnimated then minimizeHubAnimated()
+        else main.Visible=false;reopen.Visible=true end
+        return false
     end)
     register("hubopen","SETTINGS","Abrir painel",function()
-        main.Visible=true;reopen.Visible=false;return false
+        if reopenHubAnimated then reopenHubAnimated()
+        else main.Visible=true;reopen.Visible=false end
+        return false
     end)
     register("hubsmall","SETTINGS","Painel pequeno",function() prefScale(.7) end)
     register("hubnormal","SETTINGS","Painel medio",function() prefScale(1) end)
@@ -9215,7 +9221,7 @@ local function popMiniBanner()
     end
     setMiniPulse(true)
 end
-bind(minimize.MouseButton1Click,function()
+minimizeHubAnimated=function()
     if stopped or miniTransitionBusy or not main.Visible then return end
     clampMiniPosition()
     if not config.animations then
@@ -9240,8 +9246,8 @@ bind(minimize.MouseButton1Click,function()
         popMiniBanner()
         miniTransitionBusy=false
     end)
-end)
-bind(reopen.MouseButton1Click,function()
+end
+reopenHubAnimated=function()
     -- Nao reabre ao soltar o mini banner depois de arrasta-lo.
     if miniMoved or os.clock()<miniSuppressUntil then
         miniMoved=false
@@ -9272,7 +9278,9 @@ bind(reopen.MouseButton1Click,function()
         uiScale.Scale=restingScale
         miniTransitionBusy=false
     end)
-end)
+end
+bind(minimize.MouseButton1Click,minimizeHubAnimated)
+bind(reopen.MouseButton1Click,reopenHubAnimated)
 do
     local camera=workspace.CurrentCamera
     if camera then bind(camera:GetPropertyChangedSignal("ViewportSize"),function()
@@ -9370,9 +9378,8 @@ bind(UIS.InputBegan,function(key,used)
         return
     elseif name=="M" and not used and
         (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
-        main.Visible=not main.Visible
-        reopen.Visible=not main.Visible
-        if reopen.Visible then clampMiniPosition() end
+        if main.Visible then minimizeHubAnimated()
+        elseif reopen.Visible then reopenHubAnimated() end
         return
     elseif name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
         or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
@@ -9381,8 +9388,8 @@ bind(UIS.InputBegan,function(key,used)
         show("COMMANDS")
         search:CaptureFocus()
     elseif name==v13Data.keybinds.MENU then
-        main.Visible=not main.Visible
-        reopen.Visible=not main.Visible
+        if main.Visible then minimizeHubAnimated()
+        elseif reopen.Visible then reopenHubAnimated() end
     elseif not used then
         if name==v13Data.keybinds.FLY then exec("toggle")
         elseif name==v13Data.keybinds.NOCLIP then
