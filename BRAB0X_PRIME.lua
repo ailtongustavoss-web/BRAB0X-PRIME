@@ -405,12 +405,12 @@ local sections = {
     "AIM","SETTINGS","COMMANDS","PLAYERS",
     "TELEPORT","CONSOLE","PROFILES","PERFORMANCE","HELP","GAMES",
     "RECENT","MACROS","CINEMA","AVATAR","AUDIO","STATS",
-    "NOTES","BACKUP","DIAGNOSTICS","GUIDE"
+    "NOTES","BACKUP","DIAGNOSTICS","GUIDE","SERVER"
 }
 
 -- A unica categoria opcional e AIM; todas as outras permanecem juntas.
 local navOrder = {
-    "HOME","GAMES","COMMANDS","PLAYERS","TELEPORT","RECENT",
+    "HOME","GAMES","SERVER","COMMANDS","PLAYERS","TELEPORT","RECENT",
     "FLY","PLAYER","CAMERA","WORLD","EMOTES",
     "MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES",
     "CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS",
@@ -834,14 +834,14 @@ do
 
     local iconMap={
         FLY="✈",PLAYER="♟",CAMERA="◉",WORLD="◎",EMOTES="♪",
-        HOME="⌂",COMMANDS="<>",GAMES="▦",PLAYERS="♙",TELEPORT="➤",
+        HOME="⌂",COMMANDS="<>",GAMES="▦",SERVER="▣",PLAYERS="♙",TELEPORT="➤",
         RECENT="◷",MACROS="⌘",CINEMA="◈",AVATAR="◇",AUDIO="♫",
         PERFORMANCE="▥",NOTES="≡",CONSOLE=">_",PROFILES="◎",
         STATS="▤",BACKUP="⇧",DIAGNOSTICS="✧",GUIDE="?",HELP="i",
         SETTINGS="⚙",AIM="⊕"
     }
     local groups={
-        {title="PRINCIPAL",ids={"HOME","COMMANDS","GAMES","PLAYERS","TELEPORT","EMOTES"}},
+        {title="PRINCIPAL",ids={"HOME","SERVER","COMMANDS","GAMES","PLAYERS","TELEPORT","EMOTES"}},
         {title="CONTROLES",ids={"FLY","PLAYER","CAMERA","WORLD"}},
         {title="FERRAMENTAS",ids={"MACROS","CINEMA","AVATAR","AUDIO","PERFORMANCE","NOTES"}},
         {title="UTILITARIOS",ids={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","AIM"}}
@@ -1179,9 +1179,9 @@ local function relabel()
     local labels = L[config.lang] or L.en
 
     local more={
-        pt={PLAYERS="Jogadores",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",GAMES="Jogos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
-        en={PLAYERS="Players",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",GAMES="Games",NOTES="Notes",BACKUP="Backup",DIAGNOSTICS="Diagnostics",GUIDE="Guide"},
-        es={PLAYERS="Jugadores",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",GAMES="Juegos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
+        pt={SERVER="Servidor",PLAYERS="Jogadores",TELEPORT="Teleporte",CONSOLE="Console",PROFILES="Perfis",PERFORMANCE="Desempenho",HELP="Ajuda",RECENT="Recentes",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Estatisticas",GAMES="Jogos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
+        en={SERVER="Server",PLAYERS="Players",TELEPORT="Teleport",CONSOLE="Console",PROFILES="Profiles",PERFORMANCE="Performance",HELP="Help",RECENT="Recent",MACROS="Macros",CINEMA="Cinema",AVATAR="Avatar",AUDIO="Audio",STATS="Statistics",GAMES="Games",NOTES="Notes",BACKUP="Backup",DIAGNOSTICS="Diagnostics",GUIDE="Guide"},
+        es={SERVER="Servidor",PLAYERS="Jugadores",TELEPORT="Teletransporte",CONSOLE="Consola",PROFILES="Perfiles",PERFORMANCE="Rendimiento",HELP="Ayuda",RECENT="Recientes",MACROS="Macros",CINEMA="Cine",AVATAR="Avatar",AUDIO="Audio",STATS="Estadisticas",GAMES="Juegos",NOTES="Notas",BACKUP="Backup",DIAGNOSTICS="Diagnostico",GUIDE="Guia"},
     }
     for _,name in ipairs(navOrder) do
         local i=table.find(sections,name)
@@ -6666,6 +6666,7 @@ quick("↗  FLY ON","fly")
 quick("■  FLY OFF","unfly")
 quick("⚡  BOOST","boost")
 quick("⌖  AIM OPCIONAL","modules")
+item(pages.HOME,"▣  CENTRAL DA PARTIDA","serverpanel")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
 item(pages.HOME,"▣  BACKUP E RESTAURACAO","backup")
@@ -8261,6 +8262,10 @@ do
         if v14.buildCore then v14.buildCore() end
         if v14.buildExtras then v14.buildExtras() end
         if v14.buildGameRouter then v14.buildGameRouter() end
+        if v14.buildServerPro then
+            local ok,err=pcall(v14.buildServerPro)
+            if not ok then warn("[BRAB0X PRIME] Painel de servidor: "..tostring(err)) end
+        end
         if v14.v17 and v14.v17.install then v14.v17.install() end
         v14.refresh=function(page)
             local update=v14.panelRefresh and v14.panelRefresh[page]
@@ -8523,6 +8528,151 @@ do
         v14.gamePageReady=true
         v14.panelRefresh.GAMES()
     end
+end
+
+
+-- CENTRO PROFISSIONAL DE PARTIDA (VERSAO DE TESTE ISOLADA)
+-- Nenhuma ferramenta de camera nem alteracao de estado do servidor.
+do
+    v14.serverPro={joined=0,left=0,refreshElapsed=0}
+    bind(Players.PlayerAdded,function()
+        if stopped then return end
+        v14.serverPro.joined=v14.serverPro.joined+1
+        if pages.SERVER and pages.SERVER.Visible and v14.panelRefresh
+            and v14.panelRefresh.SERVER then v14.panelRefresh.SERVER() end
+    end)
+    bind(Players.PlayerRemoving,function()
+        if stopped then return end
+        v14.serverPro.left=v14.serverPro.left+1
+        if pages.SERVER and pages.SERVER.Visible and v14.panelRefresh
+            and v14.panelRefresh.SERVER then
+            task.defer(v14.panelRefresh.SERVER)
+        end
+    end)
+
+    v14.buildServerPro=function()
+        local ui=v14.ui
+        local page=pages.SERVER
+        ui.title(page,"CENTRAL DA PARTIDA",
+            "Informacoes reais do cliente, servidor e sessoes; acesso rapido aos paineis.")
+        ui.section(page,"STATUS DO SERVIDOR")
+        local gameStatus=txt(page,"CONSULTANDO PARTIDA...",63,14,true)
+        gameStatus.TextColor3=white
+        local serverStatus=txt(page,"SERVIDOR: --",70,13,true)
+        serverStatus.TextColor3=accent
+        ui.section(page,"ESTATISTICAS DA SESSAO")
+        local sessionStatus=txt(page,"SESSAO: --",62,13,true)
+        sessionStatus.TextColor3=white
+        local integrityStatus=txt(page,"MODULOS: --",52,12,true)
+        integrityStatus.TextColor3=muted
+
+        ui.section(page,"ACESSO RAPIDO")
+        local access=ui.holder(page)
+        ui.row(access,"JOGADORES  |  Lista e pesquisa",{
+            {"ABRIR",function()show("PLAYERS")end,90}
+        })
+        ui.row(access,"JOGOS  |  Detector e perfis por experiencia",{
+            {"ABRIR",function()show("GAMES")end,90}
+        })
+        ui.row(access,"DESEMPENHO  |  FPS, ping e memoria",{
+            {"ABRIR",function()show("PERFORMANCE")end,90}
+        })
+        ui.row(access,"DIAGNOSTICO  |  Problemas registrados",{
+            {"ABRIR",function()show("DIAGNOSTICS")end,90}
+        })
+        ui.row(access,"ESTATISTICAS  |  Comandos e sessoes",{
+            {"ABRIR",function()show("STATS")end,90}
+        })
+        ui.section(page,"CONTROLES DA PARTIDA")
+        local actions=ui.holder(page)
+        ui.row(actions,"Atualizar dados desta partida",{
+            {"ATUALIZAR",function()
+                if v14.panelRefresh.SERVER then v14.panelRefresh.SERVER() end
+                notify("Informacoes da partida atualizadas.","success")
+            end,100}
+        })
+        ui.row(actions,"Copiar ID da instancia atual (quando disponivel)",{
+            {"COPIAR",function()
+                local id=tostring(game.JobId or "")
+                if id=="" then
+                    notify("ID de instancia indisponivel neste ambiente.","info")
+                elseif type(setclipboard)=="function" then
+                    local ok=pcall(setclipboard,id)
+                    notify(ok and "ID da instancia copiado." or "Nao foi possivel copiar.",
+                        ok and "success" or "error")
+                else
+                    notify("Area de transferencia indisponivel neste ambiente.","info")
+                end
+            end,100}
+        })
+        local note=txt(page,"Dados do servidor sao informativos. Sem mudancas em outros jogadores, sem acesso administrativo e sem automacao de partidas.",44,11)
+        note.TextColor3=muted
+
+        v14.panelRefresh.SERVER=function()
+            if stopped or not page.Parent then return end
+            local playersNow=#Players:GetPlayers()
+            local maxPlayers=tonumber(Players.MaxPlayers) or 0
+            local capacity=maxPlayers>0 and tostring(maxPlayers) or "--"
+            local profile=v14.router and v14.router.profile
+            local label=profile and profile.label or "Jogo atual"
+            local fullJob=tostring(game.JobId or "")
+            local safeJob=fullJob~="" and (fullJob:sub(1,8).."…") or "INDISPONIVEL"
+            local ping="--"
+            local ok,pingValue=pcall(function()
+                return Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+            end)
+            if ok and pingValue then ping=tostring(pingValue) end
+            gameStatus.Text="JOGO: "..tostring(label):sub(1,43)..
+                "\nPLACE ID: "..tostring(game.PlaceId)..
+                "  |  UNIVERSE ID: "..tostring(game.GameId)
+            serverStatus.Text="JOGADORES: "..playersNow.." / "..capacity..
+                "  |  PING: "..ping..
+                "\nINSTANCIA: "..safeJob.."  |  ENTRADAS OBSERVADAS: "..v14.serverPro.joined
+            local elapsed=math.max(0,math.floor(os.clock()-v14.sessionStarted))
+            sessionStatus.Text=string.format(
+                "TEMPO NO HUB: %02d:%02d:%02d  |  COMANDOS: %d"..
+                "\nSAIDAS OBSERVADAS: %d  |  PERFIL: %s",
+                math.floor(elapsed/3600),math.floor(elapsed/60)%60,elapsed%60,
+                v14.commandsInSession,v14.serverPro.left,
+                profile and (profile.mode=="custom" and "JOGO" or "UNIVERSAL") or "UNIVERSAL")
+            integrityStatus.Text="PAINEIS: Jogadores "..(pages.PLAYERS and "OK" or "N/A")..
+                "  |  Perfis "..(v14.router and "OK" or "N/A")..
+                "  |  Diagnostico "..(v14.v17 and "OK" or "N/A")
+        end
+        v14.panelRefresh.SERVER()
+        bind(Run.Heartbeat,function(dt)
+            if stopped or not page.Visible then return end
+            v14.serverPro.refreshElapsed=v14.serverPro.refreshElapsed+dt
+            if v14.serverPro.refreshElapsed>=3 then
+                v14.serverPro.refreshElapsed=0
+                v14.panelRefresh.SERVER()
+            end
+        end)
+    end
+
+    register("serverpanel","SETTINGS","Abrir central profissional da partida",function()
+        show("SERVER")
+        return false
+    end)
+    register("serverstatus","SETTINGS","Mostrar informacoes do servidor atual",function()
+        local maxPlayers=tonumber(Players.MaxPlayers) or 0
+        local ping="--"
+        local ok,value=pcall(function()
+            return Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+        end)
+        if ok then ping=tostring(value) end
+        notify("JOGADORES "..#Players:GetPlayers().."/"..
+            (maxPlayers>0 and maxPlayers or "--")..
+            " | PING "..ping.." | PLACE "..tostring(game.PlaceId),"info")
+        return false
+    end)
+    register("sessionstatus","SETTINGS","Tempo e comandos na sessao atual",function()
+        local sec=math.floor(math.max(0,os.clock()-v14.sessionStarted))
+        notify(string.format("SESSAO %02d:%02d:%02d | %d COMANDOS",
+            math.floor(sec/3600),math.floor(sec/60)%60,sec%60,
+            v14.commandsInSession),"info")
+        return false
+    end)
 end
 
 -- V17 / ULTIMATE INTERFACE - NOTAS, BACKUP, DIAGNOSTICO E GUIA
