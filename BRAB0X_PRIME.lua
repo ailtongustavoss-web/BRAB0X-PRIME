@@ -182,11 +182,6 @@ config.compact=config.compact==true
 config.animations=config.animations~=false
 config.notifications=config.notifications~=false
 config.intro=config.intro~=false
--- Reativa a abertura uma unica vez; depois "intro off" continua funcionando.
-if not v13Data.introRepair20261113 then
-    config.intro=true
-    v13Data.introRepair20261113=true
-end
 config.opacity=math.clamp(tonumber(config.opacity) or 0,0,.45)
 config.neon=math.clamp(tonumber(config.neon) or 1,.25,2)
 local defaultKeys={FLY="F",MENU="RightShift",NOCLIP="N",BOOST="B",INVIS="I"}
@@ -210,7 +205,6 @@ local function saveV13()
         pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
     end
 end
-saveV13()
 local S = {
     fly = false,
     speed = 55,
@@ -5840,11 +5834,9 @@ do
     register("dancesamba","EMOTES","Danca samba",function() return originalMove("samba") end)
     register("dancestop","EMOTES","Parar dancas",stopEmote)
     register("hubmini","SETTINGS","Minimizar para banner",function()
-        if v14.minimizeAnimated then return v14.minimizeAnimated() end
         main.Visible=false;reopen.Visible=true;return false
     end)
     register("hubopen","SETTINGS","Abrir painel",function()
-        if v14.reopenAnimated then return v14.reopenAnimated() end
         main.Visible=true;reopen.Visible=false;return false
     end)
     register("hubsmall","SETTINGS","Painel pequeno",function() prefScale(.7) end)
@@ -9177,86 +9169,36 @@ bind(UIS.InputEnded,function(input)
     end
     miniMoved=false
 end)
--- V20.0.1: funcoes dentro de v14 evitam exceder o limite de variaveis locais.
--- Todos os atalhos, comandos e botoes chamam estas mesmas funcoes.
-v14.minimizeAnimated=function()
-    if stopped or v14.miniTransition or not main.Visible then return false end
+bind(minimize.MouseButton1Click,function()
+    main.Visible=false
+    reopen.Visible=true
     clampMiniPosition()
-    v14.miniTicket=(v14.miniTicket or 0)+1
-    local ticket=v14.miniTicket
-    v14.miniTransition=true
-    local origin=main.Position
-    local normalScale=uiScale.Scale
-    v14.miniRestorePos=origin
-    v14.miniRestoreScale=normalScale
-    if not config.animations then
-        main.Visible=false
-        reopen.Visible=true
-        v14.miniTransition=false
-        return false
+    if config.animations then
+        local normalScale=miniUIScale.Scale
+        miniUIScale.Scale=normalScale*.82
+        Tween:Create(miniUIScale,TweenInfo.new(.19,
+            Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+            Scale=normalScale
+        }):Play()
     end
-    local goal=UDim2.new(reopen.Position.X.Scale,reopen.Position.X.Offset,
-        reopen.Position.Y.Scale,reopen.Position.Y.Offset+33*miniUIScale.Scale)
-    local info=TweenInfo.new(.29,Enum.EasingStyle.Quad,Enum.EasingDirection.In)
-    Tween:Create(main,info,{Position=goal}):Play()
-    Tween:Create(uiScale,info,{Scale=math.max(.1,normalScale*.12)}):Play()
-    task.delay(.31,function()
-        if stopped or ticket~=v14.miniTicket or not main.Parent then return end
-        main.Position=origin
-        uiScale.Scale=normalScale
-        main.Visible=false
-        reopen.Visible=true
-        local resting=miniUIScale.Scale
-        miniUIScale.Scale=resting*.7
-        Tween:Create(miniUIScale,
-            TweenInfo.new(.30,Enum.EasingStyle.Back,Enum.EasingDirection.Out),
-            {Scale=resting}):Play()
-        if v14.miniPulse then v14.miniPulse:Cancel() end
-        v14.miniPulse=Tween:Create(miniStroke,
-            TweenInfo.new(1.25,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
-            {Transparency=.8})
-        v14.miniPulse:Play()
-        v14.miniTransition=false
-    end)
-    return false
-end
-v14.reopenAnimated=function()
+end)
+bind(reopen.MouseButton1Click,function()
+    -- Suprime o clique gerado pela soltura depois de arrastar.
     if miniMoved or os.clock()<miniSuppressUntil then
         miniMoved=false
-        return false
+        return
     end
-    if stopped or v14.miniTransition or not reopen.Visible then return false end
-    v14.miniTicket=(v14.miniTicket or 0)+1
-    local ticket=v14.miniTicket
-    v14.miniTransition=true
-    if v14.miniPulse then v14.miniPulse:Cancel();v14.miniPulse=nil end
-    miniStroke.Transparency=.24
-    local normalPos=main.Position
-    local normalScale=uiScale.Scale
-    v14.miniRestorePos=normalPos
-    v14.miniRestoreScale=normalScale
-    reopen.Visible=false
     main.Visible=true
+    reopen.Visible=false
     if config.animations then
-        main.Position=UDim2.new(reopen.Position.X.Scale,reopen.Position.X.Offset,
-            reopen.Position.Y.Scale,reopen.Position.Y.Offset+33*miniUIScale.Scale)
-        uiScale.Scale=math.max(.1,normalScale*.12)
-        local info=TweenInfo.new(.39,Enum.EasingStyle.Back,Enum.EasingDirection.Out)
-        Tween:Create(main,info,{Position=normalPos}):Play()
-        Tween:Create(uiScale,info,{Scale=normalScale}):Play()
-        task.delay(.41,function()
-            if stopped or ticket~=v14.miniTicket then return end
-            main.Position=normalPos
-            uiScale.Scale=normalScale
-            v14.miniTransition=false
-        end)
-    else
-        v14.miniTransition=false
+        local final=main.Position
+        main.Position=final+UDim2.fromOffset(0,13)
+        Tween:Create(main,TweenInfo.new(.18,
+            Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
+            Position=final
+        }):Play()
     end
-    return false
-end
-bind(minimize.MouseButton1Click,v14.minimizeAnimated)
-bind(reopen.MouseButton1Click,v14.reopenAnimated)
+end)
 do
     local camera=workspace.CurrentCamera
     if camera then bind(camera:GetPropertyChangedSignal("ViewportSize"),function()
@@ -9267,12 +9209,6 @@ end
 -- Recuperacao independente da intro, util para menus fechados acidentalmente.
 v14.forceShow=function()
     if stopped then return end
-    v14.miniTicket=(v14.miniTicket or 0)+1
-    v14.miniTransition=false
-    if v14.miniPulse then v14.miniPulse:Cancel();v14.miniPulse=nil end
-    miniStroke.Transparency=.24
-    if v14.miniRestorePos then main.Position=v14.miniRestorePos end
-    if v14.miniRestoreScale then uiScale.Scale=v14.miniRestoreScale end
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
     local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
@@ -9356,8 +9292,9 @@ bind(UIS.InputBegan,function(key,used)
         return
     elseif name=="M" and not used and
         (UIS:IsKeyDown(Enum.KeyCode.LeftAlt) or UIS:IsKeyDown(Enum.KeyCode.RightAlt)) then
-        if main.Visible then v14.minimizeAnimated()
-        elseif reopen.Visible then v14.reopenAnimated() end
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
+        if reopen.Visible then clampMiniPosition() end
         return
     elseif name=="K" and (UIS:IsKeyDown(Enum.KeyCode.LeftControl)
         or UIS:IsKeyDown(Enum.KeyCode.RightControl)) then
@@ -9366,8 +9303,8 @@ bind(UIS.InputBegan,function(key,used)
         show("COMMANDS")
         search:CaptureFocus()
     elseif name==v13Data.keybinds.MENU then
-        if main.Visible then v14.minimizeAnimated()
-        elseif reopen.Visible then v14.reopenAnimated() end
+        main.Visible=not main.Visible
+        reopen.Visible=not main.Visible
     elseif not used then
         if name==v13Data.keybinds.FLY then exec("toggle")
         elseif name==v13Data.keybinds.NOCLIP then
@@ -9871,10 +9808,7 @@ do
     end
     if #bootErrors>0 then
         v14.bootError=table.concat(bootErrors," | "):sub(1,250)
-        -- Erros de modulos nao cancelam a abertura cinematografica.
-        local introRunning=config.intro and v14.introOk
-            and pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")~=nil
-        if not introRunning then v14.forceShow() end
+        v14.forceShow()
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
         notify("BRAB0X PRIME V20.0.0 | "..#registered..
