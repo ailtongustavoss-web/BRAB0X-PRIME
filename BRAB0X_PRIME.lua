@@ -539,7 +539,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V20_0_0",
-    Size=UDim2.fromOffset(130,130),
+    Size=UDim2.fromOffset(150,150),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
     BackgroundColor3=Color3.fromRGB(9,7,12),
@@ -659,6 +659,7 @@ local miniArrowPanel=round(obj("Frame",reopen,{
     ZIndex=113
 }),9)
 miniArrowPanel.ZIndex=116
+miniArrowPanel.Visible=false  -- A foto deve aparecer inteira, sem seta por cima.
 obj("UIGradient",miniArrowPanel,{
     Rotation=45,
     Color=ColorSequence.new(
@@ -686,6 +687,7 @@ v14.miniImage=round(obj("ImageLabel",reopen,{
     ZIndex=114
 }),17)
 miniAccent.Visible=false
+miniStroke.Enabled=false -- A propria foto ja tem bordas vermelhas.
 if reopen:FindFirstChild("BRAB0X_SIDE_LIGHT") then
     reopen.BRAB0X_SIDE_LIGHT.Visible=false
 end
@@ -694,6 +696,22 @@ if reopen:FindFirstChild("BRAB0X_BOTTOM_LINE") then
 end
 task.spawn(function()
     local ok,err=pcall(function()
+        -- Opcional: caso a arte tenha sido publicada como imagem no Roblox,
+        -- usar diretamente o ID do asset, sem depender de arquivos locais.
+        local logoId
+        if type(getgenv)=="function" then
+            local env=getgenv()
+            if type(env)=="table" then
+                logoId=env.BRAB0X_PRIME_LOGO_ID
+            end
+        end
+        logoId=logoId or _G.BRAB0X_PRIME_LOGO_ID
+        if tonumber(logoId) and tonumber(logoId)>0 then
+            v14.miniImage.Image="rbxassetid://"..tostring(math.floor(tonumber(logoId)))
+            v14.miniImage.Visible=true
+            miniIcon.Visible=false
+            return
+        end
         local loadAsset=getcustomasset or getsynasset
         if type(loadAsset)~="function" or type(writefile)~="function" then
             error("Funcao para carregar imagem local indisponivel")
@@ -703,7 +721,7 @@ task.spawn(function()
             "BRAB0X-PRIME/brabox-pro-teste-20261113/"..
             "assets/BRAB0X_ICON_BASE64.txt"
         )
-        if type(encoded)~="string" or #encoded~=4092 then
+        if type(encoded)~="string" or #encoded~=10672 then
             error("Arquivo de imagem ausente ou incompleto")
         end
         local alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -9441,10 +9459,10 @@ local function clampMiniPosition()
     end
     -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/130,(view.Y-20)/130
+        1,(view.X-20)/150,(view.Y-20)/150
     ),.35,1)
-    local w=130*miniUIScale.Scale
-    local h=130*miniUIScale.Scale
+    local w=150*miniUIScale.Scale
+    local h=150*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
