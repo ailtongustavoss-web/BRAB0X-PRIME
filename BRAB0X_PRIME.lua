@@ -535,14 +535,14 @@ local close = btn(header,"×",nil,30)
 close.Size = UDim2.fromOffset(31,30)
 close.Position = UDim2.new(1,-40,0,19)
 
--- V19.8 / MINI BANNER PREMIUM: COMPACTO, SEM BORDAS DUPLICADAS
+-- BRAB0X PRIME / BANNER MINIMIZADO PRO: APENAS ACABAMENTO VISUAL
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V20_0_0",
     Size=UDim2.fromOffset(282,66),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
-    BackgroundColor3=Color3.fromRGB(11,11,16),
+    BackgroundColor3=Color3.fromRGB(8,9,13),
     BorderSizePixel=0,
     Text="",
     AutoButtonColor=false,
@@ -550,26 +550,43 @@ local reopen=round(obj("TextButton",gui,{
     ClipsDescendants=true,
     Visible=false,
     ZIndex=110
-}),18)
+}),20)
 local miniUIScale=obj("UIScale",reopen,{Scale=1})
 local miniStroke=obj("UIStroke",reopen,{
-    Color=Color3.fromRGB(255,65,91),
-    Thickness=1.55,
-    Transparency=.18,
+    Color=Color3.fromRGB(255,60,93),
+    Thickness=1.65,
+    Transparency=.08,
     ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 })
 obj("UIGradient",reopen,{
     Rotation=0,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(43,9,19)),
-        ColorSequenceKeypoint.new(.35,Color3.fromRGB(20,14,21)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(9,12,18))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(38,9,22)),
+        ColorSequenceKeypoint.new(.4,Color3.fromRGB(13,13,20)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(7,10,15))
     })
 })
--- Somente uma barra superior discreta, sem listras atraves do texto.
+-- Acabamento de bordas e detalhe superior, sem tocar nos controles.
+round(obj("Frame",reopen,{
+    Name="BRAB0X_SIDE_LIGHT",
+    Position=UDim2.fromOffset(0,17),
+    Size=UDim2.fromOffset(3,33),
+    BackgroundColor3=Color3.fromRGB(252,57,92),
+    BorderSizePixel=0,
+    ZIndex=111
+}),2)
+obj("Frame",reopen,{
+    Name="BRAB0X_BOTTOM_LINE",
+    Position=UDim2.fromOffset(70,63),
+    Size=UDim2.fromOffset(151,1),
+    BackgroundColor3=Color3.fromRGB(185,37,66),
+    BackgroundTransparency=.57,
+    BorderSizePixel=0,
+    ZIndex=111
+})
 local miniAccent=obj("Frame",reopen,{
-    Position=UDim2.fromOffset(65,0),
-    Size=UDim2.fromOffset(149,2),
+    Position=UDim2.fromOffset(76,0),
+    Size=UDim2.fromOffset(139,2),
     BackgroundColor3=Color3.fromRGB(241,45,78),
     BackgroundTransparency=.24,
     BorderSizePixel=0,
@@ -584,22 +601,22 @@ obj("UIGradient",miniAccent,{
 })
 local miniIcon=round(obj("Frame",reopen,{
     Name="BRAB0X_LOGO",
-    Position=UDim2.fromOffset(8,8),
-    Size=UDim2.fromOffset(49,49),
-    BackgroundColor3=Color3.fromRGB(24,10,18),
+    Position=UDim2.fromOffset(9,8),
+    Size=UDim2.fromOffset(50,50),
+    BackgroundColor3=Color3.fromRGB(16,10,18),
     BorderSizePixel=0,
     ZIndex=112
 }),11)
 local miniIconStroke=obj("UIStroke",miniIcon,{
-    Color=Color3.fromRGB(255,69,101),
-    Thickness=1.65,
-    Transparency=.08
+    Color=Color3.fromRGB(250,55,94),
+    Thickness=1.55,
+    Transparency=.06
 })
 obj("UIGradient",miniIcon,{
     Rotation=60,
     Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(79,17,36)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(16,12,21))
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(71,15,37)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(11,12,20))
     })
 })
 local miniLetter=txt(miniIcon,"B",43,32,true)
@@ -610,22 +627,22 @@ miniLetter.Font=Enum.Font.GothamBlack
 miniLetter.TextColor3=Color3.fromRGB(255,255,255)
 miniLetter.ZIndex=113
 
-local miniTitle=txt(reopen,"BRAB0X",23,19,true)
-miniTitle.Position=UDim2.fromOffset(69,7)
-miniTitle.Size=UDim2.fromOffset(157,24)
+local miniTitle=txt(reopen,"BRAB0X",24,20,true)
+miniTitle.Position=UDim2.fromOffset(72,6)
+miniTitle.Size=UDim2.fromOffset(153,25)
 miniTitle.Font=Enum.Font.GothamBlack
 miniTitle.TextWrapped=false
 miniTitle.TextColor3=Color3.fromRGB(252,250,253)
 miniTitle.ZIndex=114
 local miniPrime=txt(reopen,"P R I M E",15,11,true)
-miniPrime.Position=UDim2.fromOffset(70,28)
-miniPrime.Size=UDim2.fromOffset(136,15)
+miniPrime.Position=UDim2.fromOffset(73,28)
+miniPrime.Size=UDim2.fromOffset(140,15)
 miniPrime.TextWrapped=false
 miniPrime.TextColor3=Color3.fromRGB(255,76,109)
 miniPrime.ZIndex=114
-local miniSubtitle=txt(reopen,"CLIQUE PARA ABRIR",16,10,true)
-miniSubtitle.Position=UDim2.fromOffset(70,46)
-miniSubtitle.Size=UDim2.fromOffset(162,16)
+local miniSubtitle=txt(reopen,"PAINEL DE JOGO  •  ABRIR",16,10,true)
+miniSubtitle.Position=UDim2.fromOffset(73,46)
+miniSubtitle.Size=UDim2.fromOffset(163,16)
 miniSubtitle.TextWrapped=false
 miniSubtitle.TextColor3=Color3.fromRGB(179,172,187)
 miniSubtitle.ZIndex=114
@@ -633,12 +650,18 @@ miniSubtitle.ZIndex=114
 local miniArrowPanel=round(obj("Frame",reopen,{
     Name="REOPEN_ARROW",
     Position=UDim2.fromOffset(238,15),
-    Size=UDim2.fromOffset(32,36),
-    BackgroundColor3=Color3.fromRGB(136,24,57),
+    Size=UDim2.fromOffset(33,36),
+    BackgroundColor3=Color3.fromRGB(185,27,65),
     BorderSizePixel=0,
     ZIndex=113
-}),9)
-local miniArrow=txt(miniArrowPanel,">",32,22,true)
+}),12)
+obj("UIGradient",miniArrowPanel,{
+    Rotation=45,
+    Color=ColorSequence.new(
+        Color3.fromRGB(238,42,83),
+        Color3.fromRGB(125,16,50))
+})
+local miniArrow=txt(miniArrowPanel,">",32,24,true)
 miniArrow.Position=UDim2.fromOffset(0,0)
 miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
@@ -664,7 +687,7 @@ bind(reopen.MouseEnter,function()
         Transparency=.08
     }):Play()
     Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(223,42,83)
+        BackgroundColor3=Color3.fromRGB(250,57,97)
     }):Play()
 end)
 bind(reopen.MouseLeave,function()
@@ -676,7 +699,7 @@ bind(reopen.MouseLeave,function()
         Transparency=.32
     }):Play()
     Tween:Create(miniArrowPanel,TweenInfo.new(.16),{
-        BackgroundColor3=Color3.fromRGB(136,24,57)
+        BackgroundColor3=Color3.fromRGB(185,27,65)
     }):Play()
 end)
 
@@ -769,25 +792,61 @@ end
 -- V19.8 / SIDEBAR PREMIUM CLEAN: sem elementos do Roblox na identidade visual.
 -- Todas as paginas antigas continuam disponiveis, sem menus duplicados.
 do
-    sidebar.BackgroundColor3=Color3.fromRGB(14,14,20)
-    nav.Position=UDim2.fromOffset(10,117)
-    nav.Size=UDim2.new(1,-20,0,271)
+    sidebar.BackgroundColor3=Color3.fromRGB(12,13,19)
+    obj("UIGradient",sidebar,{
+        Rotation=90,
+        Color=ColorSequence.new({
+            ColorSequenceKeypoint.new(0,Color3.fromRGB(16,14,22)),
+            ColorSequenceKeypoint.new(.55,Color3.fromRGB(11,12,18)),
+            ColorSequenceKeypoint.new(1,Color3.fromRGB(20,10,20))
+        })
+    })
+    obj("UIStroke",sidebar,{
+        Color=Color3.fromRGB(89,40,58),
+        Transparency=.58,Thickness=1
+    })
+    -- Cartao de marca no topo; os controles continuam no mesmo sidebar.
+    local brandPlate=round(obj("Frame",sidebar,{
+        Name="BRAB0X_BRAND_CARD",
+        Position=UDim2.fromOffset(7,7),
+        Size=UDim2.fromOffset(181,74),
+        BackgroundColor3=Color3.fromRGB(24,13,24),
+        BorderSizePixel=0
+    }),13)
+    obj("UIGradient",brandPlate,{
+        Rotation=0,
+        Color=ColorSequence.new(
+            Color3.fromRGB(46,12,28),
+            Color3.fromRGB(17,16,25))
+    })
+    obj("UIStroke",brandPlate,{
+        Color=Color3.fromRGB(180,39,70),
+        Transparency=.46,Thickness=1
+    })
+    round(obj("Frame",brandPlate,{
+        Position=UDim2.fromOffset(0,19),
+        Size=UDim2.fromOffset(3,35),
+        BackgroundColor3=Color3.fromRGB(253,59,96),
+        BorderSizePixel=0
+    }),2)
+    nav.Position=UDim2.fromOffset(10,137)
+    nav.Size=UDim2.new(1,-20,0,246)
     nav.ScrollBarThickness=2
-    nav.ScrollBarImageColor3=Color3.fromRGB(74,59,68)
-    nav.ScrollBarImageTransparency=.35
+    nav.ScrollBarImageColor3=Color3.fromRGB(187,51,81)
+    nav.ScrollBarImageTransparency=.34
     nav.ScrollingDirection=Enum.ScrollingDirection.Y
     nav.CanvasPosition=Vector2.zero
     nav.ClipsDescendants=true
 
     -- Emblema proprio do BRAB0X PRIME; nenhum logo ou avatar do Roblox.
     local miniMark=round(obj("Frame",sidebar,{
-        Position=UDim2.fromOffset(12,12),
+        Position=UDim2.fromOffset(13,16),
         Size=UDim2.fromOffset(41,41),
-        BackgroundColor3=Color3.fromRGB(69,18,36),
+        BackgroundColor3=Color3.fromRGB(33,10,24),
         BorderSizePixel=0
     }),11)
     obj("UIStroke",miniMark,{
-        Color=Color3.fromRGB(232,44,77),Thickness=1.1,Transparency=.19
+        Color=Color3.fromRGB(255,63,98),Thickness=1.45,Transparency=.04
     })
     local monogram=txt(miniMark,"B",36,26,true)
     monogram.Position=UDim2.fromOffset(0,1)
@@ -797,39 +856,44 @@ do
     monogram.TextColor3=Color3.fromRGB(255,246,250)
 
     local logoTitle=txt(sidebar,"BRAB0X",24,19,true)
-    logoTitle.Position=UDim2.fromOffset(61,10)
-    logoTitle.Size=UDim2.fromOffset(117,24)
+    logoTitle.Position=UDim2.fromOffset(62,12)
+    logoTitle.Size=UDim2.fromOffset(113,24)
     logoTitle.TextWrapped=false
     logoTitle.Font=Enum.Font.GothamBlack
     logoTitle.TextColor3=Color3.fromRGB(245,243,249)
-    local logoPrime=txt(sidebar,"P R I M E",15,10,true)
-    logoPrime.Position=UDim2.fromOffset(62,33)
+    local logoPrime=txt(sidebar,"P R I M E",15,11,true)
+    logoPrime.Position=UDim2.fromOffset(63,34)
     logoPrime.Size=UDim2.fromOffset(115,16)
     logoPrime.TextWrapped=false
     logoPrime.TextColor3=Color3.fromRGB(255,68,101)
 
+    local brandState=txt(sidebar,"●  GAME HUB PRONTO",17,9,true)
+    brandState.Position=UDim2.fromOffset(63,55)
+    brandState.Size=UDim2.fromOffset(119,17)
+    brandState.TextColor3=Color3.fromRGB(255,111,143)
+    brandState.TextWrapped=false
     local separation=obj("Frame",sidebar,{
-        Position=UDim2.fromOffset(12,61),
+        Position=UDim2.fromOffset(12,85),
         Size=UDim2.new(1,-24,0,1),
-        BackgroundColor3=Color3.fromRGB(64,40,50),
+        BackgroundColor3=Color3.fromRGB(92,42,58),
         BackgroundTransparency=.35,BorderSizePixel=0
     })
 
     local navSearch=round(obj("TextBox",sidebar,{
-        Position=UDim2.fromOffset(10,70),
-        Size=UDim2.new(1,-20,0,33),
-        BackgroundColor3=Color3.fromRGB(29,28,35),
+        Position=UDim2.fromOffset(10,94),
+        Size=UDim2.new(1,-20,0,34),
+        BackgroundColor3=Color3.fromRGB(26,24,33),
         BorderSizePixel=0,
         Text="",
-        PlaceholderText="  Buscar pagina...",
+        PlaceholderText="   PESQUISAR FERRAMENTAS...",
         TextColor3=Color3.fromRGB(244,240,248),
         PlaceholderColor3=Color3.fromRGB(138,137,150),
         Font=Enum.Font.Gotham,
         TextSize=11,
         ClearTextOnFocus=false
-    }),9)
+    }),10)
     obj("UIStroke",navSearch,{
-        Color=Color3.fromRGB(75,64,76),Transparency=.58,Thickness=1
+        Color=Color3.fromRGB(107,54,77),Transparency=.52,Thickness=1
     })
 
     local iconMap={
@@ -847,7 +911,7 @@ do
         {title="UTILITARIOS",ids={"CONSOLE","PROFILES","STATS","BACKUP","DIAGNOSTICS","GUIDE","HELP","AIM"}}
     }
     v14.navigation={
-        groups={},byPage={},labels={},icons={},markers={},
+        groups={},byPage={},labels={},icons={},markers={},chevrons={},
         searchBox=navSearch,activePage="HOME"
     }
 
@@ -855,36 +919,50 @@ do
     local function makeNavButton(id,parent,parentOrder)
         local button=round(obj("TextButton",parent,{
             Name="Nav_"..id,
-            Size=UDim2.new(1,-5,0,36),
+            Size=UDim2.new(1,-5,0,38),
             LayoutOrder=parentOrder,
-            BackgroundColor3=Color3.fromRGB(21,21,28),
+            BackgroundColor3=Color3.fromRGB(23,21,31),
             BorderSizePixel=0,
             Text="",
             AutoButtonColor=true
-        }),9)
+        }),11)
         local border=obj("UIStroke",button,{
-            Color=Color3.fromRGB(64,57,68),
-            Transparency=.65,Thickness=1
+            Color=Color3.fromRGB(78,64,81),
+            Transparency=.67,Thickness=1
         })
+        round(obj("Frame",button,{
+            Name="ICON_PLATE",
+            Position=UDim2.fromOffset(7,6),
+            Size=UDim2.fromOffset(27,26),
+            BackgroundColor3=Color3.fromRGB(41,30,45),
+            BorderSizePixel=0
+        }),7)
         local line=round(obj("Frame",button,{
-            Position=UDim2.fromOffset(0,8),
-            Size=UDim2.fromOffset(3,20),
+            Position=UDim2.fromOffset(0,7),
+            Size=UDim2.fromOffset(3,24),
             BackgroundColor3=Color3.fromRGB(255,64,93),
             BackgroundTransparency=0,
             BorderSizePixel=0,
             Visible=false
         }),2)
         local icon=txt(button,iconMap[id] or "•",24,15,true)
-        icon.Position=UDim2.fromOffset(11,6)
+        icon.Position=UDim2.fromOffset(8,7)
         icon.Size=UDim2.fromOffset(26,24)
         icon.TextXAlignment=Enum.TextXAlignment.Center
         icon.TextColor3=Color3.fromRGB(190,188,201)
         local caption=txt(button,id,26,12,true)
-        caption.Position=UDim2.fromOffset(43,5)
-        caption.Size=UDim2.new(1,-48,0,26)
+        caption.Position=UDim2.fromOffset(43,6)
+        caption.Size=UDim2.new(1,-61,0,26)
         caption.TextColor3=Color3.fromRGB(215,213,222)
         caption.TextWrapped=false
         caption.TextTruncate=Enum.TextTruncate.AtEnd
+        local arrow=txt(button,">",20,12,true)
+        arrow.Position=UDim2.new(1,-21,0,9)
+        arrow.Size=UDim2.fromOffset(15,20)
+        arrow.TextXAlignment=Enum.TextXAlignment.Center
+        arrow.TextColor3=Color3.fromRGB(255,117,146)
+        arrow.Visible=false
+        v14.navigation.chevrons[id]=arrow
         navButtons[id]=button
         v14.navigation.labels[id]=caption
         v14.navigation.icons[id]=icon
@@ -898,8 +976,9 @@ do
         heading.Name="Section_"..def.title
         heading.LayoutOrder=order
         heading.Size=UDim2.new(1,-5,0,19)
-        heading.TextColor3=Color3.fromRGB(131,124,139)
+        heading.TextColor3=Color3.fromRGB(194,116,141)
         heading.TextWrapped=false
+        heading.Font=Enum.Font.GothamBold
         local group={items=def.ids,header=heading,expanded=true}
         v14.navigation.groups[#v14.navigation.groups+1]=group
         for _,id in ipairs(def.ids) do
@@ -912,13 +991,13 @@ do
     local footDivider=obj("Frame",sidebar,{
         Position=UDim2.new(0,11,1,-73),
         Size=UDim2.new(1,-22,0,1),
-        BackgroundColor3=Color3.fromRGB(69,58,67),
-        BackgroundTransparency=.44,BorderSizePixel=0
+        BackgroundColor3=Color3.fromRGB(158,57,84),
+        BackgroundTransparency=.49,BorderSizePixel=0
     })
     local footTitle=txt(sidebar,"CONFIGURACOES",19,10,true)
     footTitle.Position=UDim2.new(0,14,1,-66)
     footTitle.Size=UDim2.new(1,-28,0,18)
-    footTitle.TextColor3=Color3.fromRGB(139,132,150)
+    footTitle.TextColor3=Color3.fromRGB(204,118,146)
     local settingsButton=makeNavButton("SETTINGS",sidebar,1)
     settingsButton.Position=UDim2.new(0,10,1,-45)
     settingsButton.Size=UDim2.new(1,-20,0,36)
@@ -944,13 +1023,13 @@ do
         local active=v14.navigation.activePage or "HOME"
         for id,b in pairs(navButtons) do
             local isActive=(id==active)
-            b.BackgroundColor3=isActive and Color3.fromRGB(82,16,34)
-                or Color3.fromRGB(21,21,28)
+            b.BackgroundColor3=isActive and Color3.fromRGB(87,13,40)
+                or Color3.fromRGB(23,21,31)
             local outline=b:FindFirstChildOfClass("UIStroke")
             if outline then
-                outline.Color=isActive and Color3.fromRGB(244,40,75)
-                    or Color3.fromRGB(65,58,70)
-                outline.Transparency=isActive and .12 or .66
+                outline.Color=isActive and Color3.fromRGB(255,61,101)
+                    or Color3.fromRGB(83,59,81)
+                outline.Transparency=isActive and .08 or .68
                 outline.Thickness=isActive and 1.2 or 1
             end
             v14.navigation.labels[id].TextColor3=isActive
@@ -960,6 +1039,12 @@ do
                 and Color3.fromRGB(255,230,236)
                 or Color3.fromRGB(174,170,187)
             v14.navigation.markers[id].Visible=isActive
+            v14.navigation.chevrons[id].Visible=isActive
+            local plate=b:FindFirstChild("ICON_PLATE")
+            if plate then
+                plate.BackgroundColor3=isActive and
+                    Color3.fromRGB(138,26,61) or Color3.fromRGB(41,30,45)
+            end
         end
     end
     bind(navSearch:GetPropertyChangedSignal("Text"),function()
@@ -9112,7 +9197,7 @@ refresh = function()
         S.fly and "● FLY ATIVO" or "○ FLY OFF"
 
     -- O banner minimizado mostra o estado do voo sem poluir a tela.
-    miniSubtitle.Text = S.fly and "● FLY ATIVO • ABRIR" or "CLIQUE PARA ABRIR"
+    miniSubtitle.Text = S.fly and "● FLY ATIVO  •  ABRIR" or "PAINEL DE JOGO  •  ABRIR"
     miniSubtitle.TextColor3 = S.fly and Color3.fromRGB(255,112,134)
         or Color3.fromRGB(179,172,187)
     if v14.perfLiteButton then
