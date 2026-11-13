@@ -219,6 +219,7 @@ local S = {
     aimTargetMode = "players",
     aimMagnet = true,
     aimMagnetStrength = .75,
+    aimStickiness = 18,
     aimTeamCheck = true,
     aimVisibleOnly = true,
     aimSteady = false,
@@ -2201,6 +2202,8 @@ local aimStroke = obj("UIStroke",aimCircle,{
 })
 
 local aimKey = "BRAB0X_V19_8_8_AIM"
+local lastAimTarget = nil
+v14.liteMode=v13Data.liteMode==true
 local npcCache = {}
 local nextScan = 0
 local lastAimCamera = nil
@@ -2247,6 +2250,7 @@ local function findTarget(camera)
     if os.clock()>=nextScan then scanTrainingNPCs() end
     local best,chosenName=nil,nil
     local radius=S.aimRadius
+    local bestScore=math.huge
     local middle=camera.ViewportSize/2
 
     local function consider(model,human,label)
@@ -2260,7 +2264,9 @@ local function findTarget(camera)
         if not onScreen or point.Z<=0 then return end
         local distance=(Vector2.new(point.X,point.Y)-middle).Magnitude
         if distance>=radius or not canSeeTarget(camera,part,model) then return end
-        radius=distance
+        local score=distance-(part==lastAimTarget and S.aimStickiness or 0)
+        if score>=bestScore then return end
+        bestScore=score
         best=part
         chosenName=label
     end
@@ -2299,6 +2305,8 @@ Run:BindToRenderStep(
             or (S.aimHold and not UIS:IsMouseButtonPressed(
                 Enum.UserInputType.MouseButton2)) then
             lastAimCamera=nil
+            lastAimTarget=nil
+            aimStroke.Color=accent
             return
         end
         local camera=workspace.CurrentCamera
@@ -2306,8 +2314,19 @@ Run:BindToRenderStep(
             lastAimCamera=nil
             return
         end
-        local part,_,pixelDistance=findTarget(camera)
-        if not part then lastAimCamera=nil return end
+        local part,label,pixelDistance=findTarget(camera)
+        if not part then
+            lastAimCamera=nil
+            lastAimTarget=nil
+            if v14.aimTargetHint then v14.aimTargetHint.Text="ALVO: NENHUM NO FOV" end
+            aimStroke.Color=accent
+            return
+        end
+        lastAimTarget=part
+        if v14.aimTargetHint then
+            v14.aimTargetHint.Text="ALVO NO FOV: "..tostring(label or part.Name)
+        end
+        aimStroke.Color=Color3.fromRGB(115,224,155)
         local pos=camera.CFrame.Position
         local desired=CFrame.lookAt(pos,part.Position)
         local baseAlpha=math.clamp(
@@ -2696,6 +2715,12 @@ register("aimmagnetpower","AIM","Forca da atracao automatica no FOV",function(a)
     S.aimMagnetStrength=num(a,.75,0,1)
     return string.format("Forca da mira magnetica: %.2f",S.aimMagnetStrength)
 end,"aimmagnetpower 0.75")
+
+register("aimsticky","AIM","Evitar troca rapida de alvo no FOV",function(a)
+    S.aimStickiness=num(a,18,0,70)
+    lastAimTarget=nil
+    return "Fixacao do alvo: "..S.aimStickiness
+end,"aimsticky 18")
 
 register("aimtarget","AIM","Selecionar alvos: players, npcs ou both",function(a)
     local mode=tostring(a or ""):lower():gsub("^%s+",""):gsub("%s+$","")
@@ -3695,7 +3720,14 @@ local function profileSnapshot()
         theme=config.theme,scale=config.scale,
         compact=config.compact,opacity=config.opacity,
         neon=config.neon,animations=config.animations,
-        aimEnabled=config.aimEnabled
+        aimEnabled=config.aimEnabled,
+        aim=S.aim,aimRadius=S.aimRadius,aimSmooth=S.aimSmooth,
+        aimHold=S.aimHold,aimMagnet=S.aimMagnet,
+        aimMagnetStrength=S.aimMagnetStrength,aimStickiness=S.aimStickiness,
+        aimTargetMode=S.aimTargetMode,aimTeamCheck=S.aimTeamCheck,
+        aimVisibleOnly=S.aimVisibleOnly,aimSteady=S.aimSteady,
+        aimSteadyStrength=S.aimSteadyStrength,liteMode=v14.liteMode,
+        cinemaEase=v14.cinemaEase
     }
 end
 local function profileName(a)
@@ -3727,6 +3759,20 @@ local function loadProfile(a)
     config.neon=math.clamp(tonumber(p.neon) or 1,.25,2)
     config.animations=p.animations~=false
     config.aimEnabled=p.aimEnabled==true
+    if p.aim~=nil then S.aim=p.aim==true and config.aimEnabled end
+    if p.aimRadius then S.aimRadius=math.clamp(tonumber(p.aimRadius) or 150,30,350) end
+    if p.aimSmooth then S.aimSmooth=math.clamp(tonumber(p.aimSmooth) or .16,.02,1) end
+    if p.aimHold~=nil then S.aimHold=p.aimHold==true end
+    if p.aimMagnet~=nil then S.aimMagnet=p.aimMagnet==true end
+    if p.aimMagnetStrength then S.aimMagnetStrength=math.clamp(tonumber(p.aimMagnetStrength) or .75,0,1) end
+    if p.aimStickiness then S.aimStickiness=math.clamp(tonumber(p.aimStickiness) or 18,0,70) end
+    if p.aimTargetMode=="players" or p.aimTargetMode=="npcs" or p.aimTargetMode=="both" then S.aimTargetMode=p.aimTargetMode end
+    if p.aimTeamCheck~=nil then S.aimTeamCheck=p.aimTeamCheck==true end
+    if p.aimVisibleOnly~=nil then S.aimVisibleOnly=p.aimVisibleOnly==true end
+    if p.aimSteady~=nil then S.aimSteady=p.aimSteady==true end
+    if p.aimSteadyStrength then S.aimSteadyStrength=math.clamp(tonumber(p.aimSteadyStrength) or .35,0,1) end
+    if p.liteMode~=nil then v14.liteMode=p.liteMode==true v13Data.liteMode=v14.liteMode end
+    if p.cinemaEase then v14.cinemaEase=math.clamp(tonumber(p.cinemaEase) or .25,.02,1) end
     S.speed=math.clamp(tonumber(p.speed) or S.speed,10,300)
     S.boost=p.boost==true
     S.boostX=math.clamp(tonumber(p.boostX) or S.boostX,1,5)
@@ -3746,6 +3792,9 @@ local function loadProfile(a)
     notify("Perfil aplicado: "..name)
     return false
 end
+register("profilequick","SETTINGS","Aplicar perfil salvo rapidamente",function(a)
+    return loadProfile(a)
+end,"profilequick explorar")
 register("openplayers","SETTINGS","Abrir lista de jogadores",function()show("PLAYERS")end)
 register("openteleport","SETTINGS","Abrir waypoints",function()show("TELEPORT")end)
 register("openconsole","SETTINGS","Abrir console",function()show("CONSOLE")end)
@@ -4541,6 +4590,8 @@ do
         return true
     end
     v14.cinemaSpeed=18
+    v14.cinemaEase=.25
+    v14.cinemaVelocity=Vector3.zero
     v14.cinemaLook=nil
     v14.startCinema=function()
         if v14.cinematic then return true end
@@ -4572,9 +4623,12 @@ do
             if UIS:IsKeyDown(Enum.KeyCode.D) then vec=vec+current.CFrame.RightVector end
             if UIS:IsKeyDown(Enum.KeyCode.E) then vec=vec+Vector3.yAxis end
             if UIS:IsKeyDown(Enum.KeyCode.Q) then vec=vec-Vector3.yAxis end
-            if vec.Magnitude>0 then
-                local speed=v14.cinemaSpeed*(UIS:IsKeyDown(Enum.KeyCode.LeftShift) and 2.5 or 1)
-                current.CFrame=current.CFrame+vec.Unit*speed*math.min(dt,.1)
+            local speed=v14.cinemaSpeed*(UIS:IsKeyDown(Enum.KeyCode.LeftShift) and 2.5 or 1)
+            local desired=vec.Magnitude>0 and vec.Unit*speed or Vector3.zero
+            local easing=math.clamp(1-(1-v14.cinemaEase)^(math.max(dt,0)*60),0,1)
+            v14.cinemaVelocity=v14.cinemaVelocity:Lerp(desired,easing)
+            if v14.cinemaVelocity.Magnitude>.001 then
+                current.CFrame=current.CFrame+v14.cinemaVelocity*math.min(dt,.1)
             end
         end)
         main.Visible=false
@@ -4585,6 +4639,7 @@ do
     v14.stopCinema=function()
         if not v14.cinematic then return end
         v14.cinematic=false
+        v14.cinemaVelocity=Vector3.zero
         if v14.cinemaConnection then v14.cinemaConnection:Disconnect() v14.cinemaConnection=nil end
         if v14.cinemaLook then v14.cinemaLook:Disconnect() v14.cinemaLook=nil end
         local cam=workspace.CurrentCamera
@@ -4663,6 +4718,7 @@ do
     end
     v14.musicVolume=.35
     v14.cleanup=function()
+        if v14.cameraTween then pcall(function()v14.cameraTween:Cancel()end) v14.cameraTween=nil end
         v14.stopCinema()
         if v14.skinSeq then v14.skinSeq+=1 end
         if v14.skinRestore then v14.skinRestore() end
@@ -4698,6 +4754,33 @@ do
     register("cinemaspeed","CAMERA","Ajustar velocidade da camera livre",function(a)
         v14.cinemaSpeed=math.clamp(tonumber(a) or 18,2,70)
     end,"cinemaspeed 20")
+    v14.cameraTween=nil
+    v14.smoothZoom=function(raw)
+        local goal=tonumber(raw)
+        if not goal then return "Use: camzoom 65 (FOV de 40 a 120)" end
+        goal=math.clamp(goal,40,120)
+        local camera=workspace.CurrentCamera
+        if not camera then return "Camera indisponivel." end
+        if v14.cameraTween then pcall(function()v14.cameraTween:Cancel()end) end
+        v14.cameraTween=Tween:Create(camera,
+            TweenInfo.new(.55,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),
+            {FieldOfView=goal})
+        v14.cameraTween:Play()
+        return "Zoom suave: FOV "..math.floor(goal+.5)
+    end
+    register("camzoom","CAMERA","Zoom suave do FOV",function(a)
+        return v14.smoothZoom(a)
+    end,"camzoom 65")
+    register("camerapreset","CAMERA","Preset close normal wide cinema",function(a)
+        local presets={close=48,normal=70,wide=92,cinema=60}
+        local option=tostring(a or ""):lower():match("%S+")
+        if not presets[option] then return "Use: camerapreset close|normal|wide|cinema" end
+        return v14.smoothZoom(presets[option])
+    end,"camerapreset cinema")
+    register("cinease","CAMERA","Suavidade da camera cinema",function(a)
+        v14.cinemaEase=math.clamp(tonumber(a) or .25,.02,1)
+        return string.format("Suavidade do cinema: %.2f",v14.cinemaEase)
+    end,"cinease 0.25")
     register("avatarlocal","PLAYER","Cor local do avatar",function(a)
         return v14.avatarApply(trimmed(a):lower())
     end,"avatarlocal red")
@@ -6428,6 +6511,7 @@ end
 -- ABA CAMERA
 
 for _,c in ipairs({
+    "camzoom 60","camzoom 80","camerapreset cinema","camerapreset wide","cinease 0.25",
     "first","third","camreset",
     "fov 60","fov 90","resetfov",
     "zoom 10","zoom 30","resetzoom",
@@ -6938,6 +7022,10 @@ sliderControl(pages.AIM,"◎  RAIO DO AIM","Raio da area de treino",30,350,10,
     function()return S.aimRadius end,"aimfov","%.0f")
 sliderControl(pages.AIM,"≋  SUAVIDADE","Movimento suave da camera",.02,1,.02,
     function()return S.aimSmooth end,"smooth","%.2f")
+sliderControl(pages.AIM,"◎  FIXACAO DE ALVO","Evita troca rapida",0,70,5,
+    function()return S.aimStickiness end,"aimsticky","%.0f")
+v14.aimTargetHint=txt(pages.AIM,"ALVO: NENHUM NO FOV",29,12,true)
+v14.aimTargetHint.TextColor3=Color3.fromRGB(153,229,176)
 local aimExplain=txt(pages.AIM,
     "Com Aim ON, a cabeca mais proxima do centro dentro do FOV atrai a camera automaticamente. RMB vem desligado. Nao dispara.",
     60,12)
