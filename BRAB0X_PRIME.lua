@@ -182,6 +182,13 @@ config.compact=config.compact==true
 config.animations=config.animations~=false
 config.notifications=config.notifications~=false
 config.intro=config.intro~=false
+-- Restauracao solicitada: a intro volta a ligar uma unica vez nesta atualizacao.
+-- Depois disso a opcao "intro off" continua respeitada.
+local restoreCinematicOnce=v13Data.cinematicRestoreV20_0_1~=true
+if restoreCinematicOnce then
+    config.intro=true
+    v13Data.cinematicRestoreV20_0_1=true
+end
 config.opacity=math.clamp(tonumber(config.opacity) or 0,0,.45)
 config.neon=math.clamp(tonumber(config.neon) or 1,.25,2)
 local defaultKeys={FLY="F",MENU="RightShift",NOCLIP="N",BOOST="B",INVIS="I"}
@@ -205,6 +212,8 @@ local function saveV13()
         pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
     end
 end
+if restoreCinematicOnce then saveV13() end
+
 local S = {
     fly = false,
     speed = 55,
@@ -637,6 +646,24 @@ miniArrow.Size=UDim2.fromScale(1,1)
 miniArrow.TextXAlignment=Enum.TextXAlignment.Center
 miniArrow.TextColor3=Color3.fromRGB(255,220,225)
 miniArrow.ZIndex=114
+
+-- Animacoes discretas apenas enquanto o mini banner estiver visivel.
+local miniGlowPulse=Tween:Create(miniAccent,
+    TweenInfo.new(1.5,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
+    {BackgroundTransparency=.75})
+local miniArrowPulse=Tween:Create(miniArrow,
+    TweenInfo.new(.95,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
+    {Position=UDim2.fromOffset(3,0)})
+local function setMiniPulse(enabled)
+    miniGlowPulse:Cancel()
+    miniArrowPulse:Cancel()
+    miniAccent.BackgroundTransparency=.24
+    miniArrow.Position=UDim2.fromOffset(0,0)
+    if enabled and config.animations then
+        miniGlowPulse:Play()
+        miniArrowPulse:Play()
+    end
+end
 
 -- Posicao gravada anteriormente continua compativel.
 local miniSaved=v13Data.miniPosition
@@ -9169,35 +9196,82 @@ bind(UIS.InputEnded,function(input)
     end
     miniMoved=false
 end)
-bind(minimize.MouseButton1Click,function()
-    main.Visible=false
+-- Transicao real: a janela encolhe ate o banner e cresce de volta.
+local miniTransitionSerial=0
+local miniTransitionBusy=false
+local function miniCenter()
+    local p=reopen.Position
+    return UDim2.new(p.X.Scale,p.X.Offset,
+        p.Y.Scale,p.Y.Offset+33*miniUIScale.Scale)
+end
+local function popMiniBanner()
     reopen.Visible=true
-    clampMiniPosition()
+    local resting=miniUIScale.Scale
     if config.animations then
-        local normalScale=miniUIScale.Scale
-        miniUIScale.Scale=normalScale*.82
-        Tween:Create(miniUIScale,TweenInfo.new(.19,
-            Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
-            Scale=normalScale
-        }):Play()
+        miniUIScale.Scale=resting*.72
+        Tween:Create(miniUIScale,
+            TweenInfo.new(.27,Enum.EasingStyle.Back,Enum.EasingDirection.Out),
+            {Scale=resting}):Play()
     end
+    setMiniPulse(true)
+end
+bind(minimize.MouseButton1Click,function()
+    if stopped or miniTransitionBusy or not main.Visible then return end
+    clampMiniPosition()
+    if not config.animations then
+        main.Visible=false
+        popMiniBanner()
+        return
+    end
+    miniTransitionBusy=true
+    miniTransitionSerial=miniTransitionSerial+1
+    local ticket=miniTransitionSerial
+    local startPosition=main.Position
+    local startScale=uiScale.Scale
+    local finishPosition=miniCenter()
+    local t=TweenInfo.new(.34,Enum.EasingStyle.Quint,Enum.EasingDirection.In)
+    Tween:Create(main,t,{Position=finishPosition}):Play()
+    Tween:Create(uiScale,t,{Scale=math.max(.1,startScale*.13)}):Play()
+    task.delay(.35,function()
+        if stopped or ticket~=miniTransitionSerial or not main.Parent then return end
+        main.Visible=false
+        main.Position=startPosition
+        uiScale.Scale=startScale
+        popMiniBanner()
+        miniTransitionBusy=false
+    end)
 end)
 bind(reopen.MouseButton1Click,function()
-    -- Suprime o clique gerado pela soltura depois de arrastar.
+    -- Nao reabre ao soltar o mini banner depois de arrasta-lo.
     if miniMoved or os.clock()<miniSuppressUntil then
         miniMoved=false
         return
     end
+    if stopped or miniTransitionBusy then return end
+    miniTransitionSerial=miniTransitionSerial+1
+    local ticket=miniTransitionSerial
+    setMiniPulse(false)
+    if not config.animations then
+        reopen.Visible=false
+        main.Visible=true
+        return
+    end
+    miniTransitionBusy=true
+    local restingPosition=main.Position
+    local restingScale=uiScale.Scale
+    main.Position=miniCenter()
+    uiScale.Scale=math.max(.1,restingScale*.13)
     main.Visible=true
     reopen.Visible=false
-    if config.animations then
-        local final=main.Position
-        main.Position=final+UDim2.fromOffset(0,13)
-        Tween:Create(main,TweenInfo.new(.18,
-            Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{
-            Position=final
-        }):Play()
-    end
+    local t=TweenInfo.new(.42,Enum.EasingStyle.Back,Enum.EasingDirection.Out)
+    Tween:Create(main,t,{Position=restingPosition}):Play()
+    Tween:Create(uiScale,t,{Scale=restingScale}):Play()
+    task.delay(.44,function()
+        if stopped or ticket~=miniTransitionSerial or not main.Parent then return end
+        main.Position=restingPosition
+        uiScale.Scale=restingScale
+        miniTransitionBusy=false
+    end)
 end)
 do
     local camera=workspace.CurrentCamera
@@ -9209,6 +9283,10 @@ end
 -- Recuperacao independente da intro, util para menus fechados acidentalmente.
 v14.forceShow=function()
     if stopped then return end
+    -- Impede que uma transicao atrasada esconda o menu recuperado.
+    miniTransitionSerial=miniTransitionSerial+1
+    miniTransitionBusy=false
+    setMiniPulse(false)
     if v14.exitPhotoMode then v14.exitPhotoMode() end
     if v14.introCleanup then pcall(v14.introCleanup) end
     local dangling=pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")
@@ -9808,7 +9886,10 @@ do
     end
     if #bootErrors>0 then
         v14.bootError=table.concat(bootErrors," | "):sub(1,250)
-        v14.forceShow()
+        -- Erros nao criticos nos modulos nao devem cancelar a intro cinematografica.
+        local introRunning=config.intro and v14.introOk
+            and pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")~=nil
+        if not introRunning then v14.forceShow() end
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
         notify("BRAB0X PRIME V20.0.0 | "..#registered..
