@@ -182,6 +182,11 @@ config.compact=config.compact==true
 config.animations=config.animations~=false
 config.notifications=config.notifications~=false
 config.intro=config.intro~=false
+-- Restauracao pontual: a introducao volta a ser ativada uma unica vez.
+if v13Data.cinematicIntroFix_20261113~=true then
+    config.intro=true
+    v13Data.cinematicIntroFix_20261113=true
+end
 config.opacity=math.clamp(tonumber(config.opacity) or 0,0,.45)
 config.neon=math.clamp(tonumber(config.neon) or 1,.25,2)
 local defaultKeys={FLY="F",MENU="RightShift",NOCLIP="N",BOOST="B",INVIS="I"}
@@ -205,6 +210,8 @@ local function saveV13()
         pcall(function() writefile(dataFile,HttpService:JSONEncode(v13Data)) end)
     end
 end
+-- Salva as preferencias restauradas antes da abertura.
+saveV13()
 local S = {
     fly = false,
     speed = 55,
@@ -9808,7 +9815,11 @@ do
     end
     if #bootErrors>0 then
         v14.bootError=table.concat(bootErrors," | "):sub(1,250)
-        v14.forceShow()
+        -- Erros nao criticos nos modulos nao devem cancelar a intro.
+        if not (config.intro and v14.introOk and
+            pg:FindFirstChild("BRAB0X_INTRO_FULLSCREEN_V20_0_0")) then
+            v14.forceShow()
+        end
         notify("Aviso: falha em um modulo. Use 'uicheck' para detalhes.","error")
     else
         notify("BRAB0X PRIME V20.0.0 | "..#registered..
