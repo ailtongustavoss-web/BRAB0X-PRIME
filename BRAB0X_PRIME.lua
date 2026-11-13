@@ -539,7 +539,7 @@ close.Position = UDim2.new(1,-40,0,19)
 -- Mantem o nome reopen para os atalhos e sistemas antigos.
 local reopen=round(obj("TextButton",gui,{
     Name="BRAB0X_MINI_PREMIUM_V20_0_0",
-    Size=UDim2.fromOffset(150,150),
+    Size=UDim2.fromOffset(120,120),
     AnchorPoint=Vector2.new(.5,0),
     Position=UDim2.new(.5,0,.075,0),
     BackgroundColor3=Color3.fromRGB(9,7,12),
@@ -9459,10 +9459,10 @@ local function clampMiniPosition()
     end
     -- O banner fica inteiro no viewport seguro e usa medidas reais do novo layout.
     miniUIScale.Scale=math.clamp(math.min(
-        1,(view.X-20)/150,(view.Y-20)/150
+        1,(view.X-20)/120,(view.Y-20)/120
     ),.35,1)
-    local w=150*miniUIScale.Scale
-    local h=150*miniUIScale.Scale
+    local w=120*miniUIScale.Scale
+    local h=120*miniUIScale.Scale
     local centerX=reopen.Position.X.Scale*view.X+reopen.Position.X.Offset
     local topY=reopen.Position.Y.Scale*view.Y+reopen.Position.Y.Offset
     local minX=math.min(view.X*.5,w*.5+8)
