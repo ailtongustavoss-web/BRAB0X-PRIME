@@ -5925,6 +5925,74 @@ exec = function(raw)
     return true
 end
 
+-- ATUALIZACOES V20.0.0: somente JSON de versao, sem executar Lua remoto.
+v14.version="20.0.0"
+v14.latestVersion="20.0.0"
+v14.updateStatus="V20.0.0 INSTALADA • AINDA NAO VERIFICADA"
+v14.updateChangelog={
+    "Aim V2: estabilidade do alvo e indicador no FOV",
+    "Skin Changer V2: preview giratorio, 5 slots e acessorios",
+    "Emotes V2: categorias, filtro e fila de 12",
+    "Menu minimizado animado e modo leve",
+    "Perfis completos, camera V2, diagnostico e atualizacoes"
+}
+local function versionValue(value)
+    local a,b,c=tostring(value or ""):match("^(%d+)%.(%d+)%.(%d+)$")
+    if not a then return nil end
+    return tonumber(a)*1000000+tonumber(b)*1000+tonumber(c)
+end
+v14.checkUpdates=function(silent)
+    task.spawn(function()
+        local url="https://raw.githubusercontent.com/ailtongustavoss-web/"..
+            "BRAB0X-PRIME/main/BRAB0X_VERSION.json?t="..os.time()
+        local ok,raw=pcall(function()return game:HttpGet(url)end)
+        if stopped then return end
+        if not ok or type(raw)~="string" or #raw>6000 then
+            v14.updateStatus="NAO FOI POSSIVEL CONSULTAR O GITHUB"
+            if not silent then notify(v14.updateStatus,"error") end
+        else
+            local valid,data=pcall(function()return HttpService:JSONDecode(raw)end)
+            local ver=valid and type(data)=="table" and data.version or nil
+            local number=versionValue(ver)
+            if not number then
+                v14.updateStatus="MANIFESTO DE VERSAO INVALIDO"
+                if not silent then notify(v14.updateStatus,"error") end
+            else
+                v14.latestVersion=tostring(ver)
+                if type(data.changelog)=="table" then
+                    v14.remoteChangelog=data.changelog
+                end
+                if number>versionValue(v14.version) then
+                    v14.updateStatus="NOVA VERSAO DISPONIVEL: V"..ver
+                    notify(v14.updateStatus,"info")
+                else
+                    v14.updateStatus="V"..v14.version.." ATUALIZADA"
+                    if not silent then notify(v14.updateStatus,"success") end
+                end
+            end
+        end
+        if v14.updateLabel and v14.updateLabel.Parent then
+            v14.updateLabel.Text=v14.updateStatus
+        end
+    end)
+    return false
+end
+register("checkupdates","SETTINGS","Verificar atualizacao no GitHub",function()
+    return v14.checkUpdates(false)
+end)
+register("whatsnew","SETTINGS","Mostrar novidades da versao",function()
+    notify(table.concat(v14.updateChangelog," | "),"info")
+    show("DIAGNOSTICS")
+    return false
+end)
+register("diagnosev2","SETTINGS","Verificar Aim Skin Emotes e performance",function()
+    show("DIAGNOSTICS")
+    if v14.v17 and v14.v17.refresh then
+        v14.v17.refresh("DIAGNOSTICS")
+    end
+    return false
+end)
+
 -- COMANDOS / NOVA INTERFACE COM CONTROLES REAIS
 do
 local cmdPage = pages.COMMANDS
@@ -8558,6 +8626,10 @@ do
                 {"ABRIR BACKUP",function()show("BACKUP")end},
                 {"GUIA",function()show("GUIDE")end}
             })
+            groupButtons(pages.DIAGNOSTICS,{
+                {"CHECAR VERSAO",function()exec("checkupdates")end},
+                {"NOVIDADES",function()exec("whatsnew")end}
+            })
             local details=ui.holder(pages.DIAGNOSTICS)
             m.pages.DIAGNOSTICS=function()
                 clear(details)
@@ -8572,6 +8644,15 @@ do
                         " / "..(d.fileWrite and "GRAVACAO" or "N/A"),
                     "CLIPBOARD: "..(d.clipboard and "DISPONIVEL" or "MANUAL"),
                     "COMANDOS: "..d.totalCommands.."  |  WAYPOINTS: "..d.waypoints,
+                    "VERSAO: "..tostring(v14.updateStatus),
+                    "AIM: "..(S.aim and "ON" or "OFF").." | ALVOS "..S.aimTargetMode..
+                        " | FOV "..S.aimRadius..
+                        " | MAGNET "..(S.aimMagnet and "ON" or "OFF"),
+                    "SKIN: "..tostring(v14.skinName).." | ACESSORIOS "..
+                        (v14.skinAccessoryCount or 0),
+                    "EMOTES: FILA "..(v14.emoteQueue and #v14.emoteQueue or 0)..
+                        " | MODO LEVE "..(v14.liteMode and "ON" or "OFF"),
+                    "FALHAS NA SESSAO: "..#m.sessionErrors,
                     "NOTAS: "..d.notesSize.." caracteres",
                     "SESSOES NESTE JOGO: "..d.sessionCount..
                         "  |  COMANDOS NESTE JOGO: "..d.totalUserCommands
@@ -8596,7 +8677,7 @@ do
                 end
                 ui.section(details,"REGISTRO DE FALHAS DESTA SESSAO")
                 if #m.sessionErrors==0 then
-                    info(details,"Nenhum comando apresentou erro nesta sessao.",34)
+                    info(details,"Nenhuma falha registrada nesta sessao.",34)
                 end
                 for i=1,math.min(8,#m.sessionErrors) do
                     local issue=m.sessionErrors[i]
@@ -8671,6 +8752,15 @@ actionRow(pages.SETTINGS,{
     {"RECUPERAR MENU  F8",function()exec("rescuemenu")end},
     {"DIAGNOSTICO DA GUI",function()exec("uicheck")end}
 })
+titleRow(pages.SETTINGS,"✦  ATUALIZACOES")
+local checkVersionButton=btn(pages.SETTINGS,"VERIFICAR NOVA VERSAO NO GITHUB",function()
+    exec("checkupdates")
+end,40)
+v14.updateLabel=txt(pages.SETTINGS,v14.updateStatus,33,12,true)
+v14.updateLabel.TextColor3=muted
+local whatsNewButton=btn(pages.SETTINGS,"VER NOVIDADES V20.0.0",function()
+    exec("whatsnew")
+end,37)
 titleRow(pages.SETTINGS,"✦  NOTIFICACOES")
 toggleControl(pages.SETTINGS,"AVISOS PREMIUM","Mostra mensagens animadas ao usar comandos",
     function()return config.notifications end,"notifications on","notifications off")
