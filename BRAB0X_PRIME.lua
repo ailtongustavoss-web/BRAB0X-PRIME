@@ -6914,43 +6914,103 @@ obj("UIGridLayout",homeTiles,{
     SortOrder = Enum.SortOrder.LayoutOrder
 })
 local function makeHomeTile(symbol,title,description,target)
-    local t = btn(homeTiles,"",function()
-        show(target)
-    end,93)
+    local t=btn(homeTiles,"",function() show(target) end,93)
     t.Name="DASHBOARD_"..target
-    t.BackgroundColor3 = Color3.fromRGB(23,16,27)
+    t.AutoButtonColor=false
+    t.BackgroundColor3=Color3.fromRGB(19,14,23)
     t.ClipsDescendants=true
+    local corner=t:FindFirstChildOfClass("UICorner")
+    if corner then corner.CornerRadius=UDim.new(0,13) end
+    local border=t:FindFirstChildOfClass("UIStroke")
+    if border then
+        border.Color=Color3.fromRGB(255,62,99)
+        border.Thickness=1.5
+        border.Transparency=.20
+    end
     obj("UIGradient",t,{
-        Rotation=90,
-        Color=ColorSequence.new(Color3.fromRGB(42,12,26),Color3.fromRGB(14,15,22))
+        Rotation=13,
+        Color=ColorSequence.new({
+            ColorSequenceKeypoint.new(0,Color3.fromRGB(69,16,32)),
+            ColorSequenceKeypoint.new(.24,Color3.fromRGB(32,16,27)),
+            ColorSequenceKeypoint.new(.72,Color3.fromRGB(17,16,23)),
+            ColorSequenceKeypoint.new(1,Color3.fromRGB(35,10,22))
+        })
     })
-    obj("UIStroke",t,{
-        Color=Color3.fromRGB(251,47,83),Thickness=1.2,Transparency=.2
+    -- Detalhes metalicos da Opcao A, desenhados na interface.
+    obj("Frame",t,{
+        Name="METAL_CORNER",
+        Position=UDim2.new(1,-30,0,-30),
+        Size=UDim2.fromOffset(27,93),Rotation=30,
+        BackgroundColor3=Color3.fromRGB(145,45,70),
+        BackgroundTransparency=.78,BorderSizePixel=0
     })
-    local icon=round(obj("Frame",t,{
-        Position=UDim2.fromOffset(8,21),
-        Size=UDim2.fromOffset(37,43),
-        BackgroundColor3=Color3.fromRGB(69,17,36),
+    obj("Frame",t,{
+        Name="NEON_CORNER",
+        Position=UDim2.new(1,-24,0,-29),
+        Size=UDim2.fromOffset(2,88),Rotation=30,
+        BackgroundColor3=Color3.fromRGB(255,70,102),
+        BackgroundTransparency=.40,BorderSizePixel=0
+    })
+    local iconBox=round(obj("Frame",t,{
+        Name="ICON_BADGE",
+        Position=UDim2.fromOffset(10,17),
+        Size=UDim2.fromOffset(43,47),
+        BackgroundColor3=Color3.fromRGB(45,11,27),
         BorderSizePixel=0
-    }),9)
-    local ico = txt(icon,symbol,40,20,true)
-    ico.Position=UDim2.fromOffset(0,2)
-    ico.Size=UDim2.fromScale(1,1)
-    ico.TextXAlignment=Enum.TextXAlignment.Center
-    ico.TextColor3=Color3.fromRGB(255,86,119)
-    local ttl = txt(t,title,23,13,true)
-    ttl.Position = UDim2.fromOffset(51,14)
-    ttl.Size = UDim2.new(1,-58,0,24)
-    ttl.TextWrapped=false
-    local summary = txt(t,description,43,10)
-    summary.Position = UDim2.fromOffset(51,38)
-    summary.Size = UDim2.new(1,-60,0,46)
-    summary.TextColor3 = Color3.fromRGB(191,178,192)
-    round(obj("Frame",t,{
-        Position=UDim2.new(0,8,1,-4),Size=UDim2.new(1,-16,0,2),
-        BackgroundColor3=Color3.fromRGB(207,34,75),
-        BackgroundTransparency=.3,BorderSizePixel=0
+    }),11)
+    obj("UIGradient",iconBox,{
+        Rotation=40,
+        Color=ColorSequence.new(
+            Color3.fromRGB(124,23,53),
+            Color3.fromRGB(25,11,25)
+        )
+    })
+    obj("UIStroke",iconBox,{
+        Color=Color3.fromRGB(255,78,112),
+        Transparency=.14,Thickness=1.3
+    })
+    local glyph=txt(iconBox,symbol,43,22,true)
+    glyph.Position=UDim2.fromOffset(0,3)
+    glyph.Size=UDim2.new(1,0,1,-6)
+    glyph.TextXAlignment=Enum.TextXAlignment.Center
+    glyph.TextYAlignment=Enum.TextYAlignment.Center
+    glyph.TextColor3=Color3.fromRGB(255,231,237)
+    glyph.TextWrapped=false
+    local name=txt(t,title,25,13,true)
+    name.Position=UDim2.fromOffset(61,11)
+    name.Size=UDim2.new(1,-82,0,26)
+    name.TextColor3=Color3.fromRGB(255,249,251)
+    name.TextTruncate=Enum.TextTruncate.AtEnd
+    name.TextWrapped=false
+    local subtitle=txt(t,description,31,10)
+    subtitle.Position=UDim2.fromOffset(61,36)
+    subtitle.Size=UDim2.new(1,-80,0,33)
+    subtitle.TextColor3=Color3.fromRGB(214,190,201)
+    local actionText=txt(t,"ABRIR PAINEL",14,9,true)
+    actionText.Position=UDim2.fromOffset(61,71)
+    actionText.Size=UDim2.new(1,-79,0,15)
+    actionText.TextColor3=Color3.fromRGB(255,105,138)
+    actionText.TextWrapped=false
+    local arrow=txt(t,">",22,16,true)
+    arrow.Position=UDim2.new(1,-23,0,31)
+    arrow.Size=UDim2.fromOffset(17,26)
+    arrow.TextColor3=Color3.fromRGB(255,61,103)
+    arrow.TextXAlignment=Enum.TextXAlignment.Center
+    local baseLine=round(obj("Frame",t,{
+        Name="NEON_BASE",
+        Position=UDim2.new(0,0,1,-3),
+        Size=UDim2.new(1,0,0,3),
+        BackgroundColor3=Color3.fromRGB(247,43,83),
+        BackgroundTransparency=.19,BorderSizePixel=0
     }),2)
+    bind(t.MouseEnter,function()
+        if border then border.Transparency=.02 end
+        baseLine.BackgroundTransparency=0
+    end)
+    bind(t.MouseLeave,function()
+        if border then border.Transparency=.20 end
+        baseLine.BackgroundTransparency=.19
+    end)
 end
 makeHomeTile("▣","SERVIDOR","Informacoes da partida","SERVER")
 makeHomeTile("♙","JOGADORES","Lista e status dos players","PLAYERS")
