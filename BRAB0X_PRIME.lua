@@ -6716,7 +6716,7 @@ end
 -- HOME / BANNER PRIME: DESIGN CLEAN PRETO E VERMELHO, SEM VERSOES VISIVEIS
 do
 local hero = round(obj("Frame",pages.HOME,{
-    Size = UDim2.new(1,-9,0,202),
+    Size = UDim2.new(1,-9,0,166),
     BackgroundColor3 = Color3.fromRGB(13,12,18),
     ClipsDescendants = true,
     BorderSizePixel = 0
@@ -6751,8 +6751,8 @@ end
 -- Visual com a arte original da coroa ja carregada no mini banner.
 -- Este bloco nao baixa uma segunda imagem e nao bloqueia a inicializacao.
 local emblem=round(obj("Frame",hero,{
-    Position=UDim2.new(1,-174,0,22),
-    Size=UDim2.fromOffset(150,150),
+    Position=UDim2.new(1,-149,0,14),
+    Size=UDim2.fromOffset(133,133),
     BackgroundColor3=Color3.fromRGB(22,9,19),
     BorderSizePixel=0,
     ClipsDescendants=true
@@ -6762,7 +6762,7 @@ obj("UIGradient",emblem,{
     Rotation=45,
     Color=ColorSequence.new(Color3.fromRGB(62,12,31),Color3.fromRGB(12,12,19))
 })
-local emblemLetter=txt(emblem,"B",150,67,true)
+local emblemLetter=txt(emblem,"B",133,62,true)
 emblemLetter.Position=UDim2.fromOffset(0,0)
 emblemLetter.Size=UDim2.fromScale(1,1)
 emblemLetter.Font=Enum.Font.GothamBlack
@@ -6792,63 +6792,172 @@ if v14.miniImage then
     bind(v14.miniImage:GetPropertyChangedSignal("Image"),v14.homeCrownSync)
 end
 local bannerSmall = txt(hero,"CENTRAL DE CONTROLE  /  ACESSO PREMIUM",22,12,true)
-bannerSmall.Position = UDim2.fromOffset(28,23)
+bannerSmall.Position = UDim2.fromOffset(22,10)
 bannerSmall.Size = UDim2.new(1,-176,0,22)
 bannerSmall.TextColor3 = Color3.fromRGB(255,80,112)
 local bannerBrand = txt(hero,"BRAB0X",59,39,true)
-bannerBrand.Position = UDim2.fromOffset(27,53)
-bannerBrand.Size = UDim2.new(1,-212,0,59)
+bannerBrand.Position = UDim2.fromOffset(23,32)
+bannerBrand.Size = UDim2.new(1,-178,0,56)
 bannerBrand.Font=Enum.Font.GothamBlack
 bannerBrand.TextWrapped=false
 local bannerSub = txt(hero,"P R I M E",32,26,true)
-bannerSub.Position = UDim2.fromOffset(29,112)
-bannerSub.Size = UDim2.new(1,-208,0,32)
+bannerSub.Position = UDim2.fromOffset(24,89)
+bannerSub.Size = UDim2.new(1,-178,0,31)
 bannerSub.TextColor3 = Color3.fromRGB(255,78,110)
 local bannerDesc = txt(hero,"HUB PREMIUM DE JOGOS ROBLOX",23,11,true)
-bannerDesc.Position = UDim2.fromOffset(29,151)
+bannerDesc.Position = UDim2.fromOffset(24,123)
 bannerDesc.Size = UDim2.new(1,-62,0,23)
 bannerDesc.TextColor3 = white
 local creatorBanner = txt(hero,"CRIADO POR  @wendezao05153nh",19,11,true)
-creatorBanner.Position = UDim2.fromOffset(29,175)
-creatorBanner.Size = UDim2.new(1,-58,0,19)
+creatorBanner.Position = UDim2.fromOffset(24,146)
+creatorBanner.Size = UDim2.new(1,-58,0,16)
 creatorBanner.TextColor3 = Color3.fromRGB(255,108,135)
 
+-- Dashboard de servidor com valores do cliente; isolado de erros da abertura.
+v14.homeMetrics={}
+do
+    local success,problem=pcall(function()
+        local metricFrame=round(obj("Frame",pages.HOME,{
+            Name="BRAB0X_DASHBOARD_METRICS",
+            Size=UDim2.new(1,-9,0,57),
+            BackgroundColor3=Color3.fromRGB(20,12,22),
+            BorderSizePixel=0
+        }),12)
+        obj("UIStroke",metricFrame,{
+            Color=Color3.fromRGB(243,42,78),Transparency=.26,Thickness=1.25
+        })
+        obj("UIGradient",metricFrame,{
+            Rotation=0,
+            Color=ColorSequence.new(Color3.fromRGB(40,11,23),Color3.fromRGB(15,15,22))
+        })
+        obj("UIListLayout",metricFrame,{
+            FillDirection=Enum.FillDirection.Horizontal,
+            SortOrder=Enum.SortOrder.LayoutOrder,
+            HorizontalAlignment=Enum.HorizontalAlignment.Center,
+            VerticalAlignment=Enum.VerticalAlignment.Center,
+            Padding=UDim.new(0,1)
+        })
+        local values={}
+        for i,name in ipairs({"PING","JOGADORES","FPS","PLACE ID","SESSAO"}) do
+            local cell=obj("Frame",metricFrame,{
+                Size=UDim2.new(.2,-2,1,-7),
+                LayoutOrder=i,
+                BackgroundTransparency=1,
+                BorderSizePixel=0
+            })
+            local key=txt(cell,name,18,10,true)
+            key.Position=UDim2.fromOffset(8,3)
+            key.Size=UDim2.new(1,-9,0,18)
+            key.TextColor3=Color3.fromRGB(249,91,120)
+            local value=txt(cell,"--",28,13,true)
+            value.Position=UDim2.fromOffset(8,21)
+            value.Size=UDim2.new(1,-9,0,28)
+            value.TextWrapped=false
+            values[i]=value
+        end
+        v14.homeMetrics.values=values
+        v14.homeMetrics.frames=0
+        v14.homeMetrics.elapsed=0
+        v14.homeMetrics.clock=0
+        v14.homeMetrics.fps=0
+        v14.homeMetrics.update=function()
+            local ping="--"
+            local ok,pingString=pcall(function()
+                return Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+            end)
+            if ok and pingString then ping=tostring(pingString) end
+            local maximum=tonumber(Players.MaxPlayers) or 0
+            local seconds=math.max(0,math.floor(os.clock()-v14.sessionStarted))
+            values[1].Text=ping
+            values[2].Text=#Players:GetPlayers().."/"..(maximum>0 and maximum or "--")
+            values[3].Text=v14.homeMetrics.fps>0 and tostring(v14.homeMetrics.fps) or "--"
+            values[4].Text=tostring(game.PlaceId)
+            values[5].Text=string.format("%02d:%02d:%02d",
+                math.floor(seconds/3600),math.floor(seconds/60)%60,seconds%60)
+        end
+        v14.homeMetrics.update()
+        bind(Run.Heartbeat,function(dt)
+            if stopped or not pages.HOME.Visible then return end
+            local data=v14.homeMetrics
+            if not data or not data.update then return end
+            data.frames=data.frames+1
+            data.elapsed=data.elapsed+dt
+            data.clock=data.clock+dt
+            if data.elapsed>=1 then
+                data.fps=math.floor(data.frames/data.elapsed+.5)
+                data.frames=0
+                data.elapsed=0
+            end
+            if data.clock>=2 then
+                data.clock=0
+                local ok,err=pcall(data.update)
+                if not ok then warn("[BRAB0X PRIME] Indicadores: "..tostring(err)) end
+            end
+        end)
+    end)
+    if not success then
+        warn("[BRAB0X PRIME] Indicadores desativados: "..tostring(problem))
+    end
+end
 live = titleRow(pages.HOME,"FLY OFF • SPEED 55 • AIM OFF")
-titleRow(pages.HOME,"PAINEL DE ACOES RAPIDAS  /  ESCOLHA SUA FUNCAO")
+live.Visible=false
+titleRow(pages.HOME,"CENTRAL DE JOGOS  /  ACESSOS RAPIDOS")
 
 local homeTiles = obj("Frame",pages.HOME,{
-    Size = UDim2.new(1,-9,0,218),
+    Name="BRAB0X_DASHBOARD_6_CARTOES",
+    Size = UDim2.new(1,-9,0,203),
     BackgroundTransparency = 1
 })
 obj("UIGridLayout",homeTiles,{
-    CellSize = UDim2.new(.5,-7,0,65),
-    CellPadding = UDim2.fromOffset(9,10),
+    CellSize = UDim2.new(1/3,-9,0,93),
+    CellPadding = UDim2.fromOffset(10,10),
     SortOrder = Enum.SortOrder.LayoutOrder
 })
-local function makeHomeTile(icon,title,desc,filter)
+local function makeHomeTile(symbol,title,description,target)
     local t = btn(homeTiles,"",function()
-        if homeFilter then homeFilter(filter) end
-    end,65)
-    t.BackgroundColor3 = Color3.fromRGB(26,20,29)
-    obj("UIStroke",t,{Color=accent,Thickness=1,Transparency=.48})
-    local ico = txt(t,icon,39,29,true)
-    ico.Position = UDim2.fromOffset(13,9)
-    ico.Size = UDim2.fromOffset(46,42)
-    ico.TextColor3 = accent
-    local ttl = txt(t,title,24,15,true)
-    ttl.Position = UDim2.fromOffset(62,10)
-    ttl.Size = UDim2.new(1,-82,0,24)
-    local sb = txt(t,desc,22,11)
-    sb.Position = UDim2.fromOffset(62,35)
-    sb.Size = UDim2.new(1,-82,0,22)
-    sb.TextColor3 = muted
+        show(target)
+    end,93)
+    t.Name="DASHBOARD_"..target
+    t.BackgroundColor3 = Color3.fromRGB(23,16,27)
+    t.ClipsDescendants=true
+    obj("UIGradient",t,{
+        Rotation=90,
+        Color=ColorSequence.new(Color3.fromRGB(42,12,26),Color3.fromRGB(14,15,22))
+    })
+    obj("UIStroke",t,{
+        Color=Color3.fromRGB(251,47,83),Thickness=1.2,Transparency=.2
+    })
+    local icon=round(obj("Frame",t,{
+        Position=UDim2.fromOffset(8,21),
+        Size=UDim2.fromOffset(37,43),
+        BackgroundColor3=Color3.fromRGB(69,17,36),
+        BorderSizePixel=0
+    }),9)
+    local ico = txt(icon,symbol,40,20,true)
+    ico.Position=UDim2.fromOffset(0,2)
+    ico.Size=UDim2.fromScale(1,1)
+    ico.TextXAlignment=Enum.TextXAlignment.Center
+    ico.TextColor3=Color3.fromRGB(255,86,119)
+    local ttl = txt(t,title,23,13,true)
+    ttl.Position = UDim2.fromOffset(51,14)
+    ttl.Size = UDim2.new(1,-58,0,24)
+    ttl.TextWrapped=false
+    local summary = txt(t,description,43,10)
+    summary.Position = UDim2.fromOffset(51,38)
+    summary.Size = UDim2.new(1,-60,0,46)
+    summary.TextColor3 = Color3.fromRGB(191,178,192)
+    round(obj("Frame",t,{
+        Position=UDim2.new(0,8,1,-4),Size=UDim2.new(1,-16,0,2),
+        BackgroundColor3=Color3.fromRGB(207,34,75),
+        BackgroundTransparency=.3,BorderSizePixel=0
+    }),2)
 end
-makeHomeTile("F","MOVIMENTO","Fly, velocidade e noclip","FLY")
-makeHomeTile("P","JOGADOR","Pulo, visual e posicoes","PLAYER")
-makeHomeTile("C","CAMERA","FOV, zoom e mira","CAMERA")
-makeHomeTile("M","MUNDO","Tempo e iluminacao","WORLD")
-makeHomeTile("E","EMOTES","Animacoes autorizadas","EMOTES")
-makeHomeTile("S","AJUSTES","Configuracoes do hub","SETTINGS")
+makeHomeTile("▣","SERVIDOR","Informacoes da partida","SERVER")
+makeHomeTile("♙","JOGADORES","Lista e status dos players","PLAYERS")
+makeHomeTile("</>","COMANDOS","Funcoes e utilitarios","COMMANDS")
+makeHomeTile("▦","JOGOS","Experiencias e perfis","GAMES")
+makeHomeTile("▥","DESEMPENHO","FPS e estabilidade","PERFORMANCE")
+makeHomeTile("◷","SESSAO","Tempo e estatisticas","STATS")
 
 local quickRow = obj("Frame",pages.HOME,{
     Size = UDim2.new(1,-9,0,43),
@@ -6859,17 +6968,21 @@ obj("UIListLayout",quickRow,{
     Padding = UDim.new(0,8),
     SortOrder = Enum.SortOrder.LayoutOrder
 })
-local function quick(label,command)
+local function quick(label,target)
     local b = btn(quickRow,label,function()
-        if exec then exec(command) end
+        show(target)
     end,42)
     b.Size = UDim2.new(.25,-6,0,42)
+    b.BackgroundColor3=Color3.fromRGB(48,13,28)
+    obj("UIStroke",b,{
+        Color=Color3.fromRGB(240,42,81),Transparency=.25,Thickness=1.1
+    })
     return b
 end
-quick("↗  FLY ON","fly")
-quick("■  FLY OFF","unfly")
-quick("⚡  BOOST","boost")
-quick("⌖  AIM OPCIONAL","modules")
+quick("▣  SERVIDOR","SERVER")
+quick("⌘  COMANDOS","COMMANDS")
+quick("▦  JOGOS","GAMES")
+quick("⚙  AJUSTES","SETTINGS")
 item(pages.HOME,"▣  CENTRAL DA PARTIDA","serverpanel")
 item(pages.HOME,"?  CENTRAL DE AJUDA","manual")
 item(pages.HOME,"▣  GERENCIADOR DE JOGOS","games")
