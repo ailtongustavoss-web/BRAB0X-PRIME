@@ -6748,38 +6748,63 @@ for i=1,3 do
         BorderSizePixel = 0
     })
 end
--- Emblema circular mantido inteiramente por componentes nativos.
+-- Visual com a arte original da coroa ja carregada no mini banner.
+-- Este bloco nao baixa uma segunda imagem e nao bloqueia a inicializacao.
 local emblem=round(obj("Frame",hero,{
-    Position=UDim2.new(1,-123,0,48),
-    Size=UDim2.fromOffset(87,87),
+    Position=UDim2.new(1,-174,0,22),
+    Size=UDim2.fromOffset(150,150),
     BackgroundColor3=Color3.fromRGB(22,9,19),
-    BorderSizePixel=0
-}),44)
-obj("UIStroke",emblem,{Color=Color3.fromRGB(255,64,99),Thickness=2,Transparency=.03})
+    BorderSizePixel=0,
+    ClipsDescendants=true
+}),17)
+obj("UIStroke",emblem,{Color=Color3.fromRGB(255,64,99),Thickness=1.7,Transparency=.03})
 obj("UIGradient",emblem,{
     Rotation=45,
     Color=ColorSequence.new(Color3.fromRGB(62,12,31),Color3.fromRGB(12,12,19))
 })
-local emblemLetter=txt(emblem,"B",87,56,true)
+local emblemLetter=txt(emblem,"B",150,67,true)
 emblemLetter.Position=UDim2.fromOffset(0,0)
 emblemLetter.Size=UDim2.fromScale(1,1)
 emblemLetter.Font=Enum.Font.GothamBlack
 emblemLetter.TextColor3=Color3.fromRGB(255,249,252)
 emblemLetter.TextXAlignment=Enum.TextXAlignment.Center
+v14.homeCrownPicture=obj("ImageLabel",emblem,{
+    Name="COROA_BRAB0X_ORIGINAL",
+    Size=UDim2.fromScale(1,1),
+    BackgroundTransparency=1,
+    BorderSizePixel=0,
+    Image="",
+    ScaleType=Enum.ScaleType.Fit,
+    Visible=false,
+    ZIndex=3
+})
+v14.homeCrownSync=function()
+    if stopped or not v14.homeCrownPicture or not v14.homeCrownPicture.Parent then return end
+    if v14.miniImage and type(v14.miniImage.Image)=="string"
+        and v14.miniImage.Image~="" then
+        v14.homeCrownPicture.Image=v14.miniImage.Image
+        v14.homeCrownPicture.Visible=true
+        emblemLetter.Visible=false
+    end
+end
+v14.homeCrownSync()
+if v14.miniImage then
+    bind(v14.miniImage:GetPropertyChangedSignal("Image"),v14.homeCrownSync)
+end
 local bannerSmall = txt(hero,"CENTRAL DE CONTROLE  /  ACESSO PREMIUM",22,12,true)
 bannerSmall.Position = UDim2.fromOffset(28,23)
 bannerSmall.Size = UDim2.new(1,-176,0,22)
 bannerSmall.TextColor3 = Color3.fromRGB(255,80,112)
-local bannerBrand = txt(hero,"BRAB0X PRIME",59,36,true)
-bannerBrand.Position = UDim2.fromOffset(27,55)
-bannerBrand.Size = UDim2.new(1,-151,0,59)
+local bannerBrand = txt(hero,"BRAB0X",59,39,true)
+bannerBrand.Position = UDim2.fromOffset(27,53)
+bannerBrand.Size = UDim2.new(1,-212,0,59)
 bannerBrand.Font=Enum.Font.GothamBlack
 bannerBrand.TextWrapped=false
-local bannerSub = txt(hero,"RED NEON • CONTROL CENTER",26,16,true)
-bannerSub.Position = UDim2.fromOffset(29,116)
-bannerSub.Size = UDim2.new(1,-160,0,26)
+local bannerSub = txt(hero,"P R I M E",32,26,true)
+bannerSub.Position = UDim2.fromOffset(29,112)
+bannerSub.Size = UDim2.new(1,-208,0,32)
 bannerSub.TextColor3 = Color3.fromRGB(255,78,110)
-local bannerDesc = txt(hero,"MOVIMENTO  •  CAMERA  •  VISUAL  •  EMOTES",23,11,true)
+local bannerDesc = txt(hero,"HUB PREMIUM DE JOGOS ROBLOX",23,11,true)
 bannerDesc.Position = UDim2.fromOffset(29,151)
 bannerDesc.Size = UDim2.new(1,-62,0,23)
 bannerDesc.TextColor3 = white
